@@ -53,20 +53,24 @@ const QRScanPage = () => {
   const processDaisoQR = async (qrData) => {
     try {
       console.log('다이소 QR 처리 시작:', qrData);
+      setScanStatus('다이소 QR 분석 중...');
       
       // 다이소 QR 코드에서 제품 코드 추출
       let productCode = extractDaisoProductCode(qrData);
       
-      if (!productCode) {
-        // 추출 실패 시 원본 데이터로 시도
-        productCode = qrData.trim();
+      if (productCode) {
+        console.log('추출된 제품 코드:', productCode);
+        setScanStatus(`제품 코드 추출: ${productCode}`);
+        
+        // 제품 검색
+        await processQR(productCode);
+      } else {
+        console.log('제품 코드 추출 실패 - 모든 가능한 패턴 시도');
+        setScanStatus('제품 코드 추출 실패 - 원본 데이터로 시도');
+        
+        // 원본 데이터의 모든 가능한 조합 시도
+        await tryAllPossibleCodes(qrData);
       }
-      
-      console.log('추출된 제품 코드:', productCode);
-      setScanStatus(`제품 코드 추출: ${productCode}`);
-      
-      // 제품 검색
-      await processQR(productCode);
       
     } catch (error) {
       console.error('다이소 QR 처리 오류:', error);
@@ -74,64 +78,172 @@ const QRScanPage = () => {
     }
   };
 
+  // 모든 가능한 코드 조합 시도
+  const tryAllPossibleCodes = async (qrData) => {
+    console.log('=== 모든 가능한 코드 시도 ===');
+    
+    // 1. 원본 그대로
+    console.log('1. 원본 시도:', qrData);
+    await processQR(qrData);
+    
+    // 2. 앞뒤 공백 제거
+    const trimmed = qrData.trim();
+    if (trimmed !== qrData) {
+      console.log('2. 공백제거 시도:', trimmed);
+      await processQR(trimmed);
+    }
+    
+    // 3. 알파벳 제거하고 숫자만
+    const numbersOnly = qrData.replace(/[^\d]/g, '');
+    if (numbersOnly) {
+      console.log('3. 숫자만 시도:', numbersOnly);
+      await processQR(numbersOnly);
+      
+      // 숫자가 너무 길면 앞/뒤로 잘라서도 시도
+      if (numbersOnly.length > 8) {
+        const front = numbersOnly.substring(0, 6);
+        const back = numbersOnly.substring(numbersOnly.length - 6);
+        console.log('4. 앞 6자리 시도:', front);
+        await processQR(front);
+        console.log('5. 뒤 6자리 시도:', back);
+        await processQR(back);
+      }
+    }
+    
+    setScanStatus('모든 패턴 시도 완료 - 콘솔 확인');
+  };
+
   // 다이소 QR 코드에서 제품 코드 추출
   const extractDaisoProductCode = (qrData) => {
     console.log('QR 데이터 분석:', qrData);
+    console.log('QR 데이터 16진수:', Array.from(qrData).map(c => c.charCodeAt(0).toString(16)).join(' '));
     
-    // 다양한 다이소 QR 형식 처리
-    // 1. 파이프(|) 구분자가 있는 경우
+    // 가능한 모든 제품 코드 후보들
+    const candidates = [];
+    
+    // 1. 원본 데이터가 숫자인 경우
+    if (/^\d+$/.test(qrData.trim())) {
+      candidates.push(qrData.trim());
+      console.log('제품 코드 후보 (원본):', qrData.trim());
+    }
+    
+    // 2. 파이프(|) 구분자
     if (qrData.includes('|')) {
       const parts = qrData.split('|');
       console.log('파이프 분리:', parts);
-      
-      // 숫자로만 이루어진 부분 찾기
-      for (const part of parts) {
+      parts.forEach((part, index) => {
         const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 4) {
-          console.log('제품 코드 발견 (파이프):', cleaned);
-          return cleaned;
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (파이프 ${index}):`, cleaned);
         }
-      }
+      });
     }
     
-    // 2. 콤마(,) 구분자가 있는 경우
+    // 3. 콤마(,) 구분자
     if (qrData.includes(',')) {
       const parts = qrData.split(',');
       console.log('콤마 분리:', parts);
-      
-      for (const part of parts) {
+      parts.forEach((part, index) => {
         const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 4) {
-          console.log('제품 코드 발견 (콤마):', cleaned);
-          return cleaned;
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (콤마 ${index}):`, cleaned);
         }
-      }
+      });
     }
     
-    // 3. 숫자만 추출
+    // 4. 세미콜론(;) 구분자
+    if (qrData.includes(';')) {
+      const parts = qrData.split(';');
+      console.log('세미콜론 분리:', parts);
+      parts.forEach((part, index) => {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (세미콜론 ${index}):`, cleaned);
+        }
+      });
+    }
+    
+    // 5. 스페이스 구분자
+    if (qrData.includes(' ')) {
+      const parts = qrData.split(' ');
+      console.log('스페이스 분리:', parts);
+      parts.forEach((part, index) => {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (스페이스 ${index}):`, cleaned);
+        }
+      });
+    }
+    
+    // 6. 탭 구분자
+    if (qrData.includes('\t')) {
+      const parts = qrData.split('\t');
+      console.log('탭 분리:', parts);
+      parts.forEach((part, index) => {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (탭 ${index}):`, cleaned);
+        }
+      });
+    }
+    
+    // 7. 개행 구분자
+    if (qrData.includes('\n') || qrData.includes('\r')) {
+      const parts = qrData.split(/[\r\n]+/);
+      console.log('개행 분리:', parts);
+      parts.forEach((part, index) => {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
+          candidates.push(cleaned);
+          console.log(`제품 코드 후보 (개행 ${index}):`, cleaned);
+        }
+      });
+    }
+    
+    // 8. 모든 숫자 추출
     const numbers = qrData.match(/\d+/g);
     if (numbers) {
-      console.log('추출된 숫자들:', numbers);
-      
-      // 가장 긴 숫자 찾기 (제품 코드일 가능성이 높음)
-      const longestNumber = numbers.reduce((longest, current) => {
-        return current.length > longest.length ? current : longest;
-      }, '');
-      
-      if (longestNumber.length >= 4) {
-        console.log('제품 코드 발견 (숫자):', longestNumber);
-        return longestNumber;
+      console.log('정규식으로 추출된 숫자들:', numbers);
+      numbers.forEach((num, index) => {
+        if (num.length >= 3) {
+          candidates.push(num);
+          console.log(`제품 코드 후보 (정규식 ${index}):`, num);
+        }
+      });
+    }
+    
+    // 9. URL에서 추출 시도
+    if (qrData.includes('http') || qrData.includes('www')) {
+      console.log('URL 형식 감지');
+      const urlNumbers = qrData.match(/[?&].*?(\d{4,})/g);
+      if (urlNumbers) {
+        urlNumbers.forEach(match => {
+          const num = match.match(/\d{4,}/)[0];
+          candidates.push(num);
+          console.log('제품 코드 후보 (URL):', num);
+        });
       }
     }
     
-    // 4. 원본 데이터가 숫자인 경우
-    if (/^\d+$/.test(qrData.trim())) {
-      console.log('제품 코드 발견 (원본):', qrData.trim());
-      return qrData.trim();
+    console.log('모든 후보들:', candidates);
+    
+    if (candidates.length === 0) {
+      console.log('제품 코드 추출 실패');
+      return null;
     }
     
-    console.log('제품 코드 추출 실패');
-    return null;
+    // 가장 적절한 후보 선택 (길이 우선, 그 다음 빈도)
+    const bestCandidate = candidates
+      .filter(c => c.length >= 4) // 최소 4자리
+      .sort((a, b) => b.length - a.length)[0] || candidates[0];
+    
+    console.log('선택된 제품 코드:', bestCandidate);
+    return bestCandidate;
   };
 
   // QR 코드 처리
@@ -246,15 +358,25 @@ const QRScanPage = () => {
           console.log('🎉 QR 코드 감지됨!:', qrData);
           console.log('QR 데이터 길이:', qrData.length);
           console.log('QR 데이터 내용:', qrData);
+          console.log('QR 데이터 타입:', typeof qrData);
+          console.log('QR 데이터 바이트:', [...qrData].map(c => c.charCodeAt(0)));
           
-          setScanStatus(`QR 코드 발견: ${qrData}`);
+          // 화면에도 원본 데이터 표시
+          setScanStatus(`QR 원본: ${qrData.substring(0, 50)}${qrData.length > 50 ? '...' : ''}`);
           
           // 중복 스캔 방지
           if (qrData !== lastScannedCode) {
             setLastScannedCode(qrData);
             
+            // 즉시 원본 데이터로도 시도
+            console.log('=== 원본 데이터로 검색 시도 ===');
+            processQR(qrData);
+            
             // 다이소 QR 형식 확인 및 처리
-            processDaisoQR(qrData);
+            setTimeout(() => {
+              console.log('=== 다이소 형식 분석 시도 ===');
+              processDaisoQR(qrData);
+            }, 100);
             
             // 1초 후 중복 방지 해제
             setTimeout(() => setLastScannedCode(''), 1000);
