@@ -1,0 +1,10 @@
+{
+  "short_name": "3M QR Scanner",
+  "name": "3M 다이소 QR 스캐너",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#dc3545",
+  "background_color": "#ffffff",
+  "description": "3M 다이소 QR 스캐너 모바일 웹 애플리케이션"
+} 
