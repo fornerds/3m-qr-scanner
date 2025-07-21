@@ -113,23 +113,10 @@ const QRScannerMain = () => {
             justifyContent: 'center',
             margin: '0 auto 24px auto'
           }}>
-            {/* QR 코드 아이콘 (스크린샷과 동일한 스타일) */}
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="#dc3545">
-              <rect x="3" y="3" width="8" height="8" rx="1" fill="#dc3545"/>
-              <rect x="13" y="3" width="8" height="8" rx="1" fill="#dc3545"/>
-              <rect x="3" y="13" width="8" height="8" rx="1" fill="#dc3545"/>
-              <rect x="5" y="5" width="4" height="4" fill="white"/>
-              <rect x="15" y="5" width="4" height="4" fill="white"/>
-              <rect x="5" y="15" width="4" height="4" fill="white"/>
-              <rect x="13" y="13" width="2" height="2" fill="#dc3545"/>
-              <rect x="17" y="13" width="2" height="2" fill="#dc3545"/>
-              <rect x="19" y="13" width="2" height="2" fill="#dc3545"/>
-              <rect x="13" y="17" width="2" height="2" fill="#dc3545"/>
-              <rect x="15" y="17" width="2" height="2" fill="#dc3545"/>
-              <rect x="19" y="17" width="2" height="2" fill="#dc3545"/>
-              <rect x="17" y="19" width="2" height="2" fill="#dc3545"/>
-              <rect x="19" y="19" width="2" height="2" fill="#dc3545"/>
-            </svg>
+            <i className="fas fa-qrcode" style={{
+              fontSize: '48px',
+              color: '#dc3545'
+            }}></i>
           </div>
 
           {/* 타이틀 */}
@@ -173,14 +160,7 @@ const QRScannerMain = () => {
               boxSizing: 'border-box'
             }}
           >
-            <svg style={{ marginRight: '8px' }} width="20" height="20" viewBox="0 0 24 24" fill="white">
-              <rect x="3" y="3" width="8" height="8" rx="1"/>
-              <rect x="13" y="3" width="8" height="8" rx="1"/>
-              <rect x="3" y="13" width="8" height="8" rx="1"/>
-              <rect x="5" y="5" width="4" height="4" fill="#dc3545"/>
-              <rect x="15" y="5" width="4" height="4" fill="#dc3545"/>
-              <rect x="5" y="15" width="4" height="4" fill="#dc3545"/>
-            </svg>
+            <i className="fas fa-qrcode" style={{ marginRight: '8px', fontSize: '16px' }}></i>
             QR코드 스캔 시작
           </Link>
         </div>
@@ -275,9 +255,10 @@ const QRScannerMain = () => {
                     marginRight: '12px',
                     flexShrink: 0
                   }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#dc3545">
-                      <path d="M12 2L2 7v10c0 5.55 3.84 8.9 9 10 5.16-1.1 9-4.45 9-10V7l-10-5z"/>
-                    </svg>
+                    <i className="fas fa-store" style={{
+                      fontSize: '18px',
+                      color: '#dc3545'
+                    }}></i>
                   </div>
 
                   {/* 매장 정보 */}
@@ -303,31 +284,53 @@ const QRScannerMain = () => {
                       fontSize: '12px',
                       color: '#999'
                     }}>
-                      <svg style={{ marginRight: '4px' }} width="12" height="12" viewBox="0 0 24 24" fill="#999">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12,6 12,12 16,14"/>
-                      </svg>
+                      <i className="fas fa-clock" style={{ marginRight: '4px', fontSize: '10px' }}></i>
                       {store.lastVisit}
                       <span style={{ margin: '0 8px', color: '#ddd' }}>•</span>
-                      <svg style={{ marginRight: '4px' }} width="12" height="12" viewBox="0 0 24 24" fill="#999">
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="16" y1="2" x2="16" y2="6"/>
-                        <line x1="8" y1="2" x2="8" y2="6"/>
-                        <line x1="3" y1="10" x2="21" y2="10"/>
-                      </svg>
+                      <i className="fas fa-chart-bar" style={{ marginRight: '4px', fontSize: '10px' }}></i>
                       {store.scanCount}
                     </div>
                   </div>
 
                   {/* 화살표 아이콘 */}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="#ccc">
-                    <polyline points="9,18 15,12 9,6"/>
-                  </svg>
+                  <i className="fas fa-chevron-right" style={{
+                    color: '#ccc',
+                    fontSize: '12px'
+                  }}></i>
                 </div>
               </div>
             </Link>
           ))}
         </div>
+      </div>
+
+      {/* 하단 네비게이션 */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '414px',
+        backgroundColor: 'white',
+        borderTop: '1px solid #e0e0e0',
+        padding: '8px 0',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center'
+      }}>
+        <Link to="/" style={{ textDecoration: 'none', color: '#dc3545', textAlign: 'center' }}>
+          <i className="fas fa-home" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>홈</span>
+        </Link>
+        <Link to="/store-list" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>매장</span>
+        </Link>
+        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>스캔</span>
+        </Link>
       </div>
     </div>
   );

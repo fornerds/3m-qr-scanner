@@ -1,65 +1,129 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const InventoryStatusPage = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('missing');
 
-  const missingItems = [
-    { name: '3M 다목적 접착제', code: '재고 18개', time: '3일 전', status: '높음' },
-    { name: '3M 청소용 스펀지', code: '예상 재고 25개', time: '5일 전', status: '높음' },
-    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전', status: '높음' },
-    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전', status: '높음' }
+  // 높은 우선순위 (미구비 품목)
+  const highPriorityItems = [
+    { name: '3M 다목적 접착제', code: '재고 18개', time: '3일 전' },
+    { name: '3M 청소용 스펀지', code: '예상 재고 25개', time: '5일 전' },
+    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전' },
+    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전' }
   ];
 
-  const lowStockItems = [
-    { name: '3M 포스트잇 노트', code: '예상 재고 12개', time: '1주일 전', status: '보통' },
-    { name: '3M 양면테이프', code: '예상 재고 8개', time: '1주일 전', status: '보통' }
+  // 보통 우선순위
+  const mediumPriorityItems = [
+    { name: '3M 포스트잇 노트', code: '예상 재고 12개', time: '1주일 전' },
+    { name: '3M 양면테이프', code: '예상 재고 8개', time: '1주일 전' }
   ];
 
-  const normalItems = [
-    { name: '3M 보온 단열재', code: '예상 재고 6개', time: '2주일 전', status: '낮음' }
+  // 낮은 우선순위
+  const lowPriorityItems = [
+    { name: '3M 보온 단열재', code: '예상 재고 6개', time: '2주일 전' }
   ];
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case '높음': return '#dc3545';
-      case '보통': return '#ffc107';
-      case '낮음': return '#28a745';
-      default: return '#6c757d';
-    }
-  };
+  const PrioritySection = ({ title, items, bgColor, textColor, badgeColor, icon }) => (
+    <div style={{ marginBottom: '16px' }}>
+      {/* 섹션 헤더 */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '8px',
+        paddingLeft: '16px'
+      }}>
+        {icon && (
+          <i className={icon} style={{
+            color: textColor,
+            fontSize: '14px',
+            marginRight: '8px'
+          }}></i>
+        )}
+        <h3 style={{
+          margin: 0,
+          fontSize: '16px',
+          fontWeight: 'bold',
+          color: textColor
+        }}>
+          {title}
+        </h3>
+      </div>
 
-  const getStatusBgColor = (status) => {
-    switch (status) {
-      case '높음': return '#fff5f5';
-      case '보통': return '#fffbf0';
-      case '낮음': return '#f0fff4';
-      default: return '#f8f9fa';
-    }
-  };
-
-  const getCurrentItems = () => {
-    if (activeTab === 'missing') return missingItems;
-    if (activeTab === 'lowstock') return lowStockItems;
-    return normalItems;
-  };
-
-  const getCurrentTitle = () => {
-    if (activeTab === 'missing') return '높은 우선순위';
-    if (activeTab === 'lowstock') return '보통 우선순위';
-    return '낮은 우선순위';
-  };
+      {/* 품목 리스트 */}
+      {items.map((item, index) => (
+        <div 
+          key={index}
+          style={{
+            backgroundColor: bgColor,
+            margin: '0 16px 8px 16px',
+            padding: '16px',
+            borderRadius: '12px'
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start'
+          }}>
+            <div style={{ flex: 1 }}>
+              <h4 style={{
+                margin: '0 0 8px 0',
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#333'
+              }}>
+                {item.name}
+              </h4>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <i className="fas fa-box" style={{ fontSize: '12px' }}></i>
+                  {item.code}
+                </span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <i className="fas fa-clock" style={{ fontSize: '12px' }}></i>
+                  {item.time}
+                </span>
+              </div>
+            </div>
+            <span style={{
+              backgroundColor: badgeColor,
+              color: 'white',
+              fontSize: '12px',
+              padding: '6px 12px',
+              borderRadius: '16px',
+              fontWeight: '500',
+              minWidth: '40px',
+              textAlign: 'center'
+            }}>
+              {title.includes('미구비') ? '높음' : title.includes('보통') ? '보통' : '낮음'}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
-    <div className="mobile-container">
+    <div style={{
+      width: '100%',
+      maxWidth: '414px',
+      margin: '0 auto',
+      backgroundColor: '#f5f5f5',
+      minHeight: '100vh',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+    }}>
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '12px 16px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+        alignItems: 'center'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -69,7 +133,8 @@ const InventoryStatusPage = () => {
             color: 'white',
             fontSize: '18px',
             cursor: 'pointer',
-            padding: '4px'
+            padding: '4px',
+            marginRight: '12px'
           }}
         >
           ←
@@ -82,72 +147,70 @@ const InventoryStatusPage = () => {
         }}>
           재고 현황
         </h1>
-        <div style={{
-          color: 'white',
-          fontSize: '16px',
-          cursor: 'pointer'
-        }}>
-          ↓
-        </div>
       </div>
 
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 120px)' }}>
+      <div style={{ backgroundColor: '#ffffff', paddingBottom: '100px' }}>
         {/* 매장 정보 및 통계 */}
         <div style={{
           backgroundColor: 'white',
           padding: '20px',
-          borderBottom: '8px solid #f5f5f5'
+          borderBottom: '8px solid #f5f5f5',
+          position: 'relative'
         }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            marginBottom: '16px'
-          }}>
-            <div style={{ flex: 1 }}>
-              <h2 style={{
-                margin: '0 0 8px 0',
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: '#333'
-              }}>
-                다이소 강남점
-              </h2>
-              <p style={{
-                margin: 0,
-                fontSize: '14px',
-                color: '#666'
-              }}>
-                서울 강남구 테헤란로 123
-              </p>
-            </div>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              backgroundColor: '#ffe6e6',
-              borderRadius: '12px',
+          {/* 보고서 아이콘 */}
+          <Link
+            to="/inventory-report"
+            style={{
+              position: 'absolute',
+              top: '20px',
+              right: '20px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: '#dc3545',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '2px solid #dc3545'
-            }}>
-                          <i className="fas fa-store" style={{
-              fontSize: '20px',
-              color: '#dc3545'
+              textDecoration: 'none'
+            }}
+          >
+            <i className="fas fa-file-alt" style={{
+              color: 'white',
+              fontSize: '16px'
             }}></i>
-            </div>
+          </Link>
+
+          <div style={{
+            marginBottom: '16px',
+            paddingRight: '60px'
+          }}>
+            <h2 style={{
+              margin: '0 0 4px 0',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              다이소 강남점
+            </h2>
+            <p style={{
+              margin: 0,
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              서울 강남구 테헤란로 123
+            </p>
           </div>
 
           {/* 통계 */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '16px',
             marginBottom: '16px'
           }}>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: '24px',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#007bff',
                 marginBottom: '4px'
@@ -160,7 +223,7 @@ const InventoryStatusPage = () => {
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: '24px',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#28a745',
                 marginBottom: '4px'
@@ -173,7 +236,7 @@ const InventoryStatusPage = () => {
             </div>
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: '24px',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#fd7e14',
                 marginBottom: '4px'
@@ -184,23 +247,10 @@ const InventoryStatusPage = () => {
                 미진열
               </div>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: '#dc3545',
-                marginBottom: '4px'
-              }}>
-                40
-              </div>
-              <div style={{ fontSize: '12px', color: '#666' }}>
-                미구비
-              </div>
-            </div>
           </div>
 
           {/* 진행률 */}
-          <div style={{ marginBottom: '16px' }}>
+          <div>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -211,143 +261,48 @@ const InventoryStatusPage = () => {
               <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc3545' }}>13%</span>
             </div>
             <div style={{
-              height: '8px',
+              height: '6px',
               backgroundColor: '#e9ecef',
-              borderRadius: '4px',
+              borderRadius: '3px',
               overflow: 'hidden'
             }}>
               <div style={{
                 width: '13%',
                 height: '100%',
                 backgroundColor: '#dc3545',
-                borderRadius: '4px'
+                borderRadius: '3px'
               }}></div>
             </div>
           </div>
         </div>
 
-        {/* 탭 메뉴 */}
-        <div style={{
-          backgroundColor: 'white',
-          display: 'flex',
-          borderBottom: '2px solid #f0f0f0'
-        }}>
-          <button
-            onClick={() => setActiveTab('missing')}
-            style={{
-              flex: 1,
-              padding: '16px',
-              border: 'none',
-              background: 'none',
-              fontSize: '14px',
-              fontWeight: activeTab === 'missing' ? 'bold' : 'normal',
-              color: activeTab === 'missing' ? '#dc3545' : '#666',
-              borderBottom: activeTab === 'missing' ? '2px solid #dc3545' : 'none',
-              cursor: 'pointer'
-            }}
-          >
-            미진열 재고 (100)
-          </button>
-          <button
-            onClick={() => setActiveTab('lowstock')}
-            style={{
-              flex: 1,
-              padding: '16px',
-              border: 'none',
-              background: 'none',
-              fontSize: '14px',
-              fontWeight: activeTab === 'lowstock' ? 'bold' : 'normal',
-              color: activeTab === 'lowstock' ? '#dc3545' : '#666',
-              borderBottom: activeTab === 'lowstock' ? '2px solid #dc3545' : 'none',
-              cursor: 'pointer'
-            }}
-          >
-            미구비 품목 (90)
-          </button>
-        </div>
+        {/* 우선순위별 섹션 */}
+        <div style={{ padding: '16px 0' }}>
+          <PrioritySection
+            title="높은 우선순위"
+            items={highPriorityItems}
+            bgColor="#fff5f5"
+            textColor="#dc3545"
+            badgeColor="#dc3545"
+          />
 
-        {/* 우선순위 섹션 */}
-        <div style={{
-          backgroundColor: 'white',
-          margin: '16px',
-          borderRadius: '12px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            padding: '16px 20px',
-            borderBottom: '1px solid #f0f0f0',
-            display: 'flex',
-            alignItems: 'center'
-          }}>
-            <div style={{
-              width: '12px',
-              height: '12px',
-              backgroundColor: getStatusColor(activeTab === 'missing' ? '높음' : activeTab === 'lowstock' ? '보통' : '낮음'),
-              borderRadius: '50%',
-              marginRight: '8px'
-            }}></div>
-            <h3 style={{
-              margin: 0,
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#333'
-            }}>
-              {getCurrentTitle()}
-            </h3>
-          </div>
+          <PrioritySection
+            title="보통 우선순위"
+            items={mediumPriorityItems}
+            bgColor="#fffbf0"
+            textColor="#ffc107"
+            badgeColor="#ffc107"
+            icon="fas fa-exclamation-triangle"
+          />
 
-          {getCurrentItems().map((item, index) => (
-            <div 
-              key={index}
-              style={{
-                padding: '16px 20px',
-                borderBottom: index < getCurrentItems().length - 1 ? '1px solid #f5f5f5' : 'none',
-                backgroundColor: getStatusBgColor(item.status)
-              }}
-            >
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start'
-              }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{
-                    margin: '0 0 4px 0',
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: '#333'
-                  }}>
-                    {item.name}
-                  </h4>
-                  <p style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '13px',
-                    color: '#666'
-                  }}>
-                    {item.code}
-                  </p>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#999'
-                  }}>
-                    {item.time}
-                  </div>
-                </div>
-                <div>
-                  <span style={{
-                    backgroundColor: getStatusColor(item.status),
-                    color: 'white',
-                    padding: '4px 8px',
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    fontWeight: 'bold'
-                  }}>
-                    {item.status}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+          <PrioritySection
+            title="낮은 우선순위"
+            items={lowPriorityItems}
+            bgColor="#f0fff4"
+            textColor="#28a745"
+            badgeColor="#28a745"
+            icon="fas fa-check-circle"
+          />
         </div>
       </div>
 
@@ -357,44 +312,26 @@ const InventoryStatusPage = () => {
         bottom: 0,
         left: '50%',
         transform: 'translateX(-50%)',
-        maxWidth: '414px',
         width: '100%',
-        height: '60px',
+        maxWidth: '414px',
         backgroundColor: 'white',
-        borderTop: '1px solid #eee',
+        borderTop: '1px solid #e0e0e0',
+        padding: '8px 0',
         display: 'flex',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)'
+        justifyContent: 'space-around',
+        alignItems: 'center'
       }}>
-        <Link 
-          to="/" 
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textDecoration: 'none',
-            color: '#dc3545',
-            backgroundColor: '#ffeaea'
-          }}
-        >
-          <i className="fas fa-qrcode" style={{ fontSize: '18px', marginBottom: '2px' }}></i>
-          <div style={{ fontSize: '11px' }}>QR스캔</div>
+        <Link to="/" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-home" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>홈</span>
         </Link>
-        <Link 
-          to="/settings" 
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textDecoration: 'none',
-            color: '#999'
-          }}
-        >
-          <i className="fas fa-cog" style={{ fontSize: '18px', marginBottom: '2px' }}></i>
-          <div style={{ fontSize: '11px' }}>설정</div>
+        <Link to="/store-list" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>매장</span>
+        </Link>
+        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>스캔</span>
         </Link>
       </div>
     </div>

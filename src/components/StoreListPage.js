@@ -8,6 +8,9 @@ const StoreListPage = () => {
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const sortOptions = ['최근 방문순', '거리순', '이름순'];
 
   // API에서 매장 목록 가져오기
   useEffect(() => {
@@ -129,7 +132,7 @@ const StoreListPage = () => {
         <div style={{ width: '24px' }}></div>
       </div>
 
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 120px)' }}>
+      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 120px)', paddingBottom: '80px' }}>
         {/* 로딩 상태 */}
         {loading && (
           <div style={{ 
@@ -162,7 +165,8 @@ const StoreListPage = () => {
         {!loading && (
           <div style={{ 
             backgroundColor: 'white',
-            padding: '16px'
+            padding: '16px',
+            paddingBottom: '6px'
           }}>
             {/* 검색바 */}
             <div style={{ position: 'relative', marginBottom: '16px' }}>
@@ -195,24 +199,74 @@ const StoreListPage = () => {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              marginBottom: '8px'
             }}>
-              <span style={{ fontSize: '14px', color: '#666' }}>정렬:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  backgroundColor: 'white'
-                }}
-              >
-                <option>최근 방문순</option>
-                <option>거리순</option>
-                <option>이름순</option>
-              </select>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '14px', color: '#666' }}>정렬:</span>
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '120px',
+                    padding: '6px 8px',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                    textIndent: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  {sortBy}
+                  <i className="fas fa-caret-down" style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#999',
+                    fontSize: '12px'
+                  }}></i>
+                  {dropdownOpen && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: '0',
+                      width: '100%',
+                      backgroundColor: 'white',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      zIndex: 1000,
+                      maxHeight: '150px',
+                      overflowY: 'auto'
+                    }}>
+                      {sortOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#333',
+                            backgroundColor: option === sortBy ? '#f0f0f0' : 'transparent'
+                          }}
+                          onClick={() => {
+                            setSortBy(option);
+                            setDropdownOpen(false);
+                          }}
+                        >
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <span style={{ fontSize: '14px', color: '#999' }}>
                 총 {filteredStores.length}개 매장
               </span>
@@ -222,88 +276,159 @@ const StoreListPage = () => {
 
         {/* 매장 리스트 */}
         {!loading && (
-          <div style={{ padding: '0 16px' }}>
+          <div style={{ padding: '16px 16px' }}>
             {filteredStores.map((store) => (
-              <div key={store.id} style={{
-                backgroundColor: 'white',
-                marginBottom: '16px',
-                borderRadius: '12px',
-                padding: '16px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-              }}>
-                {/* 매장 정보 */}
+              <Link
+                key={store.id}
+                to={`/store-detail/${store.id}`}
+                style={{
+                  display: 'block',
+                  textDecoration: 'none',
+                  color: 'inherit',
+                  marginBottom: '12px'
+                }}
+              >
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  marginBottom: '16px'
+                  backgroundColor: 'white',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
                 }}>
-                  {/* 매장 아이콘 */}
+                  {/* 매장 정보 */}
                   <div style={{
-                    width: '40px',
-                    height: '40px',
-                    backgroundColor: '#ffe6e6',
-                    borderRadius: '8px',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: '12px',
-                    border: '2px solid #dc3545',
-                    flexShrink: 0
+                    alignItems: 'flex-start',
+                    marginBottom: '16px'
                   }}>
-                    <i className="fas fa-store" style={{
-                      fontSize: '16px',
-                      color: '#dc3545'
-                    }}></i>
-                  </div>
+                    {/* 매장 아이콘 */}
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      backgroundColor: '#ffe6e6',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginRight: '12px',
+                      border: '2px solid #dc3545',
+                      flexShrink: 0
+                    }}>
+                      <i className="fas fa-store" style={{
+                        fontSize: '16px',
+                        color: '#dc3545'
+                      }}></i>
+                    </div>
 
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{
-                      margin: '0 0 4px 0',
-                      fontSize: '16px',
-                      fontWeight: 'bold',
-                      color: '#333'
-                    }}>
-                      {store.name}
-                    </h3>
-                    <p style={{
-                      margin: '0 0 8px 0',
-                      fontSize: '13px',
-                      color: '#666'
-                    }}>
-                      {store.address}
-                    </p>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{
+                        margin: '0 0 4px 0',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: '#333'
+                      }}>
+                        {store.name}
+                      </h3>
+                      <p style={{
+                        margin: '0 0 8px 0',
+                        fontSize: '13px',
+                        color: '#666'
+                      }}>
+                        {store.address}
+                      </p>
+                      
+                      {/* 스캔 진행률 바 */}
+                      <div style={{
+                        marginBottom: '6px'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: '4px'
+                        }}>
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#666',
+                            fontWeight: '500'
+                          }}>
+                            스캔 진행률
+                          </span>
+                          <span style={{
+                            fontSize: '12px',
+                            color: '#dc3545',
+                            fontWeight: 'bold'
+                          }}>
+                            {store.scanCount}
+                          </span>
+                        </div>
+                        
+                        {/* 프로그레스 바 */}
+                        <div style={{
+                          width: '100%',
+                          height: '6px',
+                          backgroundColor: '#f0f0f0',
+                          borderRadius: '3px',
+                          overflow: 'hidden'
+                        }}>
+                          <div style={{
+                            width: store.scanCount.includes('13%') ? '13%' : 
+                                  store.scanCount.includes('9%') ? '9%' :
+                                  store.scanCount.includes('15%') ? '15%' :
+                                  store.scanCount.includes('12%') ? '12%' :
+                                  store.scanCount.includes('31%') ? '31%' :
+                                  store.scanCount.includes('25%') ? '25%' : '0%',
+                            height: '100%',
+                            backgroundColor: '#dc3545',
+                            borderRadius: '3px',
+                            transition: 'width 0.3s ease'
+                          }}></div>
+                        </div>
+                      </div>
+                      
+                      {/* 작업 시간 */}
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        fontSize: '12px',
+                        color: '#999'
+                      }}>
+                        <i className="fas fa-clock" style={{ marginRight: '4px', fontSize: '10px' }}></i>
+                        {store.time}
+                      </div>
+                    </div>
+
+                    {/* 화살표 아이콘 */}
                     <div style={{
                       display: 'flex',
-                      fontSize: '12px',
-                      color: '#999',
-                      gap: '16px'
+                      alignItems: 'center',
+                      paddingRight: '4px'
                     }}>
-                      <span>스캔 진행률: {store.scanCount}</span>
-                      <span>{store.time}</span>
-                      <span>{store.distance}</span>
+                      <i className="fas fa-chevron-right" style={{
+                        color: '#ccc',
+                        fontSize: '14px'
+                      }}></i>
                     </div>
                   </div>
-                </div>
 
-                {/* 선택하기 버튼 */}
-                <Link
-                  to={`/store-detail/${store.id}`}
-                  style={{
-                    display: 'block',
-                    width: '100%',
-                    padding: '12px',
-                    backgroundColor: '#dc3545',
-                    color: 'white',
-                    textAlign: 'center',
-                    textDecoration: 'none',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  선택하기
-                </Link>
-              </div>
+                  {/* 선택하기 버튼 */}
+                  <div
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      padding: '12px',
+                      backgroundColor: '#dc3545',
+                      color: 'white',
+                      textAlign: 'center',
+                      textDecoration: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    선택하기
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         )}
@@ -335,10 +460,6 @@ const StoreListPage = () => {
         <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
-        </Link>
-        <Link to="/settings" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
-          <i className="fas fa-cog" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
-          <span style={{ fontSize: '12px' }}>설정</span>
         </Link>
       </div>
     </div>

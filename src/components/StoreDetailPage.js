@@ -41,25 +41,14 @@ const StoreDetailPage = () => {
           name: '다이소 강남점',
           address: '서울 강남구 테헤란로 123',
           isOpen: true,
-          operatingHours: '10:00 - 22:00'
+          operatingHours: '10:00 - 22:00',
+          distance: '0.3km'
         });
         
         setInventory({
-          totalItems: 50,
-          scannedItems: 45,
-          unstockedItems: 3,
-          unavailableItems: 2,
-          progress: 90,
-          recentScans: [
-            {
-              productCode: '3M-ADH-001',
-              productName: '3M 다목적 접착제',
-              category: '사무용품',
-              price: '3,500원',
-              stock: '재고 24개',
-              timestamp: new Date().toISOString()
-            }
-          ]
+          totalItems: 247,
+          scannedItems: 156,
+          progress: 13
         });
       } finally {
         setLoading(false);
@@ -69,53 +58,45 @@ const StoreDetailPage = () => {
     fetchStoreData();
   }, [storeId]);
 
-  // 샘플 상품 데이터 (실제로는 API에서 가져와야 함)
-  const products = [
+  // 샘플 상품 데이터
+  const recentProducts = [
     {
       id: 1,
       name: '3M 스카치 패킷테이프',
-      category: '사무용품',
-      price: '3,500원',
-      stock: '재고 24개',
       lastScan: '2시간 전'
     },
     {
       id: 2,
-      name: '3M 포스트잇 플래그',
-      category: '사무용품',
-      price: '2,800원',
-      stock: '재고 8개',
-      lastScan: '1일 전'
+      name: '3M 다목적 접착제',
+      lastScan: '2시간 전'
     },
     {
       id: 3,
-      name: '3M 멀티용도 접착테이프',
-      category: '생활용품',
-      price: '4,200원',
-      stock: '재고 15개',
-      lastScan: '3일 전'
+      name: '3M 청소용 스펀지',
+      lastScan: '2시간 전'
     },
     {
       id: 4,
-      name: '3M 스카치 수세미',
-      category: '주방용품',
-      price: '2,500원',
-      stock: '재고 3개',
-      lastScan: '1주일 전'
+      name: '3M 글래스 클리너',
+      lastScan: '2시간 전'
     },
     {
       id: 5,
-      name: '3M 클리닝 와이프',
-      category: '청소용품',
-      price: '1,900원',
-      stock: '재고 12개',
-      lastScan: '2일 전'
+      name: '3M 포스트잇 노트',
+      lastScan: '2시간 전'
     }
   ];
 
   if (loading) {
     return (
-      <div className="mobile-container">
+      <div style={{
+        width: '100%',
+        maxWidth: '414px',
+        margin: '0 auto',
+        backgroundColor: '#f5f5f5',
+        minHeight: '100vh',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+      }}>
         <div style={{ 
           textAlign: 'center', 
           padding: '40px 20px',
@@ -127,25 +108,15 @@ const StoreDetailPage = () => {
     );
   }
 
-  if (error && !store) {
-    return (
-      <div className="mobile-container">
-        <div style={{ 
-          textAlign: 'center', 
-          padding: '20px',
-          color: '#dc3545',
-          backgroundColor: '#fff5f5',
-          borderRadius: '8px',
-          margin: '16px'
-        }}>
-          {error}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="mobile-container">
+    <div style={{
+      width: '100%',
+      maxWidth: '414px',
+      margin: '0 auto',
+      backgroundColor: '#f5f5f5',
+      minHeight: '100vh',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+    }}>
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
@@ -170,259 +141,259 @@ const StoreDetailPage = () => {
         <h1 style={{ 
           margin: 0, 
           fontSize: '18px', 
-          fontWeight: 'bold', 
+          fontWeight: '600', 
           color: 'white' 
         }}>
-          {store?.name || '매장 상세'}
+          매장 상세
         </h1>
       </div>
 
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 120px)' }}>
+      {/* 메인 컨텐츠 */}
+      <div style={{ backgroundColor: 'white', padding: '20px 16px' }}>
         {/* 매장 정보 */}
-        <div style={{ 
-          backgroundColor: 'white',
-          margin: '16px',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          marginBottom: '20px'
         }}>
           <div style={{
+            width: '60px',
+            height: '60px',
+            backgroundColor: '#fce4e6',
+            borderRadius: '12px',
             display: 'flex',
-            alignItems: 'flex-start',
-            marginBottom: '16px'
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: '16px',
+            flexShrink: 0
           }}>
+            <i className="fas fa-store" style={{
+              fontSize: '24px',
+              color: '#dc3545'
+            }}></i>
+          </div>
+          
+          <div style={{ flex: 1 }}>
             <div style={{
-              width: '50px',
-              height: '50px',
-              backgroundColor: '#ffe6e6',
-              borderRadius: '12px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: '16px',
-              border: '2px solid #dc3545'
+              marginBottom: '4px'
             }}>
-              <i className="fas fa-store" style={{
-                fontSize: '20px',
-                color: '#dc3545'
-              }}></i>
-            </div>
-            <div style={{ flex: 1 }}>
               <h2 style={{
-                margin: '0 0 4px 0',
-                fontSize: '18px',
+                margin: '0 8px 0 0',
+                fontSize: '20px',
                 fontWeight: 'bold',
                 color: '#333'
               }}>
                 {store?.name}
               </h2>
-              <p style={{
-                margin: '0 0 8px 0',
-                fontSize: '14px',
-                color: '#666'
+              <span style={{
+                backgroundColor: '#28a745',
+                color: 'white',
+                fontSize: '11px',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                fontWeight: '500'
               }}>
-                {store?.address}
-              </p>
+                영업중
+              </span>
+            </div>
+            <p style={{
+              margin: '0 0 8px 0',
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              {store?.address}
+            </p>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '13px',
+              color: '#999'
+            }}>
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <i className="fas fa-clock" style={{ fontSize: '12px' }}></i>
+                {store?.operatingHours}
+              </span>
+              <span style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <i className="fas fa-map-marker-alt" style={{ fontSize: '12px' }}></i>
+                {store?.distance}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 스캔 진행률 */}
+        <div style={{
+          marginBottom: '20px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '8px'
+          }}>
+            <span style={{
+              fontSize: '14px',
+              color: '#333',
+              fontWeight: '600'
+            }}>
+              스캔 진행률
+            </span>
+            <span style={{
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              마지막 방문: 2시간 전
+            </span>
+          </div>
+          
+          {/* 프로그레스 바 */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            marginBottom: '8px'
+          }}>
+            <div style={{
+              flex: 1,
+              height: '8px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${inventory?.progress || 13}%`,
+                height: '100%',
+                backgroundColor: '#dc3545',
+                borderRadius: '4px'
+              }}></div>
+            </div>
+            <span style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#dc3545',
+              minWidth: '40px'
+            }}>
+              {inventory?.progress || 13}%
+            </span>
+          </div>
+          
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            fontSize: '12px',
+            color: '#666'
+          }}>
+            <span>스캔 완료: {inventory?.scannedItems || 156}개</span>
+            <span>전체 리스트: {inventory?.totalItems || 247}개</span>
+          </div>
+        </div>
+
+        {/* 재고현황 보기 버튼 */}
+        <Link
+          to="/inventory-status"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            padding: '16px',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600'
+          }}
+        >
+          <i className="fas fa-clipboard-list" style={{ marginRight: '8px', fontSize: '16px' }}></i>
+          재고현황 보기
+        </Link>
+      </div>
+
+      {/* 최근 스캔된 3M 제품 */}
+      <div style={{ 
+        backgroundColor: 'white',
+        margin: '8px 0 0 0',
+        padding: '20px 16px',
+        paddingBottom: '100px'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <h3 style={{
+            margin: 0,
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: '#333'
+          }}>
+            최근 스캔된 3M 제품
+          </h3>
+          <span style={{
+            fontSize: '14px',
+            color: '#666'
+          }}>
+            {recentProducts.length}개
+          </span>
+        </div>
+
+        {/* 제품 목록 */}
+        {recentProducts.map((product, index) => (
+          <div key={product.id}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 0'
+            }}>
+              <div style={{ flex: 1 }}>
+                <h4 style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#333'
+                }}>
+                  {product.name}
+                </h4>
+              </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                fontSize: '12px',
-                color: '#999'
+                gap: '8px'
               }}>
                 <span style={{
+                  fontSize: '13px',
+                  color: '#999',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <i className="fas fa-clock"></i>
-                  {store?.operatingHours}
-                </span>
-                <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  color: store?.isOpen ? '#28a745' : '#dc3545'
-                }}>
-                  <i className="fas fa-circle"></i>
-                  {store?.isOpen ? '영업중' : '영업종료'}
+                  <i className="fas fa-clock" style={{ fontSize: '11px' }}></i>
+                  {product.lastScan}
                 </span>
               </div>
             </div>
+            {index < recentProducts.length - 1 && (
+              <div style={{ 
+                height: '1px', 
+                backgroundColor: '#f0f0f0' 
+              }}></div>
+            )}
           </div>
-
-          {/* 재고 통계 */}
-          {inventory && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr 1fr 1fr',
-              gap: '12px',
-              marginTop: '16px'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#dc3545'
-                }}>
-                  {inventory.totalItems}
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666'
-                }}>
-                  총 재고
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#28a745'
-                }}>
-                  {inventory.scannedItems}
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666'
-                }}>
-                  스캔 완료
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#ffc107'
-                }}>
-                  {inventory.unstockedItems}
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666'
-                }}>
-                  미진열
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontSize: '20px',
-                  fontWeight: 'bold',
-                  color: '#fd7e14'
-                }}>
-                  {inventory.unavailableItems}
-                </div>
-                <div style={{
-                  fontSize: '12px',
-                  color: '#666'
-                }}>
-                  부족
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 상품 목록 */}
-        <div style={{ 
-          backgroundColor: 'white',
-          margin: '16px',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
-        }}>
-          <h3 style={{
-            margin: '0 0 16px 0',
-            fontSize: '16px',
-            fontWeight: 'bold',
-            color: '#333'
-          }}>
-            상품 목록
-          </h3>
-          {products.map((product, index) => (
-            <div key={product.id}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                padding: '12px 0'
-              }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{
-                    margin: '0 0 4px 0',
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: '#333'
-                  }}>
-                    {product.name}
-                  </h4>
-                  <p style={{
-                    margin: '0 0 4px 0',
-                    fontSize: '12px',
-                    color: '#666'
-                  }}>
-                    {product.category} · {product.price}
-                  </p>
-                  <div style={{
-                    fontSize: '11px',
-                    color: '#999'
-                  }}>
-                    {product.stock} · 마지막 스캔: {product.lastScan}
-                  </div>
-                </div>
-                <i className="fas fa-chevron-right" style={{
-                  color: '#ccc',
-                  fontSize: '12px'
-                }}></i>
-              </div>
-              {index < products.length - 1 && (
-                <div style={{ 
-                  height: '1px', 
-                  backgroundColor: '#f0f0f0' 
-                }}></div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* 액션 버튼들 */}
-        <div style={{ padding: '0 16px 20px 16px' }}>
-          <Link
-            to="/scan"
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '16px',
-              backgroundColor: '#dc3545',
-              color: 'white',
-              textAlign: 'center',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              marginBottom: '12px'
-            }}
-          >
-            QR 스캔으로 재고 확인
-          </Link>
-          <Link
-            to="/inventory-status"
-            style={{
-              display: 'block',
-              width: '100%',
-              padding: '16px',
-              backgroundColor: '#f8f9fa',
-              color: '#333',
-              textAlign: 'center',
-              textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              border: '1px solid #ddd'
-            }}
-          >
-            재고 현황 상세보기
-          </Link>
-        </div>
+        ))}
       </div>
 
       {/* 하단 네비게이션 */}
@@ -451,10 +422,6 @@ const StoreDetailPage = () => {
         <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
-        </Link>
-        <Link to="/settings" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
-          <i className="fas fa-cog" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
-          <span style={{ fontSize: '12px' }}>설정</span>
         </Link>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const InventoryReportPage = () => {
   const navigate = useNavigate();
@@ -118,7 +118,7 @@ const InventoryReportPage = () => {
         </div>
       </div>
 
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)' }}>
+      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)', paddingBottom: '100px' }}>
         {/* 매장 정보 */}
         <div style={{
           backgroundColor: 'white',
@@ -167,7 +167,8 @@ const InventoryReportPage = () => {
           {/* 테이블 헤더 */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1fr 2fr 1fr 1fr',
+            gridTemplateColumns: '1.2fr 2.5fr 1fr 1fr',
+            gap: '12px',
             padding: '12px 16px',
             backgroundColor: '#f8f9fa',
             borderBottom: '1px solid #dee2e6',
@@ -187,7 +188,8 @@ const InventoryReportPage = () => {
               key={index}
               style={{
                 display: 'grid',
-                gridTemplateColumns: '1fr 2fr 1fr 1fr',
+                gridTemplateColumns: '1.2fr 2.5fr 1fr 1fr',
+                gap: '12px',
                 padding: '12px 16px',
                 borderBottom: index < inventoryData.length - 1 ? '1px solid #f0f0f0' : 'none',
                 fontSize: '12px',
@@ -239,6 +241,35 @@ const InventoryReportPage = () => {
             총 항목 수: 1,091개
           </p>
         </div>
+      </div>
+
+      {/* 하단 네비게이션 */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: '100%',
+        maxWidth: '414px',
+        backgroundColor: 'white',
+        borderTop: '1px solid #e0e0e0',
+        padding: '8px 0',
+        display: 'flex',
+        justifyContent: 'space-around',
+        alignItems: 'center'
+      }}>
+        <Link to="/" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-home" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>홈</span>
+        </Link>
+        <Link to="/store-list" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>매장</span>
+        </Link>
+        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+          <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+          <span style={{ fontSize: '12px' }}>스캔</span>
+        </Link>
       </div>
     </div>
   );
