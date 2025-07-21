@@ -4,6 +4,9 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 // MongoDB 연결
 async function connectToDatabase() {
+  if (!MONGODB_URI) {
+    throw new Error('MONGODB_URI 환경변수가 설정되지 않았습니다.');
+  }
   if (!global.mongoClient) {
     global.mongoClient = new MongoClient(MONGODB_URI);
     await global.mongoClient.connect();
@@ -15,6 +18,9 @@ async function connectToDatabase() {
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
+      // 환경변수 체크를 위한 로그
+      console.log('MONGODB_URI exists:', !!MONGODB_URI);
+      
       const db = await connectToDatabase();
       const stores = await db.collection('stores').find({}).toArray();
       
