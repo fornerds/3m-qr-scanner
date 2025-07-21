@@ -14,13 +14,12 @@ const QRScanPage = () => {
     notFound: 0
   });
   
-  // 카메라 제어 상태 (단순화)
-  const [hasFlashlight, setHasFlashlight] = useState(false);
-  const [flashlightOn, setFlashlightOn] = useState(false);
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
+  const [pinchDistance, setPinchDistance] = useState(0);
+  const [currentZoom, setCurrentZoom] = useState(1);
 
   // 세션 시작
   const startSession = async () => {
@@ -49,202 +48,7 @@ const QRScanPage = () => {
     }
   };
 
-  // 다이소 QR 코드 전용 처리
-  const processDaisoQR = async (qrData) => {
-    try {
-      console.log('다이소 QR 처리 시작:', qrData);
-      setScanStatus('다이소 QR 분석 중...');
-      
-      // 다이소 QR 코드에서 제품 코드 추출
-      let productCode = extractDaisoProductCode(qrData);
-      
-      if (productCode) {
-        console.log('추출된 제품 코드:', productCode);
-        setScanStatus(`제품 코드 추출: ${productCode}`);
-        
-        // 제품 검색
-        await processQR(productCode);
-      } else {
-        console.log('제품 코드 추출 실패 - 모든 가능한 패턴 시도');
-        setScanStatus('제품 코드 추출 실패 - 원본 데이터로 시도');
-        
-        // 원본 데이터의 모든 가능한 조합 시도
-        await tryAllPossibleCodes(qrData);
-      }
-      
-    } catch (error) {
-      console.error('다이소 QR 처리 오류:', error);
-      setScanStatus('QR 코드 처리 중 오류 발생');
-    }
-  };
 
-  // 모든 가능한 코드 조합 시도
-  const tryAllPossibleCodes = async (qrData) => {
-    console.log('=== 모든 가능한 코드 시도 ===');
-    
-    // 1. 원본 그대로
-    console.log('1. 원본 시도:', qrData);
-    await processQR(qrData);
-    
-    // 2. 앞뒤 공백 제거
-    const trimmed = qrData.trim();
-    if (trimmed !== qrData) {
-      console.log('2. 공백제거 시도:', trimmed);
-      await processQR(trimmed);
-    }
-    
-    // 3. 알파벳 제거하고 숫자만
-    const numbersOnly = qrData.replace(/[^\d]/g, '');
-    if (numbersOnly) {
-      console.log('3. 숫자만 시도:', numbersOnly);
-      await processQR(numbersOnly);
-      
-      // 숫자가 너무 길면 앞/뒤로 잘라서도 시도
-      if (numbersOnly.length > 8) {
-        const front = numbersOnly.substring(0, 6);
-        const back = numbersOnly.substring(numbersOnly.length - 6);
-        console.log('4. 앞 6자리 시도:', front);
-        await processQR(front);
-        console.log('5. 뒤 6자리 시도:', back);
-        await processQR(back);
-      }
-    }
-    
-    setScanStatus('모든 패턴 시도 완료 - 콘솔 확인');
-  };
-
-  // 다이소 QR 코드에서 제품 코드 추출
-  const extractDaisoProductCode = (qrData) => {
-    console.log('QR 데이터 분석:', qrData);
-    console.log('QR 데이터 16진수:', Array.from(qrData).map(c => c.charCodeAt(0).toString(16)).join(' '));
-    
-    // 가능한 모든 제품 코드 후보들
-    const candidates = [];
-    
-    // 1. 원본 데이터가 숫자인 경우
-    if (/^\d+$/.test(qrData.trim())) {
-      candidates.push(qrData.trim());
-      console.log('제품 코드 후보 (원본):', qrData.trim());
-    }
-    
-    // 2. 파이프(|) 구분자
-    if (qrData.includes('|')) {
-      const parts = qrData.split('|');
-      console.log('파이프 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (파이프 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 3. 콤마(,) 구분자
-    if (qrData.includes(',')) {
-      const parts = qrData.split(',');
-      console.log('콤마 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (콤마 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 4. 세미콜론(;) 구분자
-    if (qrData.includes(';')) {
-      const parts = qrData.split(';');
-      console.log('세미콜론 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (세미콜론 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 5. 스페이스 구분자
-    if (qrData.includes(' ')) {
-      const parts = qrData.split(' ');
-      console.log('스페이스 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (스페이스 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 6. 탭 구분자
-    if (qrData.includes('\t')) {
-      const parts = qrData.split('\t');
-      console.log('탭 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (탭 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 7. 개행 구분자
-    if (qrData.includes('\n') || qrData.includes('\r')) {
-      const parts = qrData.split(/[\r\n]+/);
-      console.log('개행 분리:', parts);
-      parts.forEach((part, index) => {
-        const cleaned = part.trim();
-        if (/^\d+$/.test(cleaned) && cleaned.length >= 3) {
-          candidates.push(cleaned);
-          console.log(`제품 코드 후보 (개행 ${index}):`, cleaned);
-        }
-      });
-    }
-    
-    // 8. 모든 숫자 추출
-    const numbers = qrData.match(/\d+/g);
-    if (numbers) {
-      console.log('정규식으로 추출된 숫자들:', numbers);
-      numbers.forEach((num, index) => {
-        if (num.length >= 3) {
-          candidates.push(num);
-          console.log(`제품 코드 후보 (정규식 ${index}):`, num);
-        }
-      });
-    }
-    
-    // 9. URL에서 추출 시도
-    if (qrData.includes('http') || qrData.includes('www')) {
-      console.log('URL 형식 감지');
-      const urlNumbers = qrData.match(/[?&].*?(\d{4,})/g);
-      if (urlNumbers) {
-        urlNumbers.forEach(match => {
-          const num = match.match(/\d{4,}/)[0];
-          candidates.push(num);
-          console.log('제품 코드 후보 (URL):', num);
-        });
-      }
-    }
-    
-    console.log('모든 후보들:', candidates);
-    
-    if (candidates.length === 0) {
-      console.log('제품 코드 추출 실패');
-      return null;
-    }
-    
-    // 가장 적절한 후보 선택 (길이 우선, 그 다음 빈도)
-    const bestCandidate = candidates
-      .filter(c => c.length >= 4) // 최소 4자리
-      .sort((a, b) => b.length - a.length)[0] || candidates[0];
-    
-    console.log('선택된 제품 코드:', bestCandidate);
-    return bestCandidate;
-  };
 
   // QR 코드 처리
   const processQR = async (qrData) => {
@@ -373,39 +177,22 @@ const QRScanPage = () => {
           advanced: [
             { focusMode: 'continuous' },
             { exposureMode: 'continuous' },
-            { whiteBalanceMode: 'continuous' }
+            { whiteBalanceMode: 'continuous' },
+            { zoom: { min: 1, max: 3 } }
           ]
         }
       };
 
       // 스캔 성공 콜백
       const onScanSuccess = (decodedText, decodedResult) => {
-        console.log('🎉 바코드 감지됨!:', decodedText);
-        console.log('바코드 형식:', decodedResult.result.format?.formatName || 'UNKNOWN');
-        console.log('바코드 데이터 길이:', decodedText.length);
-        console.log('바코드 데이터 내용:', decodedText);
-        console.log('바코드 데이터 타입:', typeof decodedText);
-        console.log('바코드 데이터 바이트:', [...decodedText].map(c => c.charCodeAt(0)));
-        console.log('전체 결과:', decodedResult);
-
-        // 화면에도 원본 데이터 표시
-        const format = decodedResult.result.format?.formatName || 'BARCODE';
-        setScanStatus(`${format} 감지: ${decodedText.substring(0, 30)}${decodedText.length > 30 ? '...' : ''}`);
-
         // 중복 스캔 방지
         if (decodedText !== lastScannedCode) {
           setLastScannedCode(decodedText);
-
-          // 즉시 원본 데이터로도 시도
-          console.log('=== 원본 데이터로 검색 시도 ===');
+          setScanStatus(`제품 검색 중...`);
+          
+          // 제품 검색
           processQR(decodedText);
-
-          // 다이소 바코드 형식 확인 및 처리
-          setTimeout(() => {
-            console.log('=== 다이소 형식 분석 시도 ===');
-            processDaisoQR(decodedText);
-          }, 100);
-
+          
           // 1초 후 중복 방지 해제
           setTimeout(() => setLastScannedCode(''), 1000);
         }
@@ -421,15 +208,15 @@ const QRScanPage = () => {
       scannerRef.current.render(onScanSuccess, onScanError);
 
       setIsScanning(true);
-      setScanStatus('바코드 스캔 활성화됨 (모든 형식 지원)');
+      setScanStatus('바코드 스캔 중...');
 
       // 세션 시작
       await startSession();
 
     } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
-      setScanStatus('바코드 스캐너 시작 실패 - 브라우저 설정을 확인하세요');
-      alert('바코드 스캐너를 시작할 수 없습니다.\n\n해결 방법:\n1. 브라우저에서 카메라 권한 허용\n2. HTTPS 사이트에서 접속\n3. Chrome 또는 Safari 브라우저 사용 권장');
+      setScanStatus('카메라 접근 실패');
+      alert('카메라에 접근할 수 없습니다. 카메라 권한을 허용해주세요.');
     }
   };
 
@@ -442,6 +229,49 @@ const QRScanPage = () => {
     setScanResult(null);
     setLastScannedCode('');
     setScanStatus('바코드 스캔 중지됨');
+  };
+
+  // 핀치 줌 기능
+  const getDistance = (touches) => {
+    const touch1 = touches[0];
+    const touch2 = touches[1];
+    return Math.sqrt(
+      Math.pow(touch2.clientX - touch1.clientX, 2) +
+      Math.pow(touch2.clientY - touch1.clientY, 2)
+    );
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const distance = getDistance(e.touches);
+      setPinchDistance(distance);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchDistance > 0) {
+      e.preventDefault();
+      const newDistance = getDistance(e.touches);
+      const scale = newDistance / pinchDistance;
+      
+      let newZoom = currentZoom * scale;
+      newZoom = Math.max(1, Math.min(3, newZoom)); // 1x~3x 제한
+      
+      setCurrentZoom(newZoom);
+      setPinchDistance(newDistance);
+      
+      // 실제 비디오 요소에 줌 적용
+      const video = scannerDivRef.current?.querySelector('video');
+      if (video) {
+        video.style.transform = `scale(${newZoom})`;
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      setPinchDistance(0);
+    }
   };
 
   const resetStats = () => {
@@ -509,41 +339,18 @@ const QRScanPage = () => {
         backgroundColor: '#000'
       }}>
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
-        <div id="qr-reader" ref={scannerDivRef} style={{
-          width: '100%',
-          minHeight: '400px'
-        }}></div>
-
-        {/* 테스트 버튼 */}
-        <div style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
-        }}>
-          <button
-            onClick={() => processQR('56169')}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: 'rgba(40, 167, 69, 0.8)',
-              border: 'none',
-              color: 'white',
-              fontSize: '16px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            T
-          </button>
-        </div>
-
-
+        <div 
+          id="qr-reader" 
+          ref={scannerDivRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            width: '100%',
+            minHeight: '400px',
+            touchAction: 'none' // 기본 터치 제스처 비활성화
+          }}
+        ></div>
 
         {/* 스캔 상태 표시 */}
         <div style={{
@@ -559,9 +366,6 @@ const QRScanPage = () => {
           textAlign: 'center'
         }}>
           {scanStatus}
-          <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
-            📱 QR + Data Matrix 지원 | 다이소 바코드 최적화 | T 테스트 (56169)
-          </div>
         </div>
 
         {/* 스캔 결과 표시 */}
