@@ -14,11 +14,9 @@ const QRScanPage = () => {
     notFound: 0
   });
   
-  // 카메라 제어 상태
+  // 카메라 제어 상태 (단순화)
   const [hasFlashlight, setHasFlashlight] = useState(false);
   const [flashlightOn, setFlashlightOn] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [maxZoom, setMaxZoom] = useState(1);
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
   const videoRef = useRef();
@@ -158,13 +156,7 @@ const QRScanPage = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
-          facingMode: 'environment',
-          width: { ideal: 3840, min: 1280 },
-          height: { ideal: 2160, min: 720 },
-          frameRate: { ideal: 60, min: 30 },
-          focusMode: 'continuous',
-          exposureMode: 'continuous',
-          whiteBalanceMode: 'continuous'
+          facingMode: 'environment'
         } 
       });
       
@@ -172,29 +164,20 @@ const QRScanPage = () => {
       videoRef.current.srcObject = stream;
       setIsScanning(true);
 
-      // 카메라 기능 확인
+      // 간단한 플래시라이트 지원 확인만
       const track = stream.getVideoTracks()[0];
       const capabilities = track.getCapabilities();
       
-      // 플래시라이트 지원 확인
       if (capabilities.torch) {
         setHasFlashlight(true);
-      }
-      
-      // 줌 기능 확인
-      if (capabilities.zoom) {
-        setMaxZoom(capabilities.zoom.max || 3);
       }
 
       // 세션 시작
       await startSession();
 
-      // 비디오 로드 완료 후 QR 스캔 시작
+      // 비디오 로드 완료 후 QR 스캔 시작 (일반 카메라처럼 즉시)
       videoRef.current.onloadedmetadata = () => {
-        // 비디오가 완전히 준비될 때까지 잠시 기다림
-        setTimeout(() => {
-          startQRScanning();
-        }, 500);
+        startQRScanning();
       };
     } catch (error) {
       console.error('카메라 접근 실패:', error);
@@ -209,71 +192,39 @@ const QRScanPage = () => {
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         
-        // 비디오가 준비되지 않았으면 다음 프레임에서 다시 시도
-        if (video.readyState < 2) {
-          animationFrameRef.current = requestAnimationFrame(scanQRCode);
-          return;
-        }
+        // 캔버스 크기를 고정 크기로 설정 (일반 카메라처럼)
+        const canvasWidth = 640;
+        const canvasHeight = 480;
         
-        // 캔버스 크기를 비디오 크기에 맞게 조정
-        const videoWidth = video.videoWidth || 640;
-        const videoHeight = video.videoHeight || 480;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         
-        canvas.width = videoWidth;
-        canvas.height = videoHeight;
-        
-        // 이미지 선명도를 위한 컨텍스트 설정
-        context.imageSmoothingEnabled = false;
-        context.imageSmoothingQuality = 'high';
-        context.filter = 'contrast(1.3) brightness(1.15) saturate(1.1) sharpen(1)';
-        
-        // 비디오 프레임을 캔버스에 그리기
-        context.drawImage(video, 0, 0, videoWidth, videoHeight);
+        // 비디오 프레임을 캔버스에 그리기 (일반 카메라 방식)
+        context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
         
         // 캔버스에서 이미지 데이터 추출
-        const imageData = context.getImageData(0, 0, videoWidth, videoHeight);
+        const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
         
-        // jsQR로 QR 코드 감지 (최고 감도 설정)
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "attemptBoth",
-        });
-        
-        // 스캔 영역을 중앙으로 제한해서 더 정확한 스캔
-        let centerCode = null;
-        if (!code) {
-          const centerX = Math.floor(videoWidth * 0.25);
-          const centerY = Math.floor(videoHeight * 0.25);
-          const centerWidth = Math.floor(videoWidth * 0.5);
-          const centerHeight = Math.floor(videoHeight * 0.5);
-          
-          const centerImageData = context.getImageData(centerX, centerY, centerWidth, centerHeight);
-          centerCode = jsQR(centerImageData.data, centerImageData.width, centerImageData.height, {
-            inversionAttempts: "attemptBoth",
-          });
-        }
-        
-        const finalCode = code || centerCode;
+        // jsQR로 QR 코드 감지 (기본 설정)
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
         
         // 디버그: 스캔 상태 표시
         const now = Math.floor(Date.now() / 1000);
         if (now % 2 === 0) {
-          setScanStatus(`스캔 중... ${videoWidth}x${videoHeight}`);
-          console.log('스캔 중... 해상도:', videoWidth, 'x', videoHeight);
+          setScanStatus(`스캔 중... ${canvasWidth}x${canvasHeight}`);
         }
         
-        if (finalCode && finalCode.data) {
+        if (code && code.data) {
           // 중복 스캔 방지 (1초 간격)
-          if (finalCode.data !== lastScannedCode) {
-            setLastScannedCode(finalCode.data);
+          if (code.data !== lastScannedCode) {
+            setLastScannedCode(code.data);
             
-            console.log('🎉 QR 코드 감지됨!:', finalCode.data);
-            console.log('QR 코드 위치:', finalCode.location);
-            console.log('스캔 방법:', code ? '전체 영역' : '중앙 영역');
+            console.log('🎉 QR 코드 감지됨!:', code.data);
             
-            setScanStatus(`QR 코드 발견: ${finalCode.data}`);
+            setScanStatus(`QR 코드 발견: ${code.data}`);
             
             // QR 데이터 처리
-            processQR(finalCode.data);
+            processQR(code.data);
             
             // 1초 후 중복 방지 해제
             setTimeout(() => setLastScannedCode(''), 1000);
@@ -325,72 +276,12 @@ const QRScanPage = () => {
     }
   };
 
-  // 줌 조정
-  const adjustZoom = async (direction) => {
-    if (!streamRef.current) return;
-    
-    try {
-      const track = streamRef.current.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      
-      if (capabilities.zoom) {
-        let newZoom = zoomLevel;
-        if (direction === 'in' && zoomLevel < maxZoom) {
-          newZoom = Math.min(zoomLevel + 0.5, maxZoom);
-        } else if (direction === 'out' && zoomLevel > 1) {
-          newZoom = Math.max(zoomLevel - 0.5, 1);
-        }
-        
-        await track.applyConstraints({
-          advanced: [{ zoom: newZoom }]
-        });
-        setZoomLevel(newZoom);
-      }
-    } catch (error) {
-      console.error('줌 조정 실패:', error);
-    }
-  };
 
-  // 포커스 조정 (탭하여 포커스)
+
+  // 포커스 조정 (간단하게)
   const handleFocus = async (event) => {
-    if (!streamRef.current) return;
-    
-    try {
-      const track = streamRef.current.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      
-      // 수동 포커스 시도
-      if (capabilities.focusMode) {
-        await track.applyConstraints({
-          advanced: [{ 
-            focusMode: 'manual',
-            focusDistance: 0.1 
-          }]
-        });
-        
-        // 잠시 후 연속 포커스로 전환
-        setTimeout(async () => {
-          try {
-            await track.applyConstraints({
-              advanced: [{ focusMode: 'continuous' }]
-            });
-          } catch (e) {
-            console.log('연속 포커스 설정 실패:', e);
-          }
-        }, 100);
-      }
-      
-      // 노출 최적화
-      if (capabilities.exposureMode) {
-        await track.applyConstraints({
-          advanced: [{ exposureMode: 'manual', exposureCompensation: 0 }]
-        });
-      }
-      
-      setScanStatus('포커스 조정됨');
-    } catch (error) {
-      console.error('포커스 조정 실패:', error);
-    }
+    setScanStatus('포커스 조정 시도중...');
+    // 일반 카메라처럼 단순하게 처리
   };
 
   useEffect(() => {
@@ -575,47 +466,7 @@ const QRScanPage = () => {
             </button>
           )}
           
-          {/* 줌 인 버튼 */}
-          <button
-            onClick={() => adjustZoom('in')}
-            disabled={zoomLevel >= maxZoom}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: zoomLevel >= maxZoom ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              cursor: zoomLevel >= maxZoom ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <i className="fas fa-search-plus"></i>
-          </button>
-          
-          {/* 줌 아웃 버튼 */}
-          <button
-            onClick={() => adjustZoom('out')}
-            disabled={zoomLevel <= 1}
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '50%',
-              backgroundColor: zoomLevel <= 1 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
-              border: 'none',
-              color: 'white',
-              fontSize: '20px',
-              cursor: zoomLevel <= 1 ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <i className="fas fa-search-minus"></i>
-          </button>
+
           
           {/* 테스트 버튼 */}
           <button
@@ -638,22 +489,7 @@ const QRScanPage = () => {
           </button>
         </div>
 
-        {/* 줌 레벨 표시 */}
-        {zoomLevel > 1 && (
-          <div style={{
-            position: 'absolute',
-            top: '20px',
-            left: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            padding: '8px 12px',
-            borderRadius: '20px',
-            fontSize: '14px',
-            fontWeight: '500'
-          }}>
-            {zoomLevel.toFixed(1)}x
-          </div>
-        )}
+
 
         {/* 스캔 상태 표시 */}
         <div style={{
