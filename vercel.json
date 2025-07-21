@@ -23,11 +23,7 @@
       "dest": "/index.html"
     }
   ],
-  "functions": {
-    "api/qr-scan.js": {
-      "maxDuration": 30
-    }
-  },
+
   "env": {
     "NODE_ENV": "production"
   }
