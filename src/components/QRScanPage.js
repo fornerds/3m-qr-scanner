@@ -1,67 +1,92 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import io from 'socket.io-client';
 import jsQR from 'jsqr';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
   
-  const socketRef = useRef();
   const videoRef = useRef();
   const canvasRef = useRef();
   const streamRef = useRef();
   const animationFrameRef = useRef();
 
-  useEffect(() => {
-    // Vercel 배포 시 자동으로 현재 도메인 사용
-    const socketUrl = process.env.NODE_ENV === 'production' 
-      ? window.location.origin 
-      : 'http://localhost:3000';
-    
-    // Socket.io 연결
-    socketRef.current = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-      path: '/api/qr-scan'
-    });
+  // 세션 시작
+  const startSession = async () => {
+    try {
+      const response = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          storeId: '1',
+          userId: 'user123',
+          startTime: new Date(),
+          status: 'active',
+          scannedItems: []
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSessionId(data.sessionId);
+        console.log('세션 시작됨:', data.sessionId);
+      }
+    } catch (error) {
+      console.error('세션 시작 오류:', error);
+    }
+  };
 
-    socketRef.current.on('connect', () => {
-      console.log('서버에 연결됨');
-      setIsConnected(true);
-    });
-
-    socketRef.current.on('disconnect', () => {
-      console.log('서버 연결 해제');
-      setIsConnected(false);
-    });
-
-    socketRef.current.on('camera-started', (data) => {
-      console.log('카메라 시작됨:', data);
-      setSessionId(data.sessionId);
-    });
-
-    socketRef.current.on('qr-processed', (data) => {
-      console.log('QR 처리됨:', data);
-      setScanResult(data);
+  // QR 코드 처리
+  const processQR = async (qrData) => {
+    try {
+      // QR 데이터 파싱
+      const [productCode, productName, category, price, stock] = qrData.split('|');
+      
+      // 세션에 스캔 아이템 추가
+      if (sessionId) {
+        await fetch(`/api/sessions?sessionId=${sessionId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            $push: {
+              scannedItems: {
+                productCode,
+                productName,
+                category,
+                price,
+                stock,
+                timestamp: new Date()
+              }
+            }
+          })
+        });
+      }
+      
+      // 결과 표시
+      setScanResult({
+        productCode,
+        productName,
+        category,
+        price,
+        stock,
+        timestamp: new Date()
+      });
+      
       // 3초 후 결과 초기화
       setTimeout(() => setScanResult(null), 3000);
-    });
-
-    socketRef.current.on('error', (error) => {
-      console.error('서버 오류:', error);
-      alert(error.message);
-    });
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
-  }, []);
+      
+      console.log(`QR 코드 처리됨: ${productCode} - ${productName}`);
+    } catch (error) {
+      console.error('QR 처리 오류:', error);
+    }
+  };
 
   const startCamera = async () => {
     try {
@@ -77,11 +102,8 @@ const QRScanPage = () => {
       videoRef.current.srcObject = stream;
       setIsScanning(true);
 
-      // 서버에 카메라 시작 알림
-      socketRef.current.emit('start-camera', {
-        storeId: '1',
-        userId: 'user123'
-      });
+      // 세션 시작
+      await startSession();
 
       // 비디오 로드 완료 후 QR 스캔 시작
       videoRef.current.onloadedmetadata = () => {
@@ -117,11 +139,8 @@ const QRScanPage = () => {
             
             console.log('QR 코드 감지:', code.data);
             
-            // 서버로 QR 데이터 전송
-            socketRef.current.emit('qr-detected', {
-              qrData: code.data,
-              timestamp: Date.now()
-            });
+            // QR 데이터 처리
+            processQR(code.data);
             
             // 1초 후 중복 방지 해제
             setTimeout(() => setLastScannedCode(''), 1000);
@@ -148,20 +167,15 @@ const QRScanPage = () => {
     setIsScanning(false);
     setScanResult(null);
     setLastScannedCode('');
-    
-    // 서버에 카메라 중단 알림
-    socketRef.current.emit('stop-camera');
   };
 
   useEffect(() => {
-    if (isConnected) {
-      startCamera();
-    }
+    startCamera();
     
     return () => {
       stopCamera();
     };
-  }, [isConnected]);
+  }, []);
 
   return (
     <div className="mobile-container">
@@ -197,57 +211,28 @@ const QRScanPage = () => {
         </h1>
       </div>
 
-      {/* 녹색 상태바 */}
+      {/* 카메라 화면 */}
       <div style={{
-        backgroundColor: '#28a745',
-        color: 'white',
-        padding: '8px 16px',
-        fontSize: '14px',
-        textAlign: 'center',
-        fontWeight: 'bold',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '8px'
-      }}>
-        <i className="fas fa-store" style={{ fontSize: '14px' }}></i>
-        다이소 강남점
-        {isConnected && (
-          <div style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: 'white',
-            borderRadius: '50%',
-            marginLeft: '8px'
-          }}></div>
-        )}
-      </div>
-
-      {/* 스캔 영역 */}
-      <div style={{
-        backgroundColor: '#000',
-        height: 'calc(100vh - 180px)',
         position: 'relative',
+        width: '100%',
+        height: '60vh',
+        backgroundColor: '#000',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden'
+        justifyContent: 'center'
       }}>
-        {/* 비디오 요소 (숨김) */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
           style={{
-            position: 'absolute',
             width: '100%',
             height: '100%',
             objectFit: 'cover'
           }}
         />
         
-        {/* 캔버스 (숨김) */}
         <canvas
           ref={canvasRef}
           width="640"
@@ -255,188 +240,122 @@ const QRScanPage = () => {
           style={{ display: 'none' }}
         />
 
-        {/* 스캔 프레임 */}
-        <div style={{
-          width: '250px',
-          height: '250px',
-          position: 'relative',
-          zIndex: 10
-        }}>
-          {/* 노란색 모서리들 */}
-          <div style={{
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '40px',
-            height: '40px',
-            border: '4px solid #ffc107',
-            borderRight: 'none',
-            borderBottom: 'none',
-            borderRadius: '8px 0 0 0'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            top: '0',
-            right: '0',
-            width: '40px',
-            height: '40px',
-            border: '4px solid #ffc107',
-            borderLeft: 'none',
-            borderBottom: 'none',
-            borderRadius: '0 8px 0 0'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            bottom: '0',
-            left: '0',
-            width: '40px',
-            height: '40px',
-            border: '4px solid #ffc107',
-            borderRight: 'none',
-            borderTop: 'none',
-            borderRadius: '0 0 0 8px'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            bottom: '0',
-            right: '0',
-            width: '40px',
-            height: '40px',
-            border: '4px solid #ffc107',
-            borderLeft: 'none',
-            borderTop: 'none',
-            borderRadius: '0 0 8px 0'
-          }}></div>
-
-          {/* 빨간색 중앙 사각형 */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '180px',
-            height: '180px',
-            border: '3px solid #dc3545',
-            borderRadius: '12px'
-          }}></div>
-
-          {/* 스캔 결과 표시 */}
-          {scanResult && (
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              color: 'white',
-              padding: '16px',
-              borderRadius: '8px',
-              textAlign: 'center',
-              zIndex: 20
-            }}>
-              <i className="fas fa-check-circle" style={{
-                fontSize: '24px',
-                color: '#28a745',
-                marginBottom: '8px'
-              }}></i>
-              <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-                {scanResult.productName}
-              </div>
-              <div style={{ fontSize: '12px', color: '#ccc' }}>
-                {scanResult.productCode}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 닫기 버튼 */}
-        <button
-          onClick={() => {
-            stopCamera();
-            navigate('/');
-          }}
-          style={{
-            position: 'absolute',
-            bottom: '100px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '60px',
-            height: '60px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            border: '2px solid white',
-            borderRadius: '50%',
-            color: 'white',
-            fontSize: '24px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10
-          }}
-        >
-          ×
-        </button>
-
-        {/* 하단 텍스트 */}
+        {/* QR 스캔 가이드 */}
         <div style={{
           position: 'absolute',
-          bottom: '30px',
+          top: '50%',
           left: '50%',
-          transform: 'translateX(-50%)',
-          color: 'white',
-          fontSize: '14px',
-          textAlign: 'center',
-          zIndex: 10
+          transform: 'translate(-50%, -50%)',
+          width: '250px',
+          height: '250px',
+          border: '2px solid #fff',
+          borderRadius: '12px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
-          {isScanning ? 'QR코드를 스캔 영역에 맞춰주세요' : '카메라 연결 중...'}
+          <div style={{
+            color: 'white',
+            textAlign: 'center',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}>
+            QR 코드를 이 영역에<br />맞춰주세요
+          </div>
         </div>
+
+        {/* 스캔 결과 표시 */}
+        {scanResult && (
+          <div style={{
+            position: 'absolute',
+            bottom: '20px',
+            left: '20px',
+            right: '20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '16px',
+            borderRadius: '8px'
+          }}>
+            <h3 style={{ margin: '0 0 8px 0', color: '#dc3545' }}>
+              스캔 완료!
+            </h3>
+            <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
+              {scanResult.productName}
+            </p>
+            <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>
+              {scanResult.category} | {scanResult.price}
+            </p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#28a745' }}>
+              {scanResult.stock}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* 하단 네비게이션 */}
+      {/* 하단 컨트롤 */}
       <div style={{
-        position: 'fixed',
-        bottom: 0,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        maxWidth: '414px',
-        width: '100%',
-        height: '60px',
-        backgroundColor: 'white',
-        borderTop: '1px solid #eee',
-        display: 'flex',
-        boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)'
+        padding: '20px',
+        backgroundColor: '#f5f5f5'
       }}>
-        <Link 
-          to="/" 
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textDecoration: 'none',
-            color: '#dc3545',
-            backgroundColor: '#ffeaea'
-          }}
-        >
-          <i className="fas fa-qrcode" style={{ fontSize: '18px', marginBottom: '2px' }}></i>
-          <div style={{ fontSize: '11px' }}>QR스캔</div>
-        </Link>
-        <Link 
-          to="/settings" 
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textDecoration: 'none',
-            color: '#999'
-          }}
-        >
-          <i className="fas fa-cog" style={{ fontSize: '18px', marginBottom: '2px' }}></i>
-          <div style={{ fontSize: '11px' }}>설정</div>
-        </Link>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px'
+        }}>
+          <button
+            onClick={stopCamera}
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            스캔 중단
+          </button>
+          
+          <div style={{
+            textAlign: 'center',
+            color: '#666'
+          }}>
+            {sessionId && (
+              <div style={{ fontSize: '12px' }}>
+                세션 ID: {sessionId}
+              </div>
+            )}
+            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
+              {isScanning ? '스캔 중...' : '스캔 준비'}
+            </div>
+          </div>
+
+          <Link
+            to="/"
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#dc3545',
+              color: 'white',
+              textDecoration: 'none',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold'
+            }}
+          >
+            홈으로
+          </Link>
+        </div>
+
+        <div style={{
+          textAlign: 'center',
+          fontSize: '12px',
+          color: '#999'
+        }}>
+          QR 코드가 감지되면 자동으로 스캔됩니다
+        </div>
       </div>
     </div>
   );
