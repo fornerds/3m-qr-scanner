@@ -8,6 +8,11 @@ const QRScanPage = () => {
   const [scanResult, setScanResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
+  const [scanStats, setScanStats] = useState({
+    total: 0,
+    found: 0,
+    notFound: 0
+  });
   
   const videoRef = useRef();
   const canvasRef = useRef();
@@ -44,8 +49,52 @@ const QRScanPage = () => {
   // QR 코드 처리
   const processQR = async (qrData) => {
     try {
-      // QR 데이터 파싱
-      const [productCode, productName, category, price, stock] = qrData.split('|');
+      // QR 데이터에서 제품코드 추출 (순수 코드만 읽는다고 가정)
+      const productCode = qrData.trim();
+      
+      // 제품 데이터베이스에서 제품 검색
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          scannedCode: productCode,
+          storeId: '1'
+        })
+      });
+      
+      const result = await response.json();
+      
+      let scanResult;
+      
+      if (result.success && result.found) {
+        // 제품을 찾은 경우
+        const product = result.product;
+        scanResult = {
+          productCode,
+          productName: product.daisoName,
+          category: product.category,
+          price: `${product.price.toLocaleString()}원`,
+          status: 'found',
+          statusMessage: '✅ 진열 상품 확인됨',
+          statusColor: '#28a745',
+          product: product,
+          timestamp: new Date()
+        };
+      } else {
+        // 제품을 찾지 못한 경우
+        scanResult = {
+          productCode,
+          productName: '알 수 없는 제품',
+          category: '-',
+          price: '-',
+          status: 'not_found',
+          statusMessage: '❌ 3M 제품이 아님',
+          statusColor: '#dc3545',
+          timestamp: new Date()
+        };
+      }
       
       // 세션에 스캔 아이템 추가
       if (sessionId) {
@@ -57,11 +106,7 @@ const QRScanPage = () => {
           body: JSON.stringify({
             $push: {
               scannedItems: {
-                productCode,
-                productName,
-                category,
-                price,
-                stock,
+                ...scanResult,
                 timestamp: new Date()
               }
             }
@@ -70,21 +115,35 @@ const QRScanPage = () => {
       }
       
       // 결과 표시
+      setScanResult(scanResult);
+      
+      // 통계 업데이트
+      setScanStats(prev => ({
+        total: prev.total + 1,
+        found: prev.found + (scanResult.status === 'found' ? 1 : 0),
+        notFound: prev.notFound + (scanResult.status === 'not_found' ? 1 : 0)
+      }));
+      
+      // 1초 후 결과 초기화
+      setTimeout(() => setScanResult(null), 1000);
+      
+      console.log(`QR 코드 처리됨: ${productCode} - ${scanResult.statusMessage}`);
+    } catch (error) {
+      console.error('QR 처리 오류:', error);
+      
+      // 에러 시 표시할 결과
       setScanResult({
-        productCode,
-        productName,
-        category,
-        price,
-        stock,
+        productCode: qrData,
+        productName: '처리 오류',
+        category: '-',
+        price: '-',
+        status: 'error',
+        statusMessage: '⚠️ 처리 중 오류 발생',
+        statusColor: '#ffc107',
         timestamp: new Date()
       });
       
-      // 3초 후 결과 초기화
-      setTimeout(() => setScanResult(null), 3000);
-      
-      console.log(`QR 코드 처리됨: ${productCode} - ${productName}`);
-    } catch (error) {
-      console.error('QR 처리 오류:', error);
+      setTimeout(() => setScanResult(null), 1000);
     }
   };
 
@@ -167,6 +226,14 @@ const QRScanPage = () => {
     setIsScanning(false);
     setScanResult(null);
     setLastScannedCode('');
+  };
+
+  const resetStats = () => {
+    setScanStats({
+      total: 0,
+      found: 0,
+      notFound: 0
+    });
   };
 
   useEffect(() => {
@@ -271,23 +338,89 @@ const QRScanPage = () => {
             bottom: '20px',
             left: '20px',
             right: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
             color: 'white',
             padding: '16px',
-            borderRadius: '8px'
+            borderRadius: '12px',
+            border: `2px solid ${scanResult.statusColor}`,
+            backdropFilter: 'blur(10px)'
           }}>
-            <h3 style={{ margin: '0 0 8px 0', color: '#dc3545' }}>
-              스캔 완료!
-            </h3>
-            <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
-              {scanResult.productName}
-            </p>
-            <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}>
-              {scanResult.category} | {scanResult.price}
-            </p>
-            <p style={{ margin: 0, fontSize: '14px', color: '#28a745' }}>
-              {scanResult.stock}
-            </p>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              marginBottom: '8px' 
+            }}>
+              <h3 style={{ 
+                margin: 0, 
+                color: scanResult.statusColor,
+                fontSize: '16px'
+              }}>
+                스캔 완료!
+              </h3>
+              <div style={{
+                marginLeft: 'auto',
+                fontSize: '12px',
+                color: '#ccc'
+              }}>
+                {scanResult.productCode}
+              </div>
+            </div>
+            
+            <div style={{
+              padding: '8px 0',
+              borderBottom: '1px solid #333',
+              marginBottom: '8px'
+            }}>
+              <p style={{ 
+                margin: '0 0 4px 0', 
+                fontWeight: 'bold',
+                fontSize: '15px'
+              }}>
+                {scanResult.productName}
+              </p>
+              <p style={{ 
+                margin: '0 0 4px 0', 
+                fontSize: '13px',
+                color: '#ccc'
+              }}>
+                {scanResult.category} | {scanResult.price}
+              </p>
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <span style={{ 
+                fontSize: '14px', 
+                color: scanResult.statusColor,
+                fontWeight: 'bold'
+              }}>
+                {scanResult.statusMessage}
+              </span>
+              
+              {scanResult.status === 'found' && (
+                <div style={{
+                  display: 'flex',
+                  gap: '8px'
+                }}>
+                  <div style={{
+                    width: '8px',
+                    height: '8px',
+                    backgroundColor: '#28a745',
+                    borderRadius: '50%',
+                    animation: 'pulse 2s infinite'
+                  }}></div>
+                  <span style={{
+                    fontSize: '12px',
+                    color: '#28a745'
+                  }}>
+                    진열됨
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -297,6 +430,115 @@ const QRScanPage = () => {
         padding: '20px',
         backgroundColor: '#f5f5f5'
       }}>
+        {/* 스캔 통계 */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '16px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '12px'
+          }}>
+            <h4 style={{
+              margin: 0,
+              fontSize: '14px',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              스캔 통계
+            </h4>
+            <button
+              onClick={resetStats}
+              style={{
+                padding: '4px 8px',
+                backgroundColor: 'transparent',
+                color: '#666',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              초기화
+            </button>
+          </div>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '8px'
+          }}>
+            <div style={{
+              textAlign: 'center',
+              padding: '8px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                {scanStats.total}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: '#666'
+              }}>
+                총 스캔
+              </div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '8px',
+              backgroundColor: '#d4edda',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#28a745'
+              }}>
+                {scanStats.found}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: '#155724'
+              }}>
+                진열 상품
+              </div>
+            </div>
+            
+            <div style={{
+              textAlign: 'center',
+              padding: '8px',
+              backgroundColor: '#f8d7da',
+              borderRadius: '6px'
+            }}>
+              <div style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                color: '#dc3545'
+              }}>
+                {scanStats.notFound}
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: '#721c24'
+              }}>
+                미진열
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 컨트롤 버튼 */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -306,14 +548,15 @@ const QRScanPage = () => {
           <button
             onClick={stopCamera}
             style={{
-              padding: '12px 24px',
+              padding: '12px 20px',
               backgroundColor: '#6c757d',
               color: 'white',
               border: 'none',
               borderRadius: '8px',
-              fontSize: '16px',
+              fontSize: '14px',
               fontWeight: 'bold',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              flex: '0 0 auto'
             }}
           >
             스캔 중단
@@ -321,28 +564,38 @@ const QRScanPage = () => {
           
           <div style={{
             textAlign: 'center',
-            color: '#666'
+            color: '#666',
+            flex: '1',
+            margin: '0 16px'
           }}>
             {sessionId && (
-              <div style={{ fontSize: '12px' }}>
-                세션 ID: {sessionId}
+              <div style={{ 
+                fontSize: '11px',
+                marginBottom: '2px'
+              }}>
+                세션: {sessionId.toString().slice(-8)}
               </div>
             )}
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }}>
-              {isScanning ? '스캔 중...' : '스캔 준비'}
+            <div style={{ 
+              fontSize: '13px', 
+              fontWeight: 'bold',
+              color: isScanning ? '#28a745' : '#666'
+            }}>
+              {isScanning ? '🔍 스캔 중...' : '⏸️ 스캔 준비'}
             </div>
           </div>
 
           <Link
             to="/"
             style={{
-              padding: '12px 24px',
+              padding: '12px 20px',
               backgroundColor: '#dc3545',
               color: 'white',
               textDecoration: 'none',
               borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: 'bold'
+              fontSize: '14px',
+              fontWeight: 'bold',
+              flex: '0 0 auto'
             }}
           >
             홈으로
@@ -352,9 +605,14 @@ const QRScanPage = () => {
         <div style={{
           textAlign: 'center',
           fontSize: '12px',
-          color: '#999'
+          color: '#999',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
         }}>
-          QR 코드가 감지되면 자동으로 스캔됩니다
+          <span>📱</span>
+          QR 코드를 카메라에 맞추면 자동으로 인식됩니다
         </div>
       </div>
     </div>

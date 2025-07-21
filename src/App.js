@@ -7,7 +7,7 @@ import SettingsPage from './components/SettingsPage';
 import InventoryReportPage from './components/InventoryReportPage';
 import InventoryStatusPage from './components/InventoryStatusPage';
 import QRScanPage from './components/QRScanPage';
-import QRTestPage from './components/QRTestPage';
+
 import './App.css';
 
 function App() {
@@ -22,7 +22,6 @@ function App() {
           <Route path="/inventory-report" element={<InventoryReportPage />} />
           <Route path="/inventory-status" element={<InventoryStatusPage />} />
           <Route path="/scan" element={<QRScanPage />} />
-          <Route path="/qr-test" element={<QRTestPage />} />
         </Routes>
       </div>
     </Router>

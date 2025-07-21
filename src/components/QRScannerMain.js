@@ -282,7 +282,7 @@ const QRScannerMain = () => {
             gap: '12px'
           }}>
             <Link
-              to="/qr-test"
+              to="/scan"
               style={{
                 display: 'flex',
                 flexDirection: 'column',
@@ -299,7 +299,7 @@ const QRScannerMain = () => {
                 color: '#dc3545',
                 marginBottom: '8px'
               }}></i>
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>QR 테스트</span>
+              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>QR 스캔</span>
             </Link>
             <Link
               to="/inventory-status"
