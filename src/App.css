@@ -49,6 +49,36 @@
   padding-bottom: 80px;
 }
 
+/* QR 스캔 애니메이션 */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    border-color: #00ff00;
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 255, 0, 0.8);
+    border-color: #33ff33;
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    border-color: #00ff00;
+  }
+}
+
+@keyframes scanLine {
+  0% {
+    top: 0;
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
 /* 버튼 스타일 */
 .btn {
   width: 100%;

@@ -159,9 +159,12 @@ const QRScanPage = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1920, min: 640 },
-          height: { ideal: 1080, min: 480 },
-          frameRate: { ideal: 30, min: 15 }
+          width: { ideal: 3840, min: 1280 },
+          height: { ideal: 2160, min: 720 },
+          frameRate: { ideal: 60, min: 30 },
+          focusMode: 'continuous',
+          exposureMode: 'continuous',
+          whiteBalanceMode: 'continuous'
         } 
       });
       
@@ -219,16 +222,37 @@ const QRScanPage = () => {
         canvas.width = videoWidth;
         canvas.height = videoHeight;
         
+        // 이미지 선명도를 위한 컨텍스트 설정
+        context.imageSmoothingEnabled = false;
+        context.imageSmoothingQuality = 'high';
+        context.filter = 'contrast(1.3) brightness(1.15) saturate(1.1) sharpen(1)';
+        
         // 비디오 프레임을 캔버스에 그리기
         context.drawImage(video, 0, 0, videoWidth, videoHeight);
         
         // 캔버스에서 이미지 데이터 추출
         const imageData = context.getImageData(0, 0, videoWidth, videoHeight);
         
-        // jsQR로 QR 코드 감지 (더 관대한 설정)
+        // jsQR로 QR 코드 감지 (최고 감도 설정)
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
           inversionAttempts: "attemptBoth",
         });
+        
+        // 스캔 영역을 중앙으로 제한해서 더 정확한 스캔
+        let centerCode = null;
+        if (!code) {
+          const centerX = Math.floor(videoWidth * 0.25);
+          const centerY = Math.floor(videoHeight * 0.25);
+          const centerWidth = Math.floor(videoWidth * 0.5);
+          const centerHeight = Math.floor(videoHeight * 0.5);
+          
+          const centerImageData = context.getImageData(centerX, centerY, centerWidth, centerHeight);
+          centerCode = jsQR(centerImageData.data, centerImageData.width, centerImageData.height, {
+            inversionAttempts: "attemptBoth",
+          });
+        }
+        
+        const finalCode = code || centerCode;
         
         // 디버그: 스캔 상태 표시
         const now = Math.floor(Date.now() / 1000);
@@ -237,18 +261,19 @@ const QRScanPage = () => {
           console.log('스캔 중... 해상도:', videoWidth, 'x', videoHeight);
         }
         
-        if (code && code.data) {
+        if (finalCode && finalCode.data) {
           // 중복 스캔 방지 (1초 간격)
-          if (code.data !== lastScannedCode) {
-            setLastScannedCode(code.data);
+          if (finalCode.data !== lastScannedCode) {
+            setLastScannedCode(finalCode.data);
             
-            console.log('🎉 QR 코드 감지됨!:', code.data);
-            console.log('QR 코드 위치:', code.location);
+            console.log('🎉 QR 코드 감지됨!:', finalCode.data);
+            console.log('QR 코드 위치:', finalCode.location);
+            console.log('스캔 방법:', code ? '전체 영역' : '중앙 영역');
             
-            setScanStatus(`QR 코드 발견: ${code.data}`);
+            setScanStatus(`QR 코드 발견: ${finalCode.data}`);
             
             // QR 데이터 처리
-            processQR(code.data);
+            processQR(finalCode.data);
             
             // 1초 후 중복 방지 해제
             setTimeout(() => setLastScannedCode(''), 1000);
@@ -334,11 +359,35 @@ const QRScanPage = () => {
       const track = streamRef.current.getVideoTracks()[0];
       const capabilities = track.getCapabilities();
       
-      if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
+      // 수동 포커스 시도
+      if (capabilities.focusMode) {
         await track.applyConstraints({
-          advanced: [{ focusMode: 'continuous' }]
+          advanced: [{ 
+            focusMode: 'manual',
+            focusDistance: 0.1 
+          }]
+        });
+        
+        // 잠시 후 연속 포커스로 전환
+        setTimeout(async () => {
+          try {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            });
+          } catch (e) {
+            console.log('연속 포커스 설정 실패:', e);
+          }
+        }, 100);
+      }
+      
+      // 노출 최적화
+      if (capabilities.exposureMode) {
+        await track.applyConstraints({
+          advanced: [{ exposureMode: 'manual', exposureCompensation: 0 }]
         });
       }
+      
+      setScanStatus('포커스 조정됨');
     } catch (error) {
       console.error('포커스 조정 실패:', error);
     }
@@ -421,21 +470,77 @@ const QRScanPage = () => {
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: '250px',
-          height: '250px',
-          border: '2px solid #fff',
-          borderRadius: '12px',
+          width: '280px',
+          height: '280px',
+          border: '3px solid #00ff00',
+          borderRadius: '16px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          boxShadow: '0 0 20px rgba(0, 255, 0, 0.5)',
+          animation: 'pulse 2s infinite'
         }}>
+          {/* 모서리 표시 */}
+          <div style={{
+            position: 'absolute',
+            top: '-3px',
+            left: '-3px',
+            width: '30px',
+            height: '30px',
+            borderTop: '6px solid #00ff00',
+            borderLeft: '6px solid #00ff00',
+            borderRadius: '16px 0 0 0'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            top: '-3px',
+            right: '-3px',
+            width: '30px',
+            height: '30px',
+            borderTop: '6px solid #00ff00',
+            borderRight: '6px solid #00ff00',
+            borderRadius: '0 16px 0 0'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '-3px',
+            left: '-3px',
+            width: '30px',
+            height: '30px',
+            borderBottom: '6px solid #00ff00',
+            borderLeft: '6px solid #00ff00',
+            borderRadius: '0 0 0 16px'
+          }}></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '-3px',
+            right: '-3px',
+            width: '30px',
+            height: '30px',
+            borderBottom: '6px solid #00ff00',
+            borderRight: '6px solid #00ff00',
+            borderRadius: '0 0 16px 0'
+          }}></div>
+          
+          {/* 스캔 라인 */}
+          <div style={{
+            position: 'absolute',
+            top: '0',
+            left: '10px',
+            right: '10px',
+            height: '2px',
+            background: 'linear-gradient(90deg, transparent, #00ff00, transparent)',
+            animation: 'scanLine 2s infinite'
+          }}></div>
+          
           <div style={{
             color: 'white',
             textAlign: 'center',
             fontSize: '14px',
-            fontWeight: '500'
+            fontWeight: '600',
+            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)'
           }}>
-            QR 코드를 스캔하세요
+            QR 코드를 여기에 맞춰주세요
           </div>
         </div>
 
