@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import jsQR from 'jsqr';
+import QrScanner from 'qr-scanner';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
@@ -20,9 +20,7 @@ const QRScanPage = () => {
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
   const videoRef = useRef();
-  const canvasRef = useRef();
-  const streamRef = useRef();
-  const animationFrameRef = useRef();
+  const qrScannerRef = useRef();
 
   // 세션 시작
   const startSession = async () => {
@@ -154,104 +152,62 @@ const QRScanPage = () => {
 
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment'
-        } 
-      });
-      
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      setIsScanning(true);
+      // qr-scanner로 QR 스캔 시작
+      qrScannerRef.current = new QrScanner(
+        videoRef.current,
+        (result) => {
+          // QR 코드 감지 성공
+          const qrData = result.data;
+          console.log('🎉 QR 코드 감지됨!:', qrData);
+          setScanStatus(`QR 코드 발견: ${qrData}`);
+          
+          // 중복 스캔 방지
+          if (qrData !== lastScannedCode) {
+            setLastScannedCode(qrData);
+            processQR(qrData);
+            
+            // 1초 후 중복 방지 해제
+            setTimeout(() => setLastScannedCode(''), 1000);
+          }
+        },
+        {
+          returnDetailedScanResult: true,
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          preferredCamera: 'environment'
+        }
+      );
 
-      // 간단한 플래시라이트 지원 확인만
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      
-      if (capabilities.torch) {
+      // QR 스캐너 시작
+      await qrScannerRef.current.start();
+      setIsScanning(true);
+      setScanStatus('QR 스캔 활성화됨');
+
+      // 플래시라이트 지원 확인
+      if (await QrScanner.hasCamera() && qrScannerRef.current.hasFlash()) {
         setHasFlashlight(true);
       }
 
       // 세션 시작
       await startSession();
 
-      // 비디오 로드 완료 후 QR 스캔 시작 (일반 카메라처럼 즉시)
-      videoRef.current.onloadedmetadata = () => {
-        startQRScanning();
-      };
     } catch (error) {
-      console.error('카메라 접근 실패:', error);
-      setScanStatus('카메라 접근 실패 - 브라우저 설정을 확인하세요');
-      alert('카메라에 접근할 수 없습니다.\n\n해결 방법:\n1. 브라우저에서 카메라 권한 허용\n2. HTTPS 사이트에서 접속\n3. Chrome 또는 Safari 브라우저 사용 권장');
+      console.error('QR 스캐너 시작 실패:', error);
+      setScanStatus('QR 스캐너 시작 실패 - 브라우저 설정을 확인하세요');
+      alert('QR 스캐너를 시작할 수 없습니다.\n\n해결 방법:\n1. 브라우저에서 카메라 권한 허용\n2. HTTPS 사이트에서 접속\n3. Chrome 또는 Safari 브라우저 사용 권장');
     }
-  };
-
-  const startQRScanning = () => {
-    const scanQRCode = () => {
-      if (videoRef.current && canvasRef.current && isScanning) {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const context = canvas.getContext('2d');
-        
-        // 캔버스 크기를 고정 크기로 설정 (일반 카메라처럼)
-        const canvasWidth = 640;
-        const canvasHeight = 480;
-        
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        
-        // 비디오 프레임을 캔버스에 그리기 (일반 카메라 방식)
-        context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-        
-        // 캔버스에서 이미지 데이터 추출
-        const imageData = context.getImageData(0, 0, canvasWidth, canvasHeight);
-        
-        // jsQR로 QR 코드 감지 (기본 설정)
-        const code = jsQR(imageData.data, imageData.width, imageData.height);
-        
-        // 디버그: 스캔 상태 표시
-        const now = Math.floor(Date.now() / 1000);
-        if (now % 2 === 0) {
-          setScanStatus(`스캔 중... ${canvasWidth}x${canvasHeight}`);
-        }
-        
-        if (code && code.data) {
-          // 중복 스캔 방지 (1초 간격)
-          if (code.data !== lastScannedCode) {
-            setLastScannedCode(code.data);
-            
-            console.log('🎉 QR 코드 감지됨!:', code.data);
-            
-            setScanStatus(`QR 코드 발견: ${code.data}`);
-            
-            // QR 데이터 처리
-            processQR(code.data);
-            
-            // 1초 후 중복 방지 해제
-            setTimeout(() => setLastScannedCode(''), 1000);
-          }
-        }
-        
-        // 다음 프레임 스캔 (더 빠른 스캔을 위해 60fps)
-        animationFrameRef.current = requestAnimationFrame(scanQRCode);
-      }
-    };
-    
-    scanQRCode();
   };
 
   const stopCamera = () => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
+    if (qrScannerRef.current) {
+      qrScannerRef.current.stop();
+      qrScannerRef.current.destroy();
+      qrScannerRef.current = null;
     }
     setIsScanning(false);
     setScanResult(null);
     setLastScannedCode('');
+    setScanStatus('QR 스캔 중지됨');
   };
 
   const resetStats = () => {
@@ -264,13 +220,14 @@ const QRScanPage = () => {
 
   // 플래시라이트 토글
   const toggleFlashlight = async () => {
-    if (!hasFlashlight || !streamRef.current) return;
+    if (!hasFlashlight || !qrScannerRef.current) return;
     
     try {
-      const track = streamRef.current.getVideoTracks()[0];
-      await track.applyConstraints({
-        advanced: [{ torch: !flashlightOn }]
-      });
+      if (flashlightOn) {
+        await qrScannerRef.current.turnFlashOff();
+      } else {
+        await qrScannerRef.current.turnFlashOn();
+      }
       setFlashlightOn(!flashlightOn);
     } catch (error) {
       console.error('플래시라이트 제어 실패:', error);
@@ -349,13 +306,6 @@ const QRScanPage = () => {
             height: '100%',
             objectFit: 'cover'
           }}
-        />
-        
-        <canvas
-          ref={canvasRef}
-          width="640"
-          height="480"
-          style={{ display: 'none' }}
         />
 
         {/* QR 스캔 가이드 */}
