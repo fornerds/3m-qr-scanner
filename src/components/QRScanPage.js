@@ -49,6 +49,91 @@ const QRScanPage = () => {
     }
   };
 
+  // 다이소 QR 코드 전용 처리
+  const processDaisoQR = async (qrData) => {
+    try {
+      console.log('다이소 QR 처리 시작:', qrData);
+      
+      // 다이소 QR 코드에서 제품 코드 추출
+      let productCode = extractDaisoProductCode(qrData);
+      
+      if (!productCode) {
+        // 추출 실패 시 원본 데이터로 시도
+        productCode = qrData.trim();
+      }
+      
+      console.log('추출된 제품 코드:', productCode);
+      setScanStatus(`제품 코드 추출: ${productCode}`);
+      
+      // 제품 검색
+      await processQR(productCode);
+      
+    } catch (error) {
+      console.error('다이소 QR 처리 오류:', error);
+      setScanStatus('QR 코드 처리 중 오류 발생');
+    }
+  };
+
+  // 다이소 QR 코드에서 제품 코드 추출
+  const extractDaisoProductCode = (qrData) => {
+    console.log('QR 데이터 분석:', qrData);
+    
+    // 다양한 다이소 QR 형식 처리
+    // 1. 파이프(|) 구분자가 있는 경우
+    if (qrData.includes('|')) {
+      const parts = qrData.split('|');
+      console.log('파이프 분리:', parts);
+      
+      // 숫자로만 이루어진 부분 찾기
+      for (const part of parts) {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 4) {
+          console.log('제품 코드 발견 (파이프):', cleaned);
+          return cleaned;
+        }
+      }
+    }
+    
+    // 2. 콤마(,) 구분자가 있는 경우
+    if (qrData.includes(',')) {
+      const parts = qrData.split(',');
+      console.log('콤마 분리:', parts);
+      
+      for (const part of parts) {
+        const cleaned = part.trim();
+        if (/^\d+$/.test(cleaned) && cleaned.length >= 4) {
+          console.log('제품 코드 발견 (콤마):', cleaned);
+          return cleaned;
+        }
+      }
+    }
+    
+    // 3. 숫자만 추출
+    const numbers = qrData.match(/\d+/g);
+    if (numbers) {
+      console.log('추출된 숫자들:', numbers);
+      
+      // 가장 긴 숫자 찾기 (제품 코드일 가능성이 높음)
+      const longestNumber = numbers.reduce((longest, current) => {
+        return current.length > longest.length ? current : longest;
+      }, '');
+      
+      if (longestNumber.length >= 4) {
+        console.log('제품 코드 발견 (숫자):', longestNumber);
+        return longestNumber;
+      }
+    }
+    
+    // 4. 원본 데이터가 숫자인 경우
+    if (/^\d+$/.test(qrData.trim())) {
+      console.log('제품 코드 발견 (원본):', qrData.trim());
+      return qrData.trim();
+    }
+    
+    console.log('제품 코드 추출 실패');
+    return null;
+  };
+
   // QR 코드 처리
   const processQR = async (qrData) => {
     try {
@@ -159,12 +244,17 @@ const QRScanPage = () => {
           // QR 코드 감지 성공
           const qrData = result.data;
           console.log('🎉 QR 코드 감지됨!:', qrData);
+          console.log('QR 데이터 길이:', qrData.length);
+          console.log('QR 데이터 내용:', qrData);
+          
           setScanStatus(`QR 코드 발견: ${qrData}`);
           
           // 중복 스캔 방지
           if (qrData !== lastScannedCode) {
             setLastScannedCode(qrData);
-            processQR(qrData);
+            
+            // 다이소 QR 형식 확인 및 처리
+            processDaisoQR(qrData);
             
             // 1초 후 중복 방지 해제
             setTimeout(() => setLastScannedCode(''), 1000);
@@ -174,11 +264,21 @@ const QRScanPage = () => {
           returnDetailedScanResult: true,
           highlightScanRegion: true,
           highlightCodeOutline: true,
-          preferredCamera: 'environment'
+          preferredCamera: 'environment',
+          maxScansPerSecond: 5,
+          calculateScanRegion: (video) => {
+            // 중앙 60% 영역에 집중하여 더 정확한 스캔
+            return {
+              x: Math.round(video.videoWidth * 0.2),
+              y: Math.round(video.videoHeight * 0.2),
+              width: Math.round(video.videoWidth * 0.6),
+              height: Math.round(video.videoHeight * 0.6),
+            };
+          }
         }
       );
 
-      // QR 스캐너 시작
+      // QR 스캐너 시작 (고해상도로)
       await qrScannerRef.current.start();
       setIsScanning(true);
       setScanStatus('QR 스캔 활성화됨');
@@ -461,7 +561,7 @@ const QRScanPage = () => {
         }}>
           {scanStatus}
           <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
-            📱 모바일 권장: Chrome, Safari | T 버튼 테스트 (56169)
+            📱 다이소 QR 최적화 | 콘솔에서 상세 로그 확인 | T 테스트 (56169)
           </div>
         </div>
 
