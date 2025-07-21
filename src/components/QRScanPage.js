@@ -19,6 +19,7 @@ const QRScanPage = () => {
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [maxZoom, setMaxZoom] = useState(1);
+  const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
   const videoRef = useRef();
   const canvasRef = useRef();
@@ -229,12 +230,22 @@ const QRScanPage = () => {
           inversionAttempts: "attemptBoth",
         });
         
+        // 디버그: 스캔 상태 표시
+        const now = Math.floor(Date.now() / 1000);
+        if (now % 2 === 0) {
+          setScanStatus(`스캔 중... ${videoWidth}x${videoHeight}`);
+          console.log('스캔 중... 해상도:', videoWidth, 'x', videoHeight);
+        }
+        
         if (code && code.data) {
           // 중복 스캔 방지 (1초 간격)
           if (code.data !== lastScannedCode) {
             setLastScannedCode(code.data);
             
-            console.log('QR 코드 감지:', code.data);
+            console.log('🎉 QR 코드 감지됨!:', code.data);
+            console.log('QR 코드 위치:', code.location);
+            
+            setScanStatus(`QR 코드 발견: ${code.data}`);
             
             // QR 데이터 처리
             processQR(code.data);
@@ -500,6 +511,26 @@ const QRScanPage = () => {
           >
             <i className="fas fa-search-minus"></i>
           </button>
+          
+          {/* 테스트 버튼 */}
+          <button
+            onClick={() => processQR('56169')}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(40, 167, 69, 0.8)',
+              border: 'none',
+              color: 'white',
+              fontSize: '16px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            T
+          </button>
         </div>
 
         {/* 줌 레벨 표시 */}
@@ -518,6 +549,25 @@ const QRScanPage = () => {
             {zoomLevel.toFixed(1)}x
           </div>
         )}
+
+        {/* 스캔 상태 표시 */}
+        <div style={{
+          position: 'absolute',
+          bottom: scanResult ? '100px' : '20px',
+          left: '20px',
+          right: '20px',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          color: 'white',
+          padding: '12px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          textAlign: 'center'
+        }}>
+          {scanStatus}
+          <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
+            테스트용: 56169, 1005979, 50056
+          </div>
+        </div>
 
         {/* 스캔 결과 표시 */}
         {scanResult && (
