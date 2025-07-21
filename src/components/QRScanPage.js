@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
+import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
@@ -19,9 +19,8 @@ const QRScanPage = () => {
   const [flashlightOn, setFlashlightOn] = useState(false);
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
-  const videoRef = useRef();
-  const readerRef = useRef();
-  const streamRef = useRef();
+  const scannerRef = useRef();
+  const scannerDivRef = useRef();
 
   // 세션 시작
   const startSession = async () => {
@@ -350,37 +349,82 @@ const QRScanPage = () => {
 
   const startCamera = async () => {
     try {
-      // ZXing MultiFormat Reader 생성 (QR + Data Matrix + 기타 바코드)
-      readerRef.current = new BrowserMultiFormatReader();
-      
-      // 카메라 스트림 시작
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
+      // HTML5-QRCode 스캐너 설정
+      const config = {
+        fps: 10,
+        qrbox: { width: 300, height: 300 },
+        aspectRatio: 1.0,
+        disableFlip: false,
+        // 모든 바코드 형식 지원
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.CODABAR,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E
+        ],
+        videoConstraints: {
           facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          advanced: [
+            { focusMode: 'continuous' },
+            { exposureMode: 'continuous' },
+            { whiteBalanceMode: 'continuous' }
+          ]
         }
-      });
-      
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      setIsScanning(true);
-      setScanStatus('바코드 스캔 활성화됨 (QR + Data Matrix)');
+      };
 
-      // 플래시라이트 지원 확인
-      const track = stream.getVideoTracks()[0];
-      const capabilities = track.getCapabilities();
-      if (capabilities.torch) {
-        setHasFlashlight(true);
-      }
+      // 스캔 성공 콜백
+      const onScanSuccess = (decodedText, decodedResult) => {
+        console.log('🎉 바코드 감지됨!:', decodedText);
+        console.log('바코드 형식:', decodedResult.result.format?.formatName || 'UNKNOWN');
+        console.log('바코드 데이터 길이:', decodedText.length);
+        console.log('바코드 데이터 내용:', decodedText);
+        console.log('바코드 데이터 타입:', typeof decodedText);
+        console.log('바코드 데이터 바이트:', [...decodedText].map(c => c.charCodeAt(0)));
+        console.log('전체 결과:', decodedResult);
+
+        // 화면에도 원본 데이터 표시
+        const format = decodedResult.result.format?.formatName || 'BARCODE';
+        setScanStatus(`${format} 감지: ${decodedText.substring(0, 30)}${decodedText.length > 30 ? '...' : ''}`);
+
+        // 중복 스캔 방지
+        if (decodedText !== lastScannedCode) {
+          setLastScannedCode(decodedText);
+
+          // 즉시 원본 데이터로도 시도
+          console.log('=== 원본 데이터로 검색 시도 ===');
+          processQR(decodedText);
+
+          // 다이소 바코드 형식 확인 및 처리
+          setTimeout(() => {
+            console.log('=== 다이소 형식 분석 시도 ===');
+            processDaisoQR(decodedText);
+          }, 100);
+
+          // 1초 후 중복 방지 해제
+          setTimeout(() => setLastScannedCode(''), 1000);
+        }
+      };
+
+      // 스캔 에러 콜백 (무시)
+      const onScanError = (errorMessage) => {
+        // 스캔 에러는 정상적인 상황이므로 무시
+      };
+
+      // HTML5-QRCode 스캐너 생성 및 시작
+      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
+      scannerRef.current.render(onScanSuccess, onScanError);
+
+      setIsScanning(true);
+      setScanStatus('바코드 스캔 활성화됨 (모든 형식 지원)');
 
       // 세션 시작
       await startSession();
-
-      // 비디오 준비 후 스캔 시작
-      videoRef.current.onloadedmetadata = () => {
-        startBarcodeScanning();
-      };
 
     } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
@@ -389,72 +433,10 @@ const QRScanPage = () => {
     }
   };
 
-  // ZXing으로 바코드 스캔 시작
-  const startBarcodeScanning = () => {
-    const scanInterval = setInterval(async () => {
-      if (!readerRef.current || !videoRef.current || !isScanning) {
-        clearInterval(scanInterval);
-        return;
-      }
-
-      try {
-        // ZXing으로 바코드 스캔 (QR + Data Matrix + 기타)
-        const result = await readerRef.current.decodeOnceFromVideoDevice(undefined, videoRef.current);
-        
-        if (result) {
-          const barcodeData = result.getText();
-          const format = result.getBarcodeFormat();
-          
-          console.log('🎉 바코드 감지됨!:', barcodeData);
-          console.log('바코드 형식:', format);
-          console.log('바코드 데이터 길이:', barcodeData.length);
-          console.log('바코드 데이터 내용:', barcodeData);
-          console.log('바코드 데이터 타입:', typeof barcodeData);
-          console.log('바코드 데이터 바이트:', [...barcodeData].map(c => c.charCodeAt(0)));
-          
-          // 화면에도 원본 데이터 표시
-          setScanStatus(`${format} 감지: ${barcodeData.substring(0, 30)}${barcodeData.length > 30 ? '...' : ''}`);
-          
-          // 중복 스캔 방지
-          if (barcodeData !== lastScannedCode) {
-            setLastScannedCode(barcodeData);
-            
-            // 즉시 원본 데이터로도 시도
-            console.log('=== 원본 데이터로 검색 시도 ===');
-            processQR(barcodeData);
-            
-            // 다이소 바코드 형식 확인 및 처리
-            setTimeout(() => {
-              console.log('=== 다이소 형식 분석 시도 ===');
-              processDaisoQR(barcodeData);
-            }, 100);
-            
-            // 1초 후 중복 방지 해제
-            setTimeout(() => setLastScannedCode(''), 1000);
-            
-            // 스캔 성공 시 잠시 멈춤
-            clearInterval(scanInterval);
-            setTimeout(() => {
-              if (isScanning) startBarcodeScanning();
-            }, 2000);
-          }
-        }
-      } catch (error) {
-        if (!(error instanceof NotFoundException)) {
-          console.log('스캔 중...', error.message);
-        }
-      }
-    }, 500); // 0.5초마다 스캔
-  };
-
   const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (readerRef.current) {
-      readerRef.current.reset();
-      readerRef.current = null;
+    if (scannerRef.current) {
+      scannerRef.current.clear();
+      scannerRef.current = null;
     }
     setIsScanning(false);
     setScanResult(null);
@@ -470,28 +452,11 @@ const QRScanPage = () => {
     });
   };
 
-  // 플래시라이트 토글
-  const toggleFlashlight = async () => {
-    if (!hasFlashlight || !streamRef.current) return;
-    
-    try {
-      const track = streamRef.current.getVideoTracks()[0];
-      await track.applyConstraints({
-        advanced: [{ torch: !flashlightOn }]
-      });
-      setFlashlightOn(!flashlightOn);
-    } catch (error) {
-      console.error('플래시라이트 제어 실패:', error);
-    }
-  };
 
 
 
-  // 포커스 조정 (간단하게)
-  const handleFocus = async (event) => {
-    setScanStatus('포커스 조정 시도중...');
-    // 일반 카메라처럼 단순하게 처리
-  };
+
+
 
 
 
@@ -536,110 +501,20 @@ const QRScanPage = () => {
         </h1>
       </div>
 
-      {/* 카메라 화면 */}
+      {/* HTML5-QRCode 스캐너 */}
       <div style={{
         position: 'relative',
         width: '100%',
-        height: '60vh',
-        backgroundColor: '#000',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
+        minHeight: '60vh',
+        backgroundColor: '#000'
       }}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          onClick={handleFocus}
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }}
-        />
+        {/* HTML5-QRCode가 여기에 렌더링됨 */}
+        <div id="qr-reader" ref={scannerDivRef} style={{
+          width: '100%',
+          minHeight: '400px'
+        }}></div>
 
-        {/* QR 스캔 가이드 */}
-        <div style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '280px',
-          height: '280px',
-          border: '3px solid #00ff00',
-          borderRadius: '16px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 0 20px rgba(0, 255, 0, 0.5)',
-          animation: 'pulse 2s infinite'
-        }}>
-          {/* 모서리 표시 */}
-          <div style={{
-            position: 'absolute',
-            top: '-3px',
-            left: '-3px',
-            width: '30px',
-            height: '30px',
-            borderTop: '6px solid #00ff00',
-            borderLeft: '6px solid #00ff00',
-            borderRadius: '16px 0 0 0'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            top: '-3px',
-            right: '-3px',
-            width: '30px',
-            height: '30px',
-            borderTop: '6px solid #00ff00',
-            borderRight: '6px solid #00ff00',
-            borderRadius: '0 16px 0 0'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            bottom: '-3px',
-            left: '-3px',
-            width: '30px',
-            height: '30px',
-            borderBottom: '6px solid #00ff00',
-            borderLeft: '6px solid #00ff00',
-            borderRadius: '0 0 0 16px'
-          }}></div>
-          <div style={{
-            position: 'absolute',
-            bottom: '-3px',
-            right: '-3px',
-            width: '30px',
-            height: '30px',
-            borderBottom: '6px solid #00ff00',
-            borderRight: '6px solid #00ff00',
-            borderRadius: '0 0 16px 0'
-          }}></div>
-          
-          {/* 스캔 라인 */}
-          <div style={{
-            position: 'absolute',
-            top: '0',
-            left: '10px',
-            right: '10px',
-            height: '2px',
-            background: 'linear-gradient(90deg, transparent, #00ff00, transparent)',
-            animation: 'scanLine 2s infinite'
-          }}></div>
-          
-          <div style={{
-            color: 'white',
-            textAlign: 'center',
-            fontSize: '14px',
-            fontWeight: '600',
-            textShadow: '2px 2px 4px rgba(0, 0, 0, 0.8)'
-          }}>
-            QR 코드를 여기에 맞춰주세요
-          </div>
-        </div>
-
-        {/* 카메라 제어 버튼들 */}
+        {/* 테스트 버튼 */}
         <div style={{
           position: 'absolute',
           top: '20px',
@@ -648,31 +523,6 @@ const QRScanPage = () => {
           flexDirection: 'column',
           gap: '12px'
         }}>
-          {/* 플래시라이트 버튼 */}
-          {hasFlashlight && (
-            <button
-              onClick={toggleFlashlight}
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '50%',
-                backgroundColor: flashlightOn ? '#ffc107' : 'rgba(0, 0, 0, 0.5)',
-                border: 'none',
-                color: 'white',
-                fontSize: '20px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <i className={`fas fa-${flashlightOn ? 'lightbulb' : 'flashlight'}`}></i>
-            </button>
-          )}
-          
-
-          
-          {/* 테스트 버튼 */}
           <button
             onClick={() => processQR('56169')}
             style={{
@@ -691,8 +541,6 @@ const QRScanPage = () => {
           >
             T
           </button>
-          
-
         </div>
 
 
