@@ -152,8 +152,9 @@ const QRScanPage = () => {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920, min: 640 },
+          height: { ideal: 1080, min: 480 },
+          frameRate: { ideal: 30, min: 15 }
         } 
       });
       
@@ -166,7 +167,10 @@ const QRScanPage = () => {
 
       // 비디오 로드 완료 후 QR 스캔 시작
       videoRef.current.onloadedmetadata = () => {
-        startQRScanning();
+        // 비디오가 완전히 준비될 때까지 잠시 기다림
+        setTimeout(() => {
+          startQRScanning();
+        }, 500);
       };
     } catch (error) {
       console.error('카메라 접근 실패:', error);
@@ -177,21 +181,35 @@ const QRScanPage = () => {
   const startQRScanning = () => {
     const scanQRCode = () => {
       if (videoRef.current && canvasRef.current && isScanning) {
+        const video = videoRef.current;
         const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
         
+        // 비디오가 준비되지 않았으면 다음 프레임에서 다시 시도
+        if (video.readyState < 2) {
+          animationFrameRef.current = requestAnimationFrame(scanQRCode);
+          return;
+        }
+        
+        // 캔버스 크기를 비디오 크기에 맞게 조정
+        const videoWidth = video.videoWidth || 640;
+        const videoHeight = video.videoHeight || 480;
+        
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+        
         // 비디오 프레임을 캔버스에 그리기
-        context.drawImage(videoRef.current, 0, 0, 640, 480);
+        context.drawImage(video, 0, 0, videoWidth, videoHeight);
         
         // 캔버스에서 이미지 데이터 추출
-        const imageData = context.getImageData(0, 0, 640, 480);
+        const imageData = context.getImageData(0, 0, videoWidth, videoHeight);
         
-        // jsQR로 QR 코드 감지
+        // jsQR로 QR 코드 감지 (더 관대한 설정)
         const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert",
+          inversionAttempts: "attemptBoth",
         });
         
-        if (code) {
+        if (code && code.data) {
           // 중복 스캔 방지 (1초 간격)
           if (code.data !== lastScannedCode) {
             setLastScannedCode(code.data);
@@ -206,7 +224,7 @@ const QRScanPage = () => {
           }
         }
         
-        // 다음 프레임 스캔 (30fps)
+        // 다음 프레임 스캔 (더 빠른 스캔을 위해 60fps)
         animationFrameRef.current = requestAnimationFrame(scanQRCode);
       }
     };

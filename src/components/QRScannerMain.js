@@ -60,6 +60,7 @@ const QRScannerMain = () => {
       margin: '0 auto',
       backgroundColor: '#f5f5f5',
       minHeight: '100vh',
+      paddingBottom: '80px',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
     }}>
       {/* 헤더 */}

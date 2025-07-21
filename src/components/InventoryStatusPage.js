@@ -184,21 +184,21 @@ const InventoryStatusPage = () => {
             marginBottom: '16px',
             paddingRight: '60px'
           }}>
-            <h2 style={{
+              <h2 style={{
               margin: '0 0 4px 0',
               fontSize: '18px',
-              fontWeight: 'bold',
-              color: '#333'
-            }}>
-              다이소 강남점
-            </h2>
-            <p style={{
-              margin: 0,
-              fontSize: '14px',
-              color: '#666'
-            }}>
-              서울 강남구 테헤란로 123
-            </p>
+                fontWeight: 'bold',
+                color: '#333'
+              }}>
+                다이소 강남점
+              </h2>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#666'
+              }}>
+                서울 강남구 테헤란로 123
+              </p>
           </div>
 
           {/* 통계 */}
