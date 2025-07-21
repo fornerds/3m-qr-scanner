@@ -2,6 +2,7 @@
   "name": "3m-daiso-qr-scanner",
   "version": "1.0.0",
   "description": "3M Daiso QR Scanner Mobile Web App",
+  "homepage": ".",
   "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
