@@ -14,6 +14,12 @@ const QRScanPage = () => {
     notFound: 0
   });
   
+  // 카메라 제어 상태
+  const [hasFlashlight, setHasFlashlight] = useState(false);
+  const [flashlightOn, setFlashlightOn] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [maxZoom, setMaxZoom] = useState(1);
+  
   const videoRef = useRef();
   const canvasRef = useRef();
   const streamRef = useRef();
@@ -162,6 +168,20 @@ const QRScanPage = () => {
       videoRef.current.srcObject = stream;
       setIsScanning(true);
 
+      // 카메라 기능 확인
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      
+      // 플래시라이트 지원 확인
+      if (capabilities.torch) {
+        setHasFlashlight(true);
+      }
+      
+      // 줌 기능 확인
+      if (capabilities.zoom) {
+        setMaxZoom(capabilities.zoom.max || 3);
+      }
+
       // 세션 시작
       await startSession();
 
@@ -254,6 +274,65 @@ const QRScanPage = () => {
     });
   };
 
+  // 플래시라이트 토글
+  const toggleFlashlight = async () => {
+    if (!hasFlashlight || !streamRef.current) return;
+    
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      await track.applyConstraints({
+        advanced: [{ torch: !flashlightOn }]
+      });
+      setFlashlightOn(!flashlightOn);
+    } catch (error) {
+      console.error('플래시라이트 제어 실패:', error);
+    }
+  };
+
+  // 줌 조정
+  const adjustZoom = async (direction) => {
+    if (!streamRef.current) return;
+    
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      
+      if (capabilities.zoom) {
+        let newZoom = zoomLevel;
+        if (direction === 'in' && zoomLevel < maxZoom) {
+          newZoom = Math.min(zoomLevel + 0.5, maxZoom);
+        } else if (direction === 'out' && zoomLevel > 1) {
+          newZoom = Math.max(zoomLevel - 0.5, 1);
+        }
+        
+        await track.applyConstraints({
+          advanced: [{ zoom: newZoom }]
+        });
+        setZoomLevel(newZoom);
+      }
+    } catch (error) {
+      console.error('줌 조정 실패:', error);
+    }
+  };
+
+  // 포커스 조정 (탭하여 포커스)
+  const handleFocus = async (event) => {
+    if (!streamRef.current) return;
+    
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      
+      if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous' }]
+        });
+      }
+    } catch (error) {
+      console.error('포커스 조정 실패:', error);
+    }
+  };
+
   useEffect(() => {
     startCamera();
     
@@ -310,6 +389,7 @@ const QRScanPage = () => {
           autoPlay
           playsInline
           muted
+          onClick={handleFocus}
           style={{
             width: '100%',
             height: '100%',
@@ -347,6 +427,97 @@ const QRScanPage = () => {
             QR 코드를 스캔하세요
           </div>
         </div>
+
+        {/* 카메라 제어 버튼들 */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '12px'
+        }}>
+          {/* 플래시라이트 버튼 */}
+          {hasFlashlight && (
+            <button
+              onClick={toggleFlashlight}
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                backgroundColor: flashlightOn ? '#ffc107' : 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                color: 'white',
+                fontSize: '20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <i className={`fas fa-${flashlightOn ? 'lightbulb' : 'flashlight'}`}></i>
+            </button>
+          )}
+          
+          {/* 줌 인 버튼 */}
+          <button
+            onClick={() => adjustZoom('in')}
+            disabled={zoomLevel >= maxZoom}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: zoomLevel >= maxZoom ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              cursor: zoomLevel >= maxZoom ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <i className="fas fa-search-plus"></i>
+          </button>
+          
+          {/* 줌 아웃 버튼 */}
+          <button
+            onClick={() => adjustZoom('out')}
+            disabled={zoomLevel <= 1}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: zoomLevel <= 1 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.5)',
+              border: 'none',
+              color: 'white',
+              fontSize: '20px',
+              cursor: zoomLevel <= 1 ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <i className="fas fa-search-minus"></i>
+          </button>
+        </div>
+
+        {/* 줌 레벨 표시 */}
+        {zoomLevel > 1 && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '8px 12px',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: '500'
+          }}>
+            {zoomLevel.toFixed(1)}x
+          </div>
+        )}
 
         {/* 스캔 결과 표시 */}
         {scanResult && (
