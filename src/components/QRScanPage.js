@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import QrScanner from 'qr-scanner';
+import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
@@ -20,7 +20,8 @@ const QRScanPage = () => {
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
   const videoRef = useRef();
-  const qrScannerRef = useRef();
+  const readerRef = useRef();
+  const streamRef = useRef();
 
   // 세션 시작
   const startSession = async () => {
@@ -349,87 +350,116 @@ const QRScanPage = () => {
 
   const startCamera = async () => {
     try {
-      // qr-scanner로 QR 스캔 시작
-      qrScannerRef.current = new QrScanner(
-        videoRef.current,
-        (result) => {
-          // QR 코드 감지 성공
-          const qrData = result.data;
-          console.log('🎉 QR 코드 감지됨!:', qrData);
-          console.log('QR 데이터 길이:', qrData.length);
-          console.log('QR 데이터 내용:', qrData);
-          console.log('QR 데이터 타입:', typeof qrData);
-          console.log('QR 데이터 바이트:', [...qrData].map(c => c.charCodeAt(0)));
-          
-          // 화면에도 원본 데이터 표시
-          setScanStatus(`QR 원본: ${qrData.substring(0, 50)}${qrData.length > 50 ? '...' : ''}`);
-          
-          // 중복 스캔 방지
-          if (qrData !== lastScannedCode) {
-            setLastScannedCode(qrData);
-            
-            // 즉시 원본 데이터로도 시도
-            console.log('=== 원본 데이터로 검색 시도 ===');
-            processQR(qrData);
-            
-            // 다이소 QR 형식 확인 및 처리
-            setTimeout(() => {
-              console.log('=== 다이소 형식 분석 시도 ===');
-              processDaisoQR(qrData);
-            }, 100);
-            
-            // 1초 후 중복 방지 해제
-            setTimeout(() => setLastScannedCode(''), 1000);
-          }
-        },
-        {
-          returnDetailedScanResult: true,
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          preferredCamera: 'environment',
-          maxScansPerSecond: 5,
-          calculateScanRegion: (video) => {
-            // 중앙 60% 영역에 집중하여 더 정확한 스캔
-            return {
-              x: Math.round(video.videoWidth * 0.2),
-              y: Math.round(video.videoHeight * 0.2),
-              width: Math.round(video.videoWidth * 0.6),
-              height: Math.round(video.videoHeight * 0.6),
-            };
-          }
+      // ZXing MultiFormat Reader 생성 (QR + Data Matrix + 기타 바코드)
+      readerRef.current = new BrowserMultiFormatReader();
+      
+      // 카메라 스트림 시작
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         }
-      );
-
-      // QR 스캐너 시작 (고해상도로)
-      await qrScannerRef.current.start();
+      });
+      
+      streamRef.current = stream;
+      videoRef.current.srcObject = stream;
       setIsScanning(true);
-      setScanStatus('QR 스캔 활성화됨');
+      setScanStatus('바코드 스캔 활성화됨 (QR + Data Matrix)');
 
       // 플래시라이트 지원 확인
-      if (await QrScanner.hasCamera() && qrScannerRef.current.hasFlash()) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities();
+      if (capabilities.torch) {
         setHasFlashlight(true);
       }
 
       // 세션 시작
       await startSession();
 
+      // 비디오 준비 후 스캔 시작
+      videoRef.current.onloadedmetadata = () => {
+        startBarcodeScanning();
+      };
+
     } catch (error) {
-      console.error('QR 스캐너 시작 실패:', error);
-      setScanStatus('QR 스캐너 시작 실패 - 브라우저 설정을 확인하세요');
-      alert('QR 스캐너를 시작할 수 없습니다.\n\n해결 방법:\n1. 브라우저에서 카메라 권한 허용\n2. HTTPS 사이트에서 접속\n3. Chrome 또는 Safari 브라우저 사용 권장');
+      console.error('바코드 스캐너 시작 실패:', error);
+      setScanStatus('바코드 스캐너 시작 실패 - 브라우저 설정을 확인하세요');
+      alert('바코드 스캐너를 시작할 수 없습니다.\n\n해결 방법:\n1. 브라우저에서 카메라 권한 허용\n2. HTTPS 사이트에서 접속\n3. Chrome 또는 Safari 브라우저 사용 권장');
     }
   };
 
+  // ZXing으로 바코드 스캔 시작
+  const startBarcodeScanning = () => {
+    const scanInterval = setInterval(async () => {
+      if (!readerRef.current || !videoRef.current || !isScanning) {
+        clearInterval(scanInterval);
+        return;
+      }
+
+      try {
+        // ZXing으로 바코드 스캔 (QR + Data Matrix + 기타)
+        const result = await readerRef.current.decodeOnceFromVideoDevice(undefined, videoRef.current);
+        
+        if (result) {
+          const barcodeData = result.getText();
+          const format = result.getBarcodeFormat();
+          
+          console.log('🎉 바코드 감지됨!:', barcodeData);
+          console.log('바코드 형식:', format);
+          console.log('바코드 데이터 길이:', barcodeData.length);
+          console.log('바코드 데이터 내용:', barcodeData);
+          console.log('바코드 데이터 타입:', typeof barcodeData);
+          console.log('바코드 데이터 바이트:', [...barcodeData].map(c => c.charCodeAt(0)));
+          
+          // 화면에도 원본 데이터 표시
+          setScanStatus(`${format} 감지: ${barcodeData.substring(0, 30)}${barcodeData.length > 30 ? '...' : ''}`);
+          
+          // 중복 스캔 방지
+          if (barcodeData !== lastScannedCode) {
+            setLastScannedCode(barcodeData);
+            
+            // 즉시 원본 데이터로도 시도
+            console.log('=== 원본 데이터로 검색 시도 ===');
+            processQR(barcodeData);
+            
+            // 다이소 바코드 형식 확인 및 처리
+            setTimeout(() => {
+              console.log('=== 다이소 형식 분석 시도 ===');
+              processDaisoQR(barcodeData);
+            }, 100);
+            
+            // 1초 후 중복 방지 해제
+            setTimeout(() => setLastScannedCode(''), 1000);
+            
+            // 스캔 성공 시 잠시 멈춤
+            clearInterval(scanInterval);
+            setTimeout(() => {
+              if (isScanning) startBarcodeScanning();
+            }, 2000);
+          }
+        }
+      } catch (error) {
+        if (!(error instanceof NotFoundException)) {
+          console.log('스캔 중...', error.message);
+        }
+      }
+    }, 500); // 0.5초마다 스캔
+  };
+
   const stopCamera = () => {
-    if (qrScannerRef.current) {
-      qrScannerRef.current.stop();
-      qrScannerRef.current.destroy();
-      qrScannerRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (readerRef.current) {
+      readerRef.current.reset();
+      readerRef.current = null;
     }
     setIsScanning(false);
     setScanResult(null);
     setLastScannedCode('');
-    setScanStatus('QR 스캔 중지됨');
+    setScanStatus('바코드 스캔 중지됨');
   };
 
   const resetStats = () => {
@@ -442,14 +472,13 @@ const QRScanPage = () => {
 
   // 플래시라이트 토글
   const toggleFlashlight = async () => {
-    if (!hasFlashlight || !qrScannerRef.current) return;
+    if (!hasFlashlight || !streamRef.current) return;
     
     try {
-      if (flashlightOn) {
-        await qrScannerRef.current.turnFlashOff();
-      } else {
-        await qrScannerRef.current.turnFlashOn();
-      }
+      const track = streamRef.current.getVideoTracks()[0];
+      await track.applyConstraints({
+        advanced: [{ torch: !flashlightOn }]
+      });
       setFlashlightOn(!flashlightOn);
     } catch (error) {
       console.error('플래시라이트 제어 실패:', error);
@@ -683,7 +712,7 @@ const QRScanPage = () => {
         }}>
           {scanStatus}
           <div style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8 }}>
-            📱 다이소 QR 최적화 | 콘솔에서 상세 로그 확인 | T 테스트 (56169)
+            📱 QR + Data Matrix 지원 | 다이소 바코드 최적화 | T 테스트 (56169)
           </div>
         </div>
 
