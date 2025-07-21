@@ -1171,13 +1171,13 @@ export const DAISO_PRODUCTS = [
 ];
 
 // 제품 검색 함수들
-export function findProductBySku(sku) {
+function findProductBySku(sku) {
   return DAISO_PRODUCTS.find(product => 
     product.sku === sku || product.sku === sku.toString()
   );
 }
 
-export function searchProductsByName(searchTerm) {
+function searchProductsByName(searchTerm) {
   const term = searchTerm.toLowerCase();
   return DAISO_PRODUCTS.filter(product =>
     product.name.toLowerCase().includes(term) ||
@@ -1186,11 +1186,11 @@ export function searchProductsByName(searchTerm) {
   );
 }
 
-export function getAllProducts() {
+function getAllProducts() {
   return DAISO_PRODUCTS;
 }
 
-export function getProductStats() {
+function getProductStats() {
   return {
     total: DAISO_PRODUCTS.length,
     categories: [...new Set(DAISO_PRODUCTS.map(p => p.category))].length,
@@ -1200,3 +1200,12 @@ export function getProductStats() {
     }
   };
 }
+
+// CommonJS 내보내기
+module.exports = {
+  DAISO_PRODUCTS,
+  findProductBySku,
+  searchProductsByName,
+  getAllProducts,
+  getProductStats
+};

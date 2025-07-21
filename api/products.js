@@ -1,6 +1,6 @@
-import { findProductBySku, searchProductsByName, getAllProducts, getProductStats } from '../src/data/products.js';
+const { findProductBySku, searchProductsByName, getAllProducts, getProductStats } = require('../src/data/products.js');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { method, query } = req;
 
   try {
