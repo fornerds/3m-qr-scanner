@@ -13,6 +13,7 @@ const QRScanPage = () => {
     found: 0,
     notFound: 0
   });
+  const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
@@ -56,6 +57,24 @@ const QRScanPage = () => {
       // QR 데이터에서 제품코드 추출 (순수 코드만 읽는다고 가정)
       const productCode = qrData.trim();
       
+      // 이미 스캔한 제품인지 확인
+      if (scannedProducts.has(productCode)) {
+        setScanResult({
+          productCode,
+          productName: '이미 스캔한 제품',
+          category: '-',
+          price: '-',
+          status: 'already_scanned',
+          statusMessage: '이미 스캔됨',
+          statusColor: '#ffc107',
+          timestamp: new Date()
+        });
+        
+        // 2초 후 결과 초기화
+        setTimeout(() => setScanResult(null), 2000);
+        return;
+      }
+      
       // 제품 데이터베이스에서 제품 검색
       const response = await fetch('/api/products', {
         method: 'POST',
@@ -86,6 +105,9 @@ const QRScanPage = () => {
           product: product,
           timestamp: new Date()
         };
+        
+        // 스캔한 제품 목록에 추가 (3M 제품만)
+        setScannedProducts(prev => new Set([...prev, productCode]));
       } else {
         // 제품을 찾지 못한 경우
         scanResult = {
@@ -121,15 +143,15 @@ const QRScanPage = () => {
       // 결과 표시
       setScanResult(scanResult);
       
-      // 통계 업데이트
+      // 통계 업데이트 (3M 제품만 카운트)
       setScanStats(prev => ({
-        total: prev.total + 1,
+        total: prev.total + (scanResult.status === 'found' ? 1 : 0),
         found: prev.found + (scanResult.status === 'found' ? 1 : 0),
-        notFound: prev.notFound + (scanResult.status === 'not_found' ? 1 : 0)
+        notFound: prev.notFound // 3M 제품이 아닌 경우 미진열에 추가하지 않음
       }));
       
-      // 1초 후 결과 초기화
-      setTimeout(() => setScanResult(null), 1000);
+      // 2초 후 결과 초기화
+      setTimeout(() => setScanResult(null), 2000);
       
       console.log(`QR 코드 처리됨: ${productCode} - ${scanResult.statusMessage}`);
     } catch (error) {
@@ -147,7 +169,7 @@ const QRScanPage = () => {
         timestamp: new Date()
       });
       
-      setTimeout(() => setScanResult(null), 1000);
+      setTimeout(() => setScanResult(null), 2000);
     }
   };
 
@@ -193,8 +215,8 @@ const QRScanPage = () => {
           // 제품 검색
           processQR(decodedText);
           
-          // 1초 후 중복 방지 해제
-          setTimeout(() => setLastScannedCode(''), 1000);
+          // 3초 후 중복 방지 해제
+          setTimeout(() => setLastScannedCode(''), 3000);
         }
       };
 
@@ -280,6 +302,7 @@ const QRScanPage = () => {
       found: 0,
       notFound: 0
     });
+    setScannedProducts(new Set()); // 스캔한 제품 목록도 초기화
   };
 
 
