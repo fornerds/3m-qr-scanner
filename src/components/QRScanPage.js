@@ -443,6 +443,7 @@ const QRScanPage = () => {
       {/* 하단 컨트롤 */}
       <div style={{
         padding: '20px',
+        paddingBottom: '100px', // 하단 네비게이션바와 간격
         backgroundColor: '#f5f5f5'
       }}>
         {/* 스캔 통계 */}
