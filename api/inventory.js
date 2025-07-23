@@ -1,126 +1,100 @@
-// 하드코딩된 재고 데이터
-const INVENTORY_DATA = {
-  '1': {
-    totalItems: 50,
-    scannedItems: 45,
-    unstockedItems: 3,
-    unavailableItems: 2,
-    progress: 90,
-    recentScans: [
-      {
-        productCode: '3M-ADH-001',
-        productName: '3M 다목적 접착제',
-        category: '사무용품',
-        price: '3,500원',
-        stock: '재고 24개',
-        timestamp: new Date().toISOString()
-      },
-      {
-        productCode: '3M-TAPE-002',
-        productName: '3M 강력 테이프',
-        category: '사무용품',
-        price: '2,800원',
-        stock: '재고 18개',
-        timestamp: new Date(Date.now() - 300000).toISOString()
-      },
-      {
-        productCode: '3M-CLEAN-003',
-        productName: '3M 다목적 클리너',
-        category: '청소용품',
-        price: '4,200원',
-        stock: '재고 15개',
-        timestamp: new Date(Date.now() - 600000).toISOString()
-      }
-    ],
-    missingItems: [
-      {
-        productCode: '3M-PROTECT-004',
-        productName: '3M 보호 테이프',
-        category: '산업용품',
-        priority: 'medium',
-        status: 'missing'
-      },
-      {
-        productCode: '3M-FILTER-005',
-        productName: '3M 공기청정 필터',
-        category: '생활용품',
-        priority: 'high',
-        status: 'missing'
-      }
-    ],
-    lowStockItems: [
-      {
-        productCode: '3M-ADH-005',
-        productName: '3M 강력 접착제',
-        category: '산업용품',
-        priority: 'high',
-        currentStock: 2,
-        minStock: 5
-      },
-      {
-        productCode: '3M-SPONGE-006',
-        productName: '3M 연마 스펀지',
-        category: '청소용품',
-        priority: 'medium',
-        currentStock: 3,
-        minStock: 8
-      }
-    ]
-  },
-  '2': {
-    totalItems: 50,
-    scannedItems: 38,
-    unstockedItems: 5,
-    unavailableItems: 7,
-    progress: 76,
-    recentScans: [
-      {
-        productCode: '3M-TAPE-002',
-        productName: '3M 강력 테이프',
-        category: '사무용품',
-        price: '2,800원',
-        stock: '재고 12개',
-        timestamp: new Date().toISOString()
-      }
-    ],
-    missingItems: [
-      {
-        productCode: '3M-CLEAN-003',
-        productName: '3M 다목적 클리너',
-        category: '청소용품',
-        priority: 'high',
-        status: 'missing'
-      }
-    ],
-    lowStockItems: []
-  },
-  '3': {
-    totalItems: 50,
-    scannedItems: 42,
-    unstockedItems: 4,
-    unavailableItems: 4,
-    progress: 84,
-    recentScans: [
-      {
-        productCode: '3M-FILTER-005',
-        productName: '3M 공기청정 필터',
-        category: '생활용품',
-        price: '8,900원',
-        stock: '재고 6개',
-        timestamp: new Date().toISOString()
-      }
-    ],
-    missingItems: [],
-    lowStockItems: [
-      {
-        productCode: '3M-SPONGE-006',
-        productName: '3M 연마 스펀지',
-        category: '청소용품',
-        priority: 'medium',
-        currentStock: 1,
-        minStock: 8
-      }
-    ]
+const { connectToDatabase } = require('./config/database');
+
+// 제품 중요도 계산 함수 (MongoDB 기반)
+const getProductImportance = async (productSku) => {
+  try {
+    const { db } = await connectToDatabase();
+    const collection = db.collection('products');
+    
+    // 모든 제품을 판매량 기준으로 정렬하여 순위 계산
+    const allProducts = await collection.find({}).sort({ salesAvg: -1 }).toArray();
+    
+    // 제품의 순위 찾기 (1부터 시작)
+    const rank = allProducts.findIndex(product => product.sku === productSku) + 1;
+    
+    if (rank === 0) {
+      return 'medium'; // 제품을 찾을 수 없으면 보통으로 처리
+    }
+    
+    // 중요도 판단
+    if (rank <= 80) {
+      return 'high';      // 1-80위: 높음
+    } else if (rank <= 130) {
+      return 'medium';    // 81-130위: 보통
+    } else {
+      return 'low';       // 131-150위: 낮음
+    }
+  } catch (error) {
+    console.error('제품 중요도 계산 오류:', error);
+    return 'medium';
+  }
+};
+
+// 동적 재고 데이터 생성 (MongoDB 연동)
+const generateInventoryData = async (storeId) => {
+  try {
+    const { db } = await connectToDatabase();
+    const collection = db.collection('scan_records');
+    
+    // 실제 스캔 기록 조회
+    const scannedItems = await collection.countDocuments({ storeId: storeId });
+    
+    // 최근 스캔 3개만 가져오기
+    const recentScansData = await collection.find({ storeId: storeId })
+      .sort({ timestamp: -1 })
+      .limit(3)
+      .toArray();
+    
+    const recentScans = recentScansData.map(scan => ({
+      productCode: scan.productCode,
+      productName: scan.productName,
+      timestamp: scan.timestamp
+    }));
+    
+    // MongoDB에서 전체 제품 수 조회
+    const { db: productDb } = await connectToDatabase();
+    const productsCollection = productDb.collection('products');
+    
+    const totalItems = await productsCollection.countDocuments();
+    const progress = totalItems > 0 ? Math.round((scannedItems / totalItems) * 100) : 0;
+    
+    // 스캔되지 않은 제품들을 미진열로 분류
+    const scannedProductCodes = await collection.find({ storeId: storeId }).distinct('productCode');
+    const notDisplayedProducts = await productsCollection.find({
+      sku: { $nin: scannedProductCodes }
+    }).sort({ salesAvg: -1 }).toArray();
+    
+    // 미진열 제품들의 중요도 계산
+    const sampleNotDisplayedItems = await Promise.all(
+      notDisplayedProducts.map(async (product) => ({
+        productCode: product.sku,
+        productName: product.name,
+        category: product.category,
+        status: 'not_displayed',
+        priority: await getProductImportance(product.sku),
+        rank: 0, // 순위는 getProductImportance에서 계산됨
+        salesAvg: product.salesAvg
+      }))
+    );
+    
+    return {
+      totalItems,
+      scannedItems,
+      notDisplayedItems: notDisplayedProducts.length, // 실제 미진열 제품 수
+      progress,
+      recentScans,
+      notDisplayedProducts: sampleNotDisplayedItems
+    };
+  } catch (error) {
+    console.error('재고 데이터 생성 오류:', error);
+    return {
+      totalItems: 0,
+      scannedItems: 0,
+      notDisplayedItems: 0,
+      progress: 0,
+      recentScans: [],
+      notDisplayedProducts: []
+    };
   }
 };
 
@@ -131,48 +105,38 @@ module.exports = async function handler(req, res) {
       const { storeId } = req.query;
       console.log('재고 조회 요청, storeId:', storeId);
       
-      // 기본값 설정
-      const defaultInventory = {
-        totalItems: 50,
-        scannedItems: 0,
-        unstockedItems: 0,
-        unavailableItems: 0,
-        progress: 0,
-        recentScans: [],
-        missingItems: [],
-        lowStockItems: []
-      };
+      // 동적으로 재고 데이터 생성
+      let inventory = await generateInventoryData(storeId || '1');
       
-      // storeId에 해당하는 재고 데이터 조회
-      const inventory = storeId && INVENTORY_DATA[storeId] 
-        ? INVENTORY_DATA[storeId] 
-        : defaultInventory;
+      // 스캔 기록 조회하여 진열 상태 자동 업데이트
+      let scannedProductCodes = new Set();
+      try {
+        const { db } = await connectToDatabase();
+        const collection = db.collection('scan_records');
+        const scannedProducts = await collection.find({ storeId: storeId }).toArray();
+        scannedProductCodes = new Set(scannedProducts.map(scan => scan.productCode));
+      } catch (error) {
+        console.error('스캔 기록 조회 실패:', error);
+      }
+      
+      // 판매량 기준으로 priority 재계산 및 진열 상태 자동 판단
+      if (inventory.notDisplayedProducts) {
+        inventory.notDisplayedProducts = await Promise.all(
+          inventory.notDisplayedProducts
+            .filter(item => !scannedProductCodes.has(item.productCode)) // 스캔된 것은 제외
+            .map(async item => ({
+              ...item,
+              priority: await getProductImportance(item.productCode)
+            }))
+        );
+      }
       
       res.status(200).json(inventory);
     } catch (error) {
       console.error('재고 조회 오류:', error);
       
       // 오류 시 기본 데이터 반환
-      const fallbackInventory = {
-        totalItems: 50,
-        scannedItems: 45,
-        unstockedItems: 3,
-        unavailableItems: 2,
-        progress: 90,
-        recentScans: [
-          {
-            productCode: '3M-ADH-001',
-            productName: '3M 다목적 접착제',
-            category: '사무용품',
-            price: '3,500원',
-            stock: '재고 24개',
-            timestamp: new Date().toISOString()
-          }
-        ],
-        missingItems: [],
-        lowStockItems: []
-      };
-      
+      const fallbackInventory = await generateInventoryData('1');
       res.status(200).json(fallbackInventory);
     }
   } else {

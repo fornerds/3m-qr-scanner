@@ -6,8 +6,34 @@ const StoreDetailPage = () => {
   const { storeId } = useParams();
   const [store, setStore] = useState(null);
   const [inventory, setInventory] = useState(null);
+  const [recentProducts, setRecentProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastVisit) => {
+    if (!lastVisit) return '방문 기록 없음';
+    
+    const visitDate = new Date(lastVisit);
+    const now = new Date();
+    const diffInMs = now - visitDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    
+    if (diffInHours < 24) {
+      return '24시간';
+    } else if (diffInDays < 2) {
+      return '1일 전';
+    } else if (diffInDays < 4) {
+      return '3일 전';
+    } else if (diffInDays < 8) {
+      return '1주일 전';
+    } else if (diffInDays < 15) {
+      return '2주일 전';
+    } else {
+      return '3주일 전';
+    }
+  };
 
   // API에서 매장 상세 정보와 재고 현황 가져오기
   useEffect(() => {
@@ -31,25 +57,34 @@ const StoreDetailPage = () => {
         }
         const inventoryData = await inventoryResponse.json();
         setInventory(inventoryData);
+        
+        // 최근 스캔된 제품 데이터 설정
+        if (inventoryData.recentScans) {
+          setRecentProducts(inventoryData.recentScans.map(product => ({
+            id: product.productCode,
+            name: product.productName,
+            lastScan: getRelativeTime(product.timestamp)
+          })));
+        }
       } catch (err) {
         console.error('매장 데이터 조회 오류:', err);
         setError(err.message);
         
-        // 오류 시 샘플 데이터 사용
+        // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
         setStore({
           id: storeId,
-          name: '다이소 강남점',
-          address: '서울 강남구 테헤란로 123',
-          isOpen: true,
-          operatingHours: '10:00 - 22:00',
-          distance: '0.3km'
+          name: '매장 정보 없음',
+          address: '주소 정보 없음'
         });
         
         setInventory({
-          totalItems: 247,
-          scannedItems: 156,
-          progress: 13
+          totalItems: 0,
+          scannedItems: 0,
+          progress: 0,
+          recentScans: []
         });
+        
+        setRecentProducts([]);
       } finally {
         setLoading(false);
       }
@@ -58,34 +93,7 @@ const StoreDetailPage = () => {
     fetchStoreData();
   }, [storeId]);
 
-  // 샘플 상품 데이터
-  const recentProducts = [
-    {
-      id: 1,
-      name: '3M 스카치 패킷테이프',
-      lastScan: '2시간 전'
-    },
-    {
-      id: 2,
-      name: '3M 다목적 접착제',
-      lastScan: '2시간 전'
-    },
-    {
-      id: 3,
-      name: '3M 청소용 스펀지',
-      lastScan: '2시간 전'
-    },
-    {
-      id: 4,
-      name: '3M 글래스 클리너',
-      lastScan: '2시간 전'
-    },
-    {
-      id: 5,
-      name: '3M 포스트잇 노트',
-      lastScan: '2시간 전'
-    }
-  ];
+
 
   if (loading) {
     return (
@@ -205,30 +213,7 @@ const StoreDetailPage = () => {
             }}>
               {store?.address}
             </p>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              fontSize: '13px',
-              color: '#999'
-            }}>
-              <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <i className="fas fa-clock" style={{ fontSize: '12px' }}></i>
-                {store?.operatingHours}
-              </span>
-              <span style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <i className="fas fa-map-marker-alt" style={{ fontSize: '12px' }}></i>
-                {store?.distance}
-              </span>
-            </div>
+
           </div>
         </div>
 
@@ -253,7 +238,7 @@ const StoreDetailPage = () => {
               fontSize: '14px',
               color: '#666'
             }}>
-              마지막 방문: 2시간 전
+              마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '방문 기록 없음'}
             </span>
           </div>
           
@@ -272,7 +257,7 @@ const StoreDetailPage = () => {
               overflow: 'hidden'
             }}>
               <div style={{
-                width: `${inventory?.progress || 13}%`,
+                width: `${inventory?.progress || 0}%`,
                 height: '100%',
                 backgroundColor: '#dc3545',
                 borderRadius: '4px'
@@ -283,8 +268,8 @@ const StoreDetailPage = () => {
               fontWeight: 'bold',
               color: '#dc3545',
               minWidth: '40px'
-            }}>
-              {inventory?.progress || 13}%
+            }}            >
+              {inventory?.progress || 0}%
             </span>
           </div>
           
@@ -294,14 +279,14 @@ const StoreDetailPage = () => {
             fontSize: '12px',
             color: '#666'
           }}>
-            <span>스캔 완료: {inventory?.scannedItems || 156}개</span>
-            <span>전체 리스트: {inventory?.totalItems || 247}개</span>
+            <span>스캔 완료: {inventory?.scannedItems || 0}개</span>
+            <span>전체 리스트: {inventory?.totalItems || 0}개</span>
           </div>
         </div>
 
         {/* 재고현황 보기 버튼 */}
         <Link
-          to="/inventory-status"
+          to={`/inventory-status?storeId=${storeId}`}
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -419,7 +404,7 @@ const StoreDetailPage = () => {
           <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>매장</span>
         </Link>
-        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+        <Link to={`/scan?storeId=${storeId}`} style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
         </Link>

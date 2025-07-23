@@ -1,4 +1,4 @@
-// 다이소 제품 리스트 (실제 엑셀 데이터 146개)
+// 다이소 제품 리스트 (Excel 데이터 146개)
 export const DAISO_PRODUCTS = [
   {
     "sku": "56169",
@@ -6,7 +6,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 22712
   },
   {
     "sku": "1005979",
@@ -14,7 +15,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 17994
   },
   {
     "sku": "50056",
@@ -22,7 +24,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 17821
   },
   {
     "sku": "56262",
@@ -30,7 +33,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 15367
   },
   {
     "sku": "1005987",
@@ -38,7 +42,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 14863
   },
   {
     "sku": "1005981",
@@ -46,7 +51,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 13769
   },
   {
     "sku": "1005986",
@@ -54,7 +60,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 11440
   },
   {
     "sku": "1005982",
@@ -62,7 +69,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 11164
   },
   {
     "sku": "56172",
@@ -70,7 +78,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 11020
   },
   {
     "sku": "50062",
@@ -78,7 +87,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 9119
   },
   {
     "sku": "50060",
@@ -86,7 +96,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 8507
   },
   {
     "sku": "1005978",
@@ -94,7 +105,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6963
   },
   {
     "sku": "56170",
@@ -102,7 +114,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6927
   },
   {
     "sku": "1005983",
@@ -110,7 +123,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6582
   },
   {
     "sku": "56174",
@@ -118,7 +132,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6422
   },
   {
     "sku": "56166",
@@ -126,7 +141,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6165
   },
   {
     "sku": "50059",
@@ -134,7 +150,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 5840
   },
   {
     "sku": "1005984",
@@ -142,7 +159,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 5712
   },
   {
     "sku": "50058",
@@ -150,7 +168,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 5501
   },
   {
     "sku": "1005976",
@@ -158,7 +177,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 5444
   },
   {
     "sku": "1005985",
@@ -166,7 +186,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4912
   },
   {
     "sku": "56173",
@@ -174,7 +195,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4587
   },
   {
     "sku": "1005988",
@@ -182,7 +204,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4557
   },
   {
     "sku": "50057",
@@ -190,7 +213,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4447
   },
   {
     "sku": "50066",
@@ -198,7 +222,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4115
   },
   {
     "sku": "1005975",
@@ -206,7 +231,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 3937
   },
   {
     "sku": "1005989",
@@ -214,7 +240,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 3672
   },
   {
     "sku": "1005977",
@@ -222,7 +249,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 3331
   },
   {
     "sku": "50065",
@@ -230,7 +258,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 3113
   },
   {
     "sku": "56263",
@@ -238,7 +267,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무메모",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 2934
   },
   {
     "sku": "56264",
@@ -246,7 +276,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 95932
   },
   {
     "sku": "56265",
@@ -254,7 +285,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 87125
   },
   {
     "sku": "58895",
@@ -262,7 +294,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 77034
   },
   {
     "sku": "56266",
@@ -270,7 +303,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 51481
   },
   {
     "sku": "58896",
@@ -278,7 +312,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 30553
   },
   {
     "sku": "56267",
@@ -286,7 +321,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 28877
   },
   {
     "sku": "1024924",
@@ -294,7 +330,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 27225
   },
   {
     "sku": "56270",
@@ -302,7 +339,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 26273
   },
   {
     "sku": "1024926",
@@ -310,7 +348,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 23282
   },
   {
     "sku": "56268",
@@ -318,7 +357,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 16831
   },
   {
     "sku": "58898",
@@ -326,7 +366,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 14696
   },
   {
     "sku": "58899",
@@ -334,7 +375,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 13225
   },
   {
     "sku": "58901",
@@ -342,7 +384,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11112
   },
   {
     "sku": "56269",
@@ -350,7 +393,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 10959
   },
   {
     "sku": "1005991",
@@ -358,7 +402,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 10288
   },
   {
     "sku": "1024925",
@@ -366,7 +411,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 8335
   },
   {
     "sku": "58900",
@@ -374,7 +420,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8027
   },
   {
     "sku": "1024931",
@@ -382,7 +429,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 7280
   },
   {
     "sku": "1024929",
@@ -390,7 +438,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6777
   },
   {
     "sku": "1024932",
@@ -398,7 +447,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6682
   },
   {
     "sku": "1024930",
@@ -406,7 +456,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6468
   },
   {
     "sku": "58897",
@@ -414,7 +465,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 6310
   },
   {
     "sku": "1024928",
@@ -422,7 +474,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 사무테이프",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 5988
   },
   {
     "sku": "56271",
@@ -430,7 +483,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 사무문구 > 수정테이프",
     "price": 1500,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 4611
   },
   {
     "sku": "1025163",
@@ -438,7 +492,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 학용문구 > 학습기타",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 20248
   },
   {
     "sku": "1024918",
@@ -446,7 +501,8 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 학용문구 > 학습기타",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 19549
   },
   {
     "sku": "1024920",
@@ -454,15 +510,17 @@ export const DAISO_PRODUCTS = [
     "category": "사무문구포장부",
     "subCategory": "문구/팬시 > 학용문구 > 학습기타",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 16306
   },
   {
     "sku": "1019560",
     "name": "스카치 3M 매직풀 (25 g)",
-    "category": "기타",
+    "category": "",
     "subCategory": "문구/팬시 > 학용문구 > 풀",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 12832
   },
   {
     "sku": "1034446",
@@ -470,7 +528,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11822
   },
   {
     "sku": "1032648",
@@ -478,7 +537,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11133
   },
   {
     "sku": "1032643",
@@ -486,7 +546,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 5677
   },
   {
     "sku": "1032644",
@@ -494,7 +555,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4919
   },
   {
     "sku": "1032645",
@@ -502,7 +564,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4848
   },
   {
     "sku": "1032646",
@@ -510,7 +573,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "수납/정리 > 행거류 > 접착행거",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2219
   },
   {
     "sku": "1010875",
@@ -518,7 +582,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 롤클리너",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 25942
   },
   {
     "sku": "1032562",
@@ -526,7 +591,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 롤클리너",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 18366
   },
   {
     "sku": "1010877",
@@ -534,7 +600,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 롤클리너",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8220
   },
   {
     "sku": "1010876",
@@ -542,7 +609,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 롤클리너",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4406
   },
   {
     "sku": "1001967",
@@ -550,7 +618,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 변기솔",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 10491
   },
   {
     "sku": "1001968",
@@ -558,7 +627,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 변기솔",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 5737
   },
   {
     "sku": "1032565",
@@ -566,7 +636,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 변기솔",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 1060
   },
   {
     "sku": "1032563",
@@ -574,7 +645,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소도구 > 변기솔",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 947
   },
   {
     "sku": "1009814",
@@ -582,7 +654,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소세제 > 청소포",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 12100
   },
   {
     "sku": "1009813",
@@ -590,7 +663,8 @@ export const DAISO_PRODUCTS = [
     "category": "수납청소욕실케미칼부",
     "subCategory": "욕실/청소 > 청소세제 > 청소포",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8177
   },
   {
     "sku": "1011177",
@@ -598,7 +672,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 안전 > 작업용장갑",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 15240
   },
   {
     "sku": "1011178",
@@ -606,7 +681,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 안전 > 작업용장갑",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 14858
   },
   {
     "sku": "1011175",
@@ -614,7 +690,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 안전 > 작업용장갑",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 10962
   },
   {
     "sku": "1011176",
@@ -622,7 +699,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 안전 > 작업용장갑",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 8413
   },
   {
     "sku": "1011286",
@@ -630,7 +708,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 47222
   },
   {
     "sku": "1011285",
@@ -638,7 +717,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 35198
   },
   {
     "sku": "1011288",
@@ -646,7 +726,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 18375
   },
   {
     "sku": "1006398",
@@ -654,7 +735,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11885
   },
   {
     "sku": "1006393",
@@ -662,7 +744,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11251
   },
   {
     "sku": "1006394",
@@ -670,7 +753,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 5000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 10927
   },
   {
     "sku": "1011287",
@@ -678,7 +762,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 1000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 10374
   },
   {
     "sku": "1014615",
@@ -686,7 +771,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8772
   },
   {
     "sku": "1014616",
@@ -694,7 +780,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8123
   },
   {
     "sku": "1006397",
@@ -702,7 +789,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 7851
   },
   {
     "sku": "1006400",
@@ -710,7 +798,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 6851
   },
   {
     "sku": "1032671",
@@ -718,7 +807,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4740
   },
   {
     "sku": "1014614",
@@ -726,7 +816,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4654
   },
   {
     "sku": "1006404",
@@ -734,7 +825,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4383
   },
   {
     "sku": "1006395",
@@ -742,7 +834,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3412
   },
   {
     "sku": "1014617",
@@ -750,7 +843,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 5000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3403
   },
   {
     "sku": "1006396",
@@ -758,7 +852,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3101
   },
   {
     "sku": "1006403",
@@ -766,7 +861,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 공구용테이프",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3021
   },
   {
     "sku": "1019385",
@@ -774,7 +870,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 접착제",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 22984
   },
   {
     "sku": "1019386",
@@ -782,7 +879,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 접착용품 > 접착제",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 18947
   },
   {
     "sku": "1006402",
@@ -790,7 +888,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "공구/전기 > 철물용품 > 벨크로",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2234
   },
   {
     "sku": "1021629",
@@ -798,7 +897,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 고무장갑",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 18097
   },
   {
     "sku": "1021630",
@@ -806,7 +906,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 고무장갑",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 13365
   },
   {
     "sku": "1021628",
@@ -814,7 +915,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 고무장갑",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 5441
   },
   {
     "sku": "1018173",
@@ -822,7 +924,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 롤백",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 14327
   },
   {
     "sku": "1018172",
@@ -830,7 +933,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 롤백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8182
   },
   {
     "sku": "1018174",
@@ -838,7 +942,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 롤백",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 6637
   },
   {
     "sku": "1018175",
@@ -846,7 +951,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 위생백",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 11015
   },
   {
     "sku": "1018176",
@@ -854,7 +960,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 위생백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4749
   },
   {
     "sku": "1018177",
@@ -862,7 +969,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 위생백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2222
   },
   {
     "sku": "1025270",
@@ -870,7 +978,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 위생장갑",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 13983
   },
   {
     "sku": "1018169",
@@ -878,7 +987,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 위생장갑",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8768
   },
   {
     "sku": "1025271",
@@ -886,7 +996,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 지퍼백",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 7054
   },
   {
     "sku": "1018171",
@@ -894,7 +1005,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 지퍼백",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 5546
   },
   {
     "sku": "1018170",
@@ -902,7 +1014,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 지퍼백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4152
   },
   {
     "sku": "1025272",
@@ -910,7 +1023,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 지퍼백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 4047
   },
   {
     "sku": "1025273",
@@ -918,7 +1032,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리식사일회 > 지퍼백",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3527
   },
   {
     "sku": "56578",
@@ -926,7 +1041,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 54152
   },
   {
     "sku": "58112",
@@ -934,7 +1050,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 42429
   },
   {
     "sku": "56571",
@@ -942,7 +1059,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 41590
   },
   {
     "sku": "56580",
@@ -950,7 +1068,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 40720
   },
   {
     "sku": "56574",
@@ -958,7 +1077,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 36833
   },
   {
     "sku": "56573",
@@ -966,7 +1086,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 36577
   },
   {
     "sku": "56579",
@@ -974,7 +1095,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 29936
   },
   {
     "sku": "56567",
@@ -982,7 +1104,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 24442
   },
   {
     "sku": "58110",
@@ -990,7 +1113,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 22913
   },
   {
     "sku": "56568",
@@ -998,7 +1122,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 19422
   },
   {
     "sku": "58108",
@@ -1006,7 +1131,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 19192
   },
   {
     "sku": "56577",
@@ -1014,7 +1140,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 16992
   },
   {
     "sku": "1013417",
@@ -1022,7 +1149,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 15726
   },
   {
     "sku": "56570",
@@ -1030,7 +1158,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 15334
   },
   {
     "sku": "58113",
@@ -1038,7 +1167,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 10652
   },
   {
     "sku": "58111",
@@ -1046,7 +1176,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 10571
   },
   {
     "sku": "56576",
@@ -1054,7 +1185,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 9714
   },
   {
     "sku": "1006232",
@@ -1062,7 +1194,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1500,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 9010
   },
   {
     "sku": "58107",
@@ -1070,7 +1203,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 8814
   },
   {
     "sku": "56566",
@@ -1078,7 +1212,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 수세미",
     "price": 1000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 6231
   },
   {
     "sku": "56610",
@@ -1086,7 +1221,8 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 행주",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2810
   },
   {
     "sku": "56612",
@@ -1094,118 +1230,121 @@ export const DAISO_PRODUCTS = [
     "category": "주방공구디지털파티레저부",
     "subCategory": "조리/식사 > 조리위생 > 행주",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2703
   },
   {
     "sku": "1032670",
     "name": "3M 코맨드 투명 데코레이션 클립 (20개입)",
-    "category": "기타",
+    "category": "",
     "subCategory": "공구/전기 > 휴대폰용품 > 충전기",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 3640
   },
   {
     "sku": "1032665",
     "name": "3M 코맨드 투명 전선용클립 (소) (8개입)",
-    "category": "기타",
+    "category": "",
     "subCategory": "공구/전기 > 휴대폰용품 > 충전기",
     "price": 2000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 2685
   },
   {
     "sku": "1023108",
     "name": "3M자동차투명양면테이프(18 mm*1.3 m)",
-    "category": "기타",
+    "category": "",
     "subCategory": "레저/취미 > 차량용품 > 차량공구소모품",
     "price": 3000,
-    "salesRep": "SH Kim"
+    "salesRep": "SH Kim",
+    "salesAvg": 12570
   },
   {
     "sku": "1021743",
     "name": "3M 싱글라인 일회용치실 27P",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 구강 > 치실",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 14564
   },
   {
     "sku": "1021744",
     "name": "3M 더블라인 일회용치실 35P",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 구강 > 치실",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 8919
   },
   {
     "sku": "1021745",
     "name": "3M 어린이 일회용치실 16P",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 구강 > 치실",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 3159
   },
   {
     "sku": "1043101",
     "name": "쓰리엠 넥스케어 블레미쉬 패치 라이트 32매",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 기초화장품 > 스팟패치",
     "price": 3000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 11552
   },
   {
     "sku": "58974",
     "name": "쓰리엠 넥스케어 블레미쉬 클리어 커버(11매)",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 기초화장품 > 스팟패치",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 9381
   },
   {
     "sku": "58973",
     "name": "쓰리엠 넥스케어 블레미쉬 클리어 커버(12매)",
-    "category": "기타",
+    "category": "",
     "subCategory": "뷰티/퍼스널케어 > 기초화장품 > 스팟패치",
     "price": 2000,
-    "salesRep": "JW Park"
+    "salesRep": "JW Park",
+    "salesAvg": 8747
   }
 ];
 
-// 제품 검색 함수들
-function findProductBySku(sku) {
-  return DAISO_PRODUCTS.find(product => 
-    product.sku === sku || product.sku === sku.toString()
-  );
-}
+// 판매량 기준으로 제품 중요도 계산
+export const getProductImportance = (productSku) => {
+  // 판매량 기준으로 정렬
+  const sortedProducts = [...DAISO_PRODUCTS].sort((a, b) => b.salesAvg - a.salesAvg);
+  
+  // 제품의 순위 찾기 (1부터 시작)
+  const rank = sortedProducts.findIndex(product => product.sku === productSku) + 1;
+  
+  if (rank === 0) {
+    return 'unknown'; // 제품을 찾을 수 없음
+  }
+  
+  // 중요도 판단
+  if (rank <= 80) {
+    return 'high';      // 1-80위: 높음
+  } else if (rank <= 130) {
+    return 'medium';    // 81-130위: 보통
+  } else {
+    return 'low';       // 131-150위: 낮음
+  }
+};
 
-function searchProductsByName(searchTerm) {
-  const term = searchTerm.toLowerCase();
-  return DAISO_PRODUCTS.filter(product =>
-    product.name.toLowerCase().includes(term) ||
-    product.category.toLowerCase().includes(term) ||
-    product.subCategory.toLowerCase().includes(term)
-  );
-}
+// 제품 정보 가져오기 (SKU 기준)
+export const getProductBySku = (sku) => {
+  return DAISO_PRODUCTS.find(product => product.sku === sku);
+};
 
-function getAllProducts() {
-  return DAISO_PRODUCTS;
-}
-
-function getProductStats() {
-  return {
-    total: DAISO_PRODUCTS.length,
-    categories: [...new Set(DAISO_PRODUCTS.map(p => p.category))].length,
-    priceRange: {
-      min: Math.min(...DAISO_PRODUCTS.map(p => p.price)),
-      max: Math.max(...DAISO_PRODUCTS.map(p => p.price))
-    }
-  };
-}
-
-// CommonJS 내보내기
-module.exports = {
-  DAISO_PRODUCTS,
-  findProductBySku,
-  searchProductsByName,
-  getAllProducts,
-  getProductStats
+// 판매량 순위 가져오기
+export const getProductRank = (productSku) => {
+  const sortedProducts = [...DAISO_PRODUCTS].sort((a, b) => b.salesAvg - a.salesAvg);
+  return sortedProducts.findIndex(product => product.sku === productSku) + 1;
 };

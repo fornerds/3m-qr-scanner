@@ -1,55 +1,114 @@
-// 하드코딩된 매장 데이터
-const STORES_DATA = [
-  {
-    id: '1',
-    name: '3M 강남점',
-    address: '서울 강남구 강남대로 123',
-    scanCount: '45/50 (90%)',
-    lastVisit: '2024-01-15 14:30',
-    distance: '0.5km',
-    isOpen: true,
-    operatingHours: '10:00 - 22:00',
-    totalItems: 50,
-    scannedItems: 45,
-    unstockedItems: 3,
-    unavailableItems: 2
-  },
-  {
-    id: '2',
-    name: '3M 홍대점',
-    address: '서울 마포구 홍익로 456',
-    scanCount: '38/50 (76%)',
-    lastVisit: '2024-01-14 16:20',
-    distance: '1.2km',
-    isOpen: true,
-    operatingHours: '09:00 - 21:00',
-    totalItems: 50,
-    scannedItems: 38,
-    unstockedItems: 5,
-    unavailableItems: 7
-  },
-  {
-    id: '3',
-    name: '3M 명동점',
-    address: '서울 중구 명동길 789',
-    scanCount: '42/50 (84%)',
-    lastVisit: '2024-01-13 11:15',
-    distance: '2.1km',
-    isOpen: false,
-    operatingHours: '10:30 - 20:30',
-    totalItems: 50,
-    scannedItems: 42,
-    unstockedItems: 4,
-    unavailableItems: 4
+const { connectToDatabase } = require('./config/database');
+
+// 매장 데이터 조회 (MongoDB)
+const getStoresData = async () => {
+  try {
+    const { db } = await connectToDatabase();
+    const collection = db.collection('stores');
+    
+    // 매장이 없으면 기본 매장 생성
+    const storesCount = await collection.countDocuments();
+    if (storesCount === 0) {
+      const defaultStores = [
+        {
+          _id: '1',
+          name: '3M 강남점',
+          address: '서울 강남구 강남대로 123',
+          lastVisit: new Date('2024-01-15T14:30:00.000Z'),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          _id: '2',
+          name: '3M 홍대점',
+          address: '서울 마포구 홍익로 456',
+          lastVisit: new Date('2024-01-14T16:20:00.000Z'),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          _id: '3',
+          name: '3M 명동점',
+          address: '서울 중구 명동길 789',
+          lastVisit: new Date('2024-01-13T11:15:00.000Z'),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+      await collection.insertMany(defaultStores);
+    }
+    
+    const stores = await collection.find({}).toArray();
+    return stores.map(store => ({
+      id: store._id,
+      name: store.name,
+      address: store.address,
+      lastVisit: store.lastVisit
+    }));
+  } catch (error) {
+    console.error('매장 데이터 조회 오류:', error);
+    return [];
   }
-];
+};
+
+// MongoDB에서 직접 스캔 기록 조회
+const getScanRecordsCount = async (storeId) => {
+  try {
+    const { db } = await connectToDatabase();
+    const collection = db.collection('scan_records');
+    const count = await collection.countDocuments({ storeId: storeId });
+    return count;
+  } catch (error) {
+    console.error(`매장 ${storeId} 스캔 기록 조회 실패:`, error);
+    return 0;
+  }
+};
+
+// 스캔 기록을 조회하여 실제 작업 통계 계산
+const getStoreStats = async (storeId) => {
+  try {
+    const { db } = await connectToDatabase();
+    const scannedItems = await getScanRecordsCount(storeId);
+    const totalItems = await db.collection('products').countDocuments();
+    const progress = totalItems > 0 ? Math.round((scannedItems / totalItems) * 100) : 0;
+    
+    return {
+      totalItems,
+      scannedItems,
+      progress
+    };
+  } catch (error) {
+    console.error('매장 통계 계산 오류:', error);
+    return {
+      totalItems: 0,
+      scannedItems: 0,
+      progress: 0
+    };
+  }
+};
 
 // 매장 목록 조회 API
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       console.log('매장 목록 조회 요청');
-      res.status(200).json(STORES_DATA);
+      
+      // 각 매장별 실제 스캔 통계 추가
+      const baseStores = await getStoresData();
+      const storesWithStats = await Promise.all(
+        baseStores.map(async (store) => {
+          const stats = await getStoreStats(store.id);
+          return {
+            ...store,
+            scanCount: `${stats.scannedItems}/${stats.totalItems} (${stats.progress}%)`,
+            totalItems: stats.totalItems,
+            scannedItems: stats.scannedItems,
+            progress: stats.progress
+          };
+        })
+      );
+      
+      res.status(200).json(storesWithStats);
     } catch (error) {
       console.error('매장 목록 조회 오류:', error);
       res.status(500).json({ 
@@ -61,19 +120,27 @@ module.exports = async function handler(req, res) {
     try {
       const newStore = req.body;
       
-      // 새 매장 추가 (실제로는 메모리에만 저장됨)
+      // 새 매장 추가
+      const { db } = await connectToDatabase();
+      const collection = db.collection('stores');
+      
+      // 새 ID 생성 (기존 매장 수 + 1)
+      const storeCount = await collection.countDocuments();
+      const newStoreId = String(storeCount + 1);
+      
       const storeWithId = {
+        _id: newStoreId,
         ...newStore,
-        id: String(STORES_DATA.length + 1),
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
-      STORES_DATA.push(storeWithId);
+      const result = await collection.insertOne(storeWithId);
+      console.log('새 매장 추가:', storeWithId);
       
       res.status(201).json({ 
         success: true, 
-        storeId: storeWithId.id,
+        storeId: newStoreId,
         message: '매장이 성공적으로 추가되었습니다.'
       });
     } catch (error) {

@@ -10,7 +10,32 @@ const StoreListPage = () => {
   const [error, setError] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const sortOptions = ['최근 방문순', '거리순', '이름순'];
+  const sortOptions = ['최근 방문순', '이름순'];
+
+  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastVisit) => {
+    if (!lastVisit) return '방문 기록 없음';
+    
+    const visitDate = new Date(lastVisit);
+    const now = new Date();
+    const diffInMs = now - visitDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    
+    if (diffInHours < 24) {
+      return '24시간';
+    } else if (diffInDays < 2) {
+      return '1일 전';
+    } else if (diffInDays < 4) {
+      return '3일 전';
+    } else if (diffInDays < 8) {
+      return '1주일 전';
+    } else if (diffInDays < 15) {
+      return '2주일 전';
+    } else {
+      return '3주일 전';
+    }
+  };
 
   // API에서 매장 목록 가져오기
   useEffect(() => {
@@ -26,65 +51,8 @@ const StoreListPage = () => {
       } catch (err) {
         console.error('매장 목록 조회 오류:', err);
         setError(err.message);
-        // 오류 시 샘플 데이터 사용
-        setStores([
-          {
-            id: 1,
-            name: '다이소 강남점',
-            address: '서울 강남구 테헤란로 123',
-            scanCount: '156/247 (13%)',
-            time: '24시간',
-            distance: '0.3km'
-          },
-          {
-            id: 2,
-            name: '다이소 신촌점',
-            address: '서울 서대문구 연세로 456',
-            scanCount: '78/892 (9%)',
-            time: '1일 전',
-            distance: '1.2km'
-          },
-          {
-            id: 3,
-            name: '다이소 홍대점',
-            address: '서울 마포구 홍익로 789',
-            scanCount: '234/1568 (15%)',
-            time: '3일 전',
-            distance: '1.8km'
-          },
-          {
-            id: 4,
-            name: '다이소 명동점',
-            address: '서울 중구 명동길 321',
-            scanCount: '89/743 (12%)',
-            time: '1주일 전',
-            distance: '2.1km'
-          },
-          {
-            id: 5,
-            name: '다이소 잠실점',
-            address: '서울 송파구 올림픽로 654',
-            scanCount: '345/1125 (31%)',
-            time: '10일 전',
-            distance: '3.5km'
-          },
-          {
-            id: 6,
-            name: '다이소 구로점',
-            address: '서울 구로구 구로중앙로 987',
-            scanCount: '123/934 (13%)',
-            time: '2주일 전',
-            distance: '4.2km'
-          },
-          {
-            id: 7,
-            name: '다이소 노원점',
-            address: '서울 노원구 노원로 258',
-            scanCount: '267/1089 (25%)',
-            time: '3주일 전',
-            distance: '5.8km'
-          }
-        ]);
+        // 오류 시 빈 배열로 설정 (더 이상 하드코딩 데이터 사용 안함)
+        setStores([]);
       } finally {
         setLoading(false);
       }
@@ -93,10 +61,26 @@ const StoreListPage = () => {
     fetchStores();
   }, []);
 
+  // 검색 필터링
   const filteredStores = stores.filter(store =>
     store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     store.address.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // 정렬 로직
+  const sortedStores = [...filteredStores].sort((a, b) => {
+    switch (sortBy) {
+      case '이름순':
+        return a.name.localeCompare(b.name, 'ko');
+      
+      case '최근 방문순':
+      default:
+        // lastVisit 날짜를 기준으로 정렬 (최신 날짜가 먼저)
+        const dateA = a.lastVisit ? new Date(a.lastVisit) : new Date(0);
+        const dateB = b.lastVisit ? new Date(b.lastVisit) : new Date(0);
+        return dateB - dateA;
+    }
+  });
 
   return (
     <div className="mobile-container">
@@ -268,7 +252,7 @@ const StoreListPage = () => {
                 </div>
               </div>
               <span style={{ fontSize: '14px', color: '#999' }}>
-                총 {filteredStores.length}개 매장
+                총 {sortedStores.length}개 매장
               </span>
             </div>
           </div>
@@ -277,7 +261,7 @@ const StoreListPage = () => {
         {/* 매장 리스트 */}
         {!loading && (
           <div style={{ padding: '16px 16px' }}>
-            {filteredStores.map((store) => (
+            {sortedStores.map((store) => (
               <Link
                 key={store.id}
                 to={`/store-detail/${store.id}`}
@@ -371,12 +355,7 @@ const StoreListPage = () => {
                           overflow: 'hidden'
                         }}>
                           <div style={{
-                            width: store.scanCount.includes('13%') ? '13%' : 
-                                  store.scanCount.includes('9%') ? '9%' :
-                                  store.scanCount.includes('15%') ? '15%' :
-                                  store.scanCount.includes('12%') ? '12%' :
-                                  store.scanCount.includes('31%') ? '31%' :
-                                  store.scanCount.includes('25%') ? '25%' : '0%',
+                            width: `${store.progress || 0}%`,
                             height: '100%',
                             backgroundColor: '#dc3545',
                             borderRadius: '3px',
@@ -393,7 +372,7 @@ const StoreListPage = () => {
                         color: '#999'
                       }}>
                         <i className="fas fa-clock" style={{ marginRight: '4px', fontSize: '10px' }}></i>
-                        {store.time}
+                        {getRelativeTime(store.lastVisit)}
                       </div>
                     </div>
 

@@ -6,6 +6,29 @@ const QRScannerMain = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastVisit) => {
+    if (!lastVisit) return '방문 기록 없음';
+    
+    const visitDate = new Date(lastVisit);
+    const now = new Date();
+    const diffInMs = now - visitDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    
+    if (diffInHours < 1) {
+      return '방금 전';
+    } else if (diffInHours < 24) {
+      return `${Math.floor(diffInHours)}시간 전`;
+    } else if (diffInDays < 2) {
+      return '1일 전';
+    } else if (diffInDays < 7) {
+      return `${Math.floor(diffInDays)}일 전`;
+    } else {
+      return `${Math.floor(diffInDays / 7)}주일 전`;
+    }
+  };
+
   // API에서 매장 목록 가져오기
   useEffect(() => {
     const fetchStores = async () => {
@@ -16,35 +39,13 @@ const QRScannerMain = () => {
           throw new Error('매장 목록을 가져올 수 없습니다.');
         }
         const data = await response.json();
-        // 최근 3개 매장만 표시 (스크린샷과 일치)
-        setStores(data.slice(0, 3));
+        // 모든 매장 표시
+        setStores(data);
       } catch (err) {
         console.error('매장 목록 조회 오류:', err);
         setError(err.message);
-        // 오류 시 샘플 데이터 사용 (스크린샷과 일치하게 수정)
-        setStores([
-          {
-            id: '1',
-            name: '다이소 강남점',
-            address: '서울 강남구 테헤란로 123',
-            lastVisit: '2시간 전',
-            scanCount: '156/27 (13%)'
-          },
-          {
-            id: '2', 
-            name: '다이소 신촌점',
-            address: '서울 서대문구 연세로 456',
-            lastVisit: '1일 전',
-            scanCount: '156/27 (13%)'
-          },
-          {
-            id: '3',
-            name: '다이소 홍대점', 
-            address: '서울 마포구 홍익로 789',
-            lastVisit: '3일 전',
-            scanCount: '156/27 (13%)'
-          }
-        ]);
+        // 오류 시 빈 배열로 설정 (더 이상 하드코딩 데이터 사용 안함)
+        setStores([]);
       } finally {
         setLoading(false);
       }
@@ -144,7 +145,7 @@ const QRScannerMain = () => {
 
           {/* QR 스캔 시작 버튼 */}
           <Link
-            to="/scan"
+            to="/scan?storeId=1"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -286,7 +287,7 @@ const QRScannerMain = () => {
                       color: '#999'
                     }}>
                       <i className="fas fa-clock" style={{ marginRight: '4px', fontSize: '10px' }}></i>
-                      {store.lastVisit}
+                      {getRelativeTime(store.lastVisit)}
                       <span style={{ margin: '0 8px', color: '#ddd' }}>•</span>
                       <i className="fas fa-chart-bar" style={{ marginRight: '4px', fontSize: '10px' }}></i>
                       {store.scanCount}
@@ -328,7 +329,7 @@ const QRScannerMain = () => {
           <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>매장</span>
         </Link>
-        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+        <Link to="/scan?storeId=1" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
         </Link>

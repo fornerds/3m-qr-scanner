@@ -1,27 +1,56 @@
-// 시스템 상태 확인 API (MongoDB 없이)
+const { connectToDatabase } = require('./config/database');
+
+// 시스템 상태 확인 API (MongoDB 연동)
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const { findProductBySku, getAllProducts, getProductStats } = require('../src/data/products.js');
+      // MongoDB 연결 테스트
+      const { db } = await connectToDatabase();
       
       // 제품 데이터 통계 확인
-      const productStats = getProductStats();
-      const allProducts = getAllProducts();
+      const productsCollection = db.collection('products');
+      const allProducts = await productsCollection.find({}).toArray();
+      
+      // 카테고리 통계 계산
+      const categories = {};
+      allProducts.forEach(product => {
+        if (product.category) {
+          categories[product.category] = (categories[product.category] || 0) + 1;
+        }
+      });
+      
+      // 컬렉션별 문서 수 확인
+      const storesCount = await db.collection('stores').countDocuments();
+      const scansCount = await db.collection('scan_records').countDocuments();
+      const sessionsCount = await db.collection('sessions').countDocuments();
       
       const testResult = {
         status: 'success',
-        message: '시스템 상태 확인 완료!',
+        message: '시스템 상태 확인 완료! (MongoDB 연동)',
         timestamp: new Date().toISOString(),
         system: {
           nodeVersion: process.version,
           platform: process.platform,
           uptime: process.uptime()
         },
+        database: {
+          connected: true,
+          collections: {
+            products: allProducts.length,
+            stores: storesCount,
+            scan_records: scansCount,
+            sessions: sessionsCount
+          }
+        },
         data: {
           products: {
             total: allProducts.length,
-            categories: productStats.categories,
-            stats: productStats
+            categories: categories,
+            topProducts: allProducts.sort((a, b) => b.salesAvg - a.salesAvg).slice(0, 5).map(p => ({
+              sku: p.sku,
+              name: p.name,
+              salesAvg: p.salesAvg
+            }))
           }
         },
         apis: {

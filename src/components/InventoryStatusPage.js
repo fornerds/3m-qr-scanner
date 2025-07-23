@@ -1,27 +1,151 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const InventoryStatusPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const storeId = searchParams.get('storeId') || '1'; // URL에서 storeId 가져오기
+  
+  const [store, setStore] = useState(null);
+  const [inventory, setInventory] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // 높은 우선순위 (미구비 품목)
-  const highPriorityItems = [
-    { name: '3M 다목적 접착제', code: '재고 18개', time: '3일 전' },
-    { name: '3M 청소용 스펀지', code: '예상 재고 25개', time: '5일 전' },
-    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전' },
-    { name: '3M 글래스 클리너', code: '예상 재고 9개', time: '4일 전' }
-  ];
+  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastVisit) => {
+    if (!lastVisit) return '방문 기록 없음';
+    
+    const visitDate = new Date(lastVisit);
+    const now = new Date();
+    const diffInMs = now - visitDate;
+    const diffInHours = diffInMs / (1000 * 60 * 60);
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    
+    if (diffInHours < 24) {
+      return '24시간';
+    } else if (diffInDays < 2) {
+      return '1일 전';
+    } else if (diffInDays < 4) {
+      return '3일 전';
+    } else if (diffInDays < 8) {
+      return '1주일 전';
+    } else if (diffInDays < 15) {
+      return '2주일 전';
+    } else {
+      return '3주일 전';
+    }
+  };
 
-  // 보통 우선순위
-  const mediumPriorityItems = [
-    { name: '3M 포스트잇 노트', code: '예상 재고 12개', time: '1주일 전' },
-    { name: '3M 양면테이프', code: '예상 재고 8개', time: '1주일 전' }
-  ];
+  // API에서 데이터 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // 매장 정보 가져오기
+        const storeResponse = await fetch('/api/stores');
+        if (!storeResponse.ok) {
+          throw new Error('매장 정보를 가져올 수 없습니다.');
+        }
+        const stores = await storeResponse.json();
+        const currentStore = stores.find(s => s.id === storeId) || stores[0];
+        setStore(currentStore);
 
-  // 낮은 우선순위
-  const lowPriorityItems = [
-    { name: '3M 보온 단열재', code: '예상 재고 6개', time: '2주일 전' }
-  ];
+        // 재고 현황 가져오기
+        const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
+        if (!inventoryResponse.ok) {
+          throw new Error('재고 현황을 가져올 수 없습니다.');
+        }
+        const inventoryData = await inventoryResponse.json();
+        setInventory(inventoryData);
+      } catch (err) {
+        console.error('데이터 조회 오류:', err);
+        setError(err.message);
+        
+        // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
+        setStore({
+          id: storeId,
+          name: '매장 정보 없음',
+          address: '주소 정보 없음'
+        });
+        
+        setInventory({
+          totalItems: 0,
+          scannedItems: 0,
+          notDisplayedItems: 0,
+          progress: 0,
+          notDisplayedProducts: []
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [storeId]);
+
+  // API 데이터를 기반으로 우선순위별 아이템 생성 (미진열 제품만)
+  const getPriorityItems = () => {
+    if (!inventory) return { high: [], medium: [], low: [] };
+
+    const highPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'high').map(item => ({
+      name: item.productName,
+      code: '미진열',
+      time: '진열 필요',
+      type: 'not_displayed',
+      rank: item.rank || 0,
+      salesAvg: item.salesAvg || 0
+    })) || [];
+
+    const mediumPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'medium').map(item => ({
+      name: item.productName,
+      code: '미진열',
+      time: '확인 필요',
+      type: 'not_displayed',
+      rank: item.rank || 0,
+      salesAvg: item.salesAvg || 0
+    })) || [];
+
+    const lowPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'low').map(item => ({
+      name: item.productName,
+      code: '미진열',
+      time: '모니터링',
+      type: 'not_displayed',
+      rank: item.rank || 0,
+      salesAvg: item.salesAvg || 0
+    })) || [];
+
+    return {
+      high: highPriorityItems,
+      medium: mediumPriorityItems,
+      low: lowPriorityItems
+    };
+  };
+
+  const priorityItems = getPriorityItems();
+
+  if (loading) {
+    return (
+      <div style={{
+        width: '100%',
+        maxWidth: '414px',
+        margin: '0 auto',
+        backgroundColor: '#f5f5f5',
+        minHeight: '100vh',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ 
+          textAlign: 'center', 
+          color: '#666'
+        }}>
+          재고 현황을 불러오는 중...
+        </div>
+      </div>
+    );
+  }
 
   const PrioritySection = ({ title, items, bgColor, textColor, badgeColor, icon }) => (
     <div style={{ marginBottom: '16px' }}>
@@ -89,6 +213,21 @@ const InventoryStatusPage = () => {
                   <i className="fas fa-clock" style={{ fontSize: '12px' }}></i>
                   {item.time}
                 </span>
+                {item.rank && (
+                  <span style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    backgroundColor: '#f8f9fa',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: '500'
+                  }}>
+                    <i className="fas fa-chart-line" style={{ fontSize: '10px' }}></i>
+                    판매 {item.rank}위
+                  </span>
+                )}
               </div>
             </div>
             <span style={{
@@ -101,7 +240,7 @@ const InventoryStatusPage = () => {
               minWidth: '40px',
               textAlign: 'center'
             }}>
-              {title.includes('미구비') ? '높음' : title.includes('보통') ? '보통' : '낮음'}
+              {title.includes('높은') ? '높음' : title.includes('보통') ? '보통' : '낮음'}
             </span>
           </div>
         </div>
@@ -159,7 +298,7 @@ const InventoryStatusPage = () => {
         }}>
           {/* 보고서 아이콘 */}
           <Link
-            to="/inventory-report"
+            to={`/inventory-report?storeId=${storeId}`}
             style={{
               position: 'absolute',
               top: '20px',
@@ -190,14 +329,14 @@ const InventoryStatusPage = () => {
                 fontWeight: 'bold',
                 color: '#333'
               }}>
-                다이소 강남점
+                {store?.name || '매장명'}
               </h2>
               <p style={{
                 margin: 0,
                 fontSize: '14px',
                 color: '#666'
               }}>
-                서울 강남구 테헤란로 123
+                {store?.address || '주소 정보 없음'}
               </p>
           </div>
 
@@ -215,7 +354,7 @@ const InventoryStatusPage = () => {
                 color: '#007bff',
                 marginBottom: '4px'
               }}>
-                150
+                {inventory?.totalItems || 0}
               </div>
               <div style={{ fontSize: '12px', color: '#666' }}>
                 전체 품목수
@@ -228,7 +367,7 @@ const InventoryStatusPage = () => {
                 color: '#28a745',
                 marginBottom: '4px'
               }}>
-                50
+                {inventory?.scannedItems || 0}
               </div>
               <div style={{ fontSize: '12px', color: '#666' }}>
                 스캔 완료
@@ -241,7 +380,7 @@ const InventoryStatusPage = () => {
                 color: '#fd7e14',
                 marginBottom: '4px'
               }}>
-                60
+                {inventory?.notDisplayedItems || 0}
               </div>
               <div style={{ fontSize: '12px', color: '#666' }}>
                 미진열
@@ -258,7 +397,7 @@ const InventoryStatusPage = () => {
               marginBottom: '8px'
             }}>
               <span style={{ fontSize: '14px', fontWeight: 'bold' }}>진행률</span>
-              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc3545' }}>13%</span>
+              <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#dc3545' }}>{inventory?.progress || 0}%</span>
             </div>
             <div style={{
               height: '6px',
@@ -267,7 +406,7 @@ const InventoryStatusPage = () => {
               overflow: 'hidden'
             }}>
               <div style={{
-                width: '13%',
+                width: `${inventory?.progress || 0}%`,
                 height: '100%',
                 backgroundColor: '#dc3545',
                 borderRadius: '3px'
@@ -278,31 +417,50 @@ const InventoryStatusPage = () => {
 
         {/* 우선순위별 섹션 */}
         <div style={{ padding: '16px 0' }}>
+          {priorityItems.high.length > 0 && (
           <PrioritySection
             title="높은 우선순위"
-            items={highPriorityItems}
+              items={priorityItems.high}
             bgColor="#fff5f5"
             textColor="#dc3545"
             badgeColor="#dc3545"
           />
+          )}
 
+          {priorityItems.medium.length > 0 && (
           <PrioritySection
             title="보통 우선순위"
-            items={mediumPriorityItems}
+              items={priorityItems.medium}
             bgColor="#fffbf0"
             textColor="#ffc107"
             badgeColor="#ffc107"
             icon="fas fa-exclamation-triangle"
           />
+          )}
 
+          {priorityItems.low.length > 0 && (
           <PrioritySection
             title="낮은 우선순위"
-            items={lowPriorityItems}
+              items={priorityItems.low}
             bgColor="#f0fff4"
             textColor="#28a745"
             badgeColor="#28a745"
             icon="fas fa-check-circle"
           />
+          )}
+          
+          {priorityItems.high.length === 0 && priorityItems.medium.length === 0 && priorityItems.low.length === 0 && (
+            <div style={{
+              textAlign: 'center',
+              padding: '40px 20px',
+              color: '#666',
+              backgroundColor: 'white',
+              margin: '16px',
+              borderRadius: '12px'
+            }}>
+              현재 주의가 필요한 품목이 없습니다.
+            </div>
+          )}
         </div>
       </div>
 

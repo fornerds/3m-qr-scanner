@@ -1,82 +1,107 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const InventoryReportPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const storeId = searchParams.get('storeId') || '1';
+  
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const inventoryData = [
-    {
-      productCode: '3M-ADH-001',
-      productName: '3M 다목적 접착제',
-      priority: '높음',
-      status: '미진열'
-    },
-    {
-      productCode: '3M-SPG-002',
-      productName: '3M 접착 스펀지',
-      priority: '높음',
-      status: '미구비'
-    },
-    {
-      productCode: 'KIT-CLN-007',
-      productName: '주방 청소용품 세트',
-      priority: '높음',
-      status: '미구비'
-    },
-    {
-      productCode: 'KTC-UTL-010',
-      productName: '주방용 조리도구 세트',
-      priority: '높음',
-      status: '미구비'
-    },
-    {
-      productCode: 'KTC-UTL-010',
-      productName: '주방용 조리도구 세트',
-      priority: '높음',
-      status: '미구비'
-    },
-    {
-      productCode: '3M-CLN-003',
-      productName: '3M 글래스 클리너',
-      priority: '보통',
-      status: '미진열'
-    },
-    {
-      productCode: '3M-PST-004',
-      productName: '3M 포스트잇 노트',
-      priority: '보통',
-      status: '미구비'
-    },
-    {
-      productCode: 'ORG-STR-008',
-      productName: '수납정리함 대형',
-      priority: '보통',
-      status: '미구비'
-    },
-    {
-      productCode: '3M-TPE-005',
-      productName: '3M 양면테이프',
-      priority: '낮음',
-      status: '미진열'
-    }
-  ];
+  // API에서 보고서 데이터 가져오기
+  useEffect(() => {
+    const fetchReportData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`/api/inventory-report?storeId=${storeId}`);
+        if (!response.ok) {
+          throw new Error('보고서 데이터를 가져올 수 없습니다.');
+        }
+        const data = await response.json();
+        setReportData(data);
+      } catch (err) {
+        console.error('보고서 데이터 조회 오류:', err);
+        setError(err.message);
+        
+        // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
+        setReportData({
+          storeInfo: {
+            id: storeId,
+            name: '매장 정보 없음',
+            address: '주소 정보 없음'
+          },
+          products: [],
+          summary: {
+            totalProducts: 0,
+            notDisplayedCount: 0,
+            displayedCount: 0,
+            generatedAt: new Date().toISOString()
+          }
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchReportData();
+  }, [storeId]);
 
   const getPriorityColor = (priority) => {
     switch (priority) {
+      case 'high': 
       case '높음': return '#dc3545';
+      case 'medium':
       case '보통': return '#ffc107';
+      case 'low':
       case '낮음': return '#28a745';
       default: return '#6c757d';
     }
   };
 
+  const getPriorityText = (priority) => {
+    switch (priority) {
+      case 'high': return '높음';
+      case 'medium': return '보통';
+      case 'low': return '낮음';
+      default: return priority;
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
-      case '미구비': return '#dc3545';
+      case 'not_displayed':
       case '미진열': return '#ffc107';
+      case 'displayed':
+      case '진열완료': return '#28a745';
       default: return '#6c757d';
     }
   };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'not_displayed': return '미진열';
+      case 'displayed': return '진열완료';
+      default: return status;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="mobile-container" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#f5f5f5'
+      }}>
+        <div style={{ textAlign: 'center', color: '#666' }}>
+          보고서를 불러오는 중...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mobile-container">
@@ -131,14 +156,14 @@ const InventoryReportPage = () => {
             fontWeight: 'bold',
             color: '#333'
           }}>
-            다이소 강남점
+            {reportData?.storeInfo?.name || '매장명'}
           </h2>
           <p style={{
             margin: 0,
             fontSize: '14px',
             color: '#666'
           }}>
-            서울 강남구 테헤란로 123
+            {reportData?.storeInfo?.address || '주소 정보 없음'}
           </p>
         </div>
 
@@ -160,71 +185,95 @@ const InventoryReportPage = () => {
               fontWeight: 'bold',
               color: '#333'
             }}>
-              미진열 상품 (1,091)
+              전체 상품 ({reportData?.summary?.totalProducts || 0})
             </h3>
+            <div style={{
+              fontSize: '12px',
+              color: '#666',
+              marginTop: '4px'
+            }}>
+              미진열: {reportData?.summary?.notDisplayedCount || 0}개 | 
+              진열완료: {reportData?.summary?.displayedCount || 0}개
+            </div>
           </div>
 
           {/* 테이블 헤더 */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '1.2fr 2.5fr 1fr 1fr',
-            gap: '12px',
+            gridTemplateColumns: '1fr 2fr 0.8fr 0.8fr 0.8fr',
+            gap: '8px',
             padding: '12px 16px',
             backgroundColor: '#f8f9fa',
             borderBottom: '1px solid #dee2e6',
-            fontSize: '13px',
+            fontSize: '12px',
             fontWeight: 'bold',
             color: '#495057'
           }}>
             <div>상품코드</div>
             <div>품목명</div>
+            <div>판매순위</div>
             <div>우선순위</div>
             <div>상태</div>
           </div>
 
           {/* 테이블 데이터 */}
-          {inventoryData.map((item, index) => (
-            <div 
-              key={index}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1.2fr 2.5fr 1fr 1fr',
-                gap: '12px',
-                padding: '12px 16px',
-                borderBottom: index < inventoryData.length - 1 ? '1px solid #f0f0f0' : 'none',
-                fontSize: '12px',
-                alignItems: 'center'
-              }}
-            >
-              <div style={{ color: '#495057', fontWeight: '500' }}>
-                {item.productCode}
-              </div>
-              <div style={{ color: '#333', fontWeight: '500' }}>
-                {item.productName}
-              </div>
-              <div>
-                <span style={{
-                  backgroundColor: getPriorityColor(item.priority),
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '12px',
+          {reportData?.products?.map((item, index) => {
+            const rank = getProductRank(item.productCode);
+            return (
+              <div 
+                key={index}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 2fr 0.8fr 0.8fr 0.8fr',
+                  gap: '8px',
+                  padding: '12px 16px',
+                  borderBottom: index < reportData.products.length - 1 ? '1px solid #f0f0f0' : 'none',
                   fontSize: '11px',
-                  fontWeight: 'bold'
-                }}>
-                  {item.priority}
-                </span>
+                  alignItems: 'center'
+                }}
+              >
+                <div style={{ color: '#495057', fontWeight: '500' }}>
+                  {item.productCode}
+                </div>
+                <div style={{ color: '#333', fontWeight: '500', fontSize: '12px' }}>
+                  {item.productName}
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{
+                    backgroundColor: '#f8f9fa',
+                    color: '#495057',
+                    padding: '2px 6px',
+                    borderRadius: '8px',
+                    fontSize: '10px',
+                    fontWeight: '500'
+                  }}>
+                    {rank}위
+                  </span>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{
+                    backgroundColor: getPriorityColor(item.priority),
+                    color: 'white',
+                    padding: '3px 6px',
+                    borderRadius: '8px',
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                  }}>
+                    {getPriorityText(item.priority)}
+                  </span>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <span style={{
+                    color: getStatusColor(item.status),
+                    fontSize: '10px',
+                    fontWeight: 'bold'
+                  }}>
+                    {getStatusText(item.status)}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span style={{
-                  color: getStatusColor(item.status),
-                  fontSize: '11px',
-                  fontWeight: 'bold'
-                }}>
-                  {item.status}
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          }) || []}
         </div>
 
         {/* 하단 정보 */}
@@ -235,10 +284,19 @@ const InventoryReportPage = () => {
           color: '#999'
         }}>
           <p style={{ margin: '0 0 4px 0' }}>
-            보고서 생성일: 2025년 7월 18일 오후 01:41
+            보고서 생성일: {reportData?.summary?.generatedAt ? 
+              new Date(reportData.summary.generatedAt).toLocaleString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              }) : 
+              '정보 없음'
+            }
           </p>
           <p style={{ margin: 0 }}>
-            총 항목 수: 1,091개
+            총 항목 수: {reportData?.summary?.totalProducts || 0}개
           </p>
         </div>
       </div>

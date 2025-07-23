@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const storeId = searchParams.get('storeId') || '1'; // URL에서 storeId 가져오기, 기본값 1
+  
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
   const [scanStats, setScanStats] = useState({
-    total: 0,
-    found: 0,
-    notFound: 0
+    totalScans: 0
   });
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
@@ -31,8 +32,8 @@ const QRScanPage = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          storeId: '1',
-          userId: 'user123',
+          storeId: storeId,
+          userId: `user_${Date.now()}`, // 동적 사용자 ID 생성
           startTime: new Date(),
           status: 'active',
           scannedItems: []
@@ -75,28 +76,19 @@ const QRScanPage = () => {
         return;
       }
       
-      // 제품 데이터베이스에서 제품 검색
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          scannedCode: productCode,
-          storeId: '1'
-        })
-      });
+      // MongoDB에서 제품 검색 (SKU 기준)
+      const response = await fetch(`/api/products?sku=${encodeURIComponent(productCode)}`);
       
       const result = await response.json();
       
       let scanResult;
       
-      if (result.success && result.found) {
+      if (result.success && result.product) {
         // 제품을 찾은 경우
         const product = result.product;
         scanResult = {
           productCode,
-          productName: product.daisoName,
+          productName: product.name,
           category: product.category,
           price: `${product.price.toLocaleString()}원`,
           status: 'found',
@@ -106,8 +98,31 @@ const QRScanPage = () => {
           timestamp: new Date()
         };
         
+        // 스캔 기록 DB에 저장 (3M 제품만)
+        try {
+          await fetch('/api/scan-records', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              storeId: storeId, // URL에서 가져온 매장 ID
+              productCode,
+              productName: product.name,
+              sessionId
+            })
+          });
+        } catch (error) {
+          console.error('스캔 기록 저장 실패:', error);
+        }
+        
         // 스캔한 제품 목록에 추가 (3M 제품만)
         setScannedProducts(prev => new Set([...prev, productCode]));
+        
+        // 통계 업데이트 (3M 제품만 카운트)
+        setScanStats(prev => ({
+          totalScans: prev.totalScans + 1
+        }));
       } else {
         // 제품을 찾지 못한 경우
         scanResult = {
@@ -122,33 +137,8 @@ const QRScanPage = () => {
         };
       }
       
-      // 세션에 스캔 아이템 추가
-      if (sessionId) {
-        await fetch(`/api/sessions?sessionId=${sessionId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            $push: {
-              scannedItems: {
-                ...scanResult,
-                timestamp: new Date()
-              }
-            }
-          })
-        });
-      }
-      
       // 결과 표시
       setScanResult(scanResult);
-      
-      // 통계 업데이트 (3M 제품만 카운트)
-      setScanStats(prev => ({
-        total: prev.total + (scanResult.status === 'found' ? 1 : 0),
-        found: prev.found + (scanResult.status === 'found' ? 1 : 0),
-        notFound: prev.notFound // 3M 제품이 아닌 경우 미진열에 추가하지 않음
-      }));
       
       // 2초 후 결과 초기화
       setTimeout(() => setScanResult(null), 2000);
@@ -226,8 +216,43 @@ const QRScanPage = () => {
       };
 
       // HTML5-QRCode 스캐너 생성 및 시작
-      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, false);
+      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose= */ false);
       scannerRef.current.render(onScanSuccess, onScanError);
+
+      // 기본 UI 요소들 숨기기
+      setTimeout(() => {
+        const qrReaderDiv = document.getElementById('qr-reader');
+        if (qrReaderDiv) {
+          // 권한 요청 메시지와 기본 버튼들 숨기기
+          const selectElements = qrReaderDiv.querySelectorAll('select');
+          const spanElements = qrReaderDiv.querySelectorAll('span');
+          const divElements = qrReaderDiv.querySelectorAll('div');
+          
+          selectElements.forEach(el => el.style.display = 'none');
+          spanElements.forEach(el => {
+            if (el.innerText && (
+              el.innerText.includes('Request') || 
+              el.innerText.includes('Camera') || 
+              el.innerText.includes('Permission') ||
+              el.innerText.includes('Select') ||
+              el.innerText.includes('Choose')
+            )) {
+              el.style.display = 'none';
+            }
+          });
+          
+          // 불필요한 컨트롤 숨기기
+          divElements.forEach(el => {
+            if (el.style && el.style.textAlign === 'center' && el.children.length > 0) {
+              const hasSelect = el.querySelector('select');
+              const hasSpan = el.querySelector('span');
+              if (hasSelect || (hasSpan && hasSpan.innerText && hasSpan.innerText.includes('Camera'))) {
+                el.style.display = 'none';
+              }
+            }
+          });
+        }
+      }, 100);
 
       setIsScanning(true);
       setScanStatus('바코드 스캔 중...');
@@ -298,9 +323,7 @@ const QRScanPage = () => {
 
   const resetStats = () => {
     setScanStats({
-      total: 0,
-      found: 0,
-      notFound: 0
+      totalScans: 0
     });
     setScannedProducts(new Set()); // 스캔한 제품 목록도 초기화
   };
@@ -323,6 +346,33 @@ const QRScanPage = () => {
 
   return (
     <div className="mobile-container">
+      {/* CSS 스타일로 HTML5-QRCode 기본 UI 숨기기 */}
+      <style jsx>{`
+        #qr-reader select,
+        #qr-reader span:contains("Request"),
+        #qr-reader span:contains("Camera"),
+        #qr-reader span:contains("Permission"),
+        #qr-reader span:contains("Select"),
+        #qr-reader span:contains("Choose"),
+        #qr-reader__dashboard_section,
+        #qr-reader__camera_selection,
+        #qr-reader__camera_permission_button {
+          display: none !important;
+        }
+        
+        #qr-reader video {
+          border-radius: 0 !important;
+          object-fit: cover !important;
+        }
+        
+        #qr-reader__scan_region {
+          border: none !important;
+        }
+        
+        #qr-reader__dashboard {
+          display: none !important;
+        }
+      `}</style>
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
@@ -358,7 +408,6 @@ const QRScanPage = () => {
       <div style={{
         position: 'relative',
         width: '100%',
-        minHeight: '60vh',
         backgroundColor: '#000'
       }}>
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
@@ -375,21 +424,9 @@ const QRScanPage = () => {
           }}
         ></div>
 
-        {/* 스캔 상태 표시 */}
-        <div style={{
-          position: 'absolute',
-          bottom: scanResult ? '100px' : '20px',
-          left: '20px',
-          right: '20px',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          color: 'white',
-          padding: '12px',
-          borderRadius: '8px',
-          fontSize: '14px',
-          textAlign: 'center'
-        }}>
-          {scanStatus}
-        </div>
+
+
+
 
         {/* 스캔 결과 표시 */}
         {scanResult && (
@@ -450,149 +487,153 @@ const QRScanPage = () => {
         <div style={{
           backgroundColor: 'white',
           borderRadius: '12px',
-          padding: '16px',
-          marginBottom: '16px',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+          padding: '20px',
+          marginBottom: '20px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+          border: '1px solid #e9ecef'
         }}>
-          <h4 style={{
-            margin: '0 0 12px 0',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            color: '#333'
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            paddingBottom: '16px',
+            borderBottom: '1px solid #f8f9fa'
           }}>
-            스캔 통계
-          </h4>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '20px',
+                backgroundColor: '#dc3545',
+                borderRadius: '3px'
+              }}></div>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#495057'
+              }}>
+                스캔 통계
+              </span>
+            </div>
+          </div>
           
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              textAlign: 'center'
+            }}>
+              <div style={{
+                fontSize: '48px',
+                fontWeight: '700',
+                color: '#dc3545',
+                lineHeight: '1',
+                marginBottom: '8px',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+              }}>
+                {scanStats.totalScans}
+              </div>
+              <div style={{
+                fontSize: '14px',
+                color: '#6c757d',
+                fontWeight: '500',
+                letterSpacing: '0.5px'
+              }}>
+                스캔한 제품 수
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 상태 표시 */}
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+          marginBottom: '16px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px'
           }}>
             <div style={{
-              textAlign: 'center',
-              padding: '8px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px'
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: isScanning ? '#28a745' : '#6c757d'
+            }}></div>
+            <span style={{
+              fontSize: '15px',
+              fontWeight: '600',
+              color: isScanning ? '#28a745' : '#6c757d'
             }}>
-              <div style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#333'
-              }}>
-                {scanStats.total}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: '#666'
-              }}>
-                총 스캔
-              </div>
-            </div>
-            
-            <div style={{
-              textAlign: 'center',
-              padding: '8px',
-              backgroundColor: '#d4edda',
-              borderRadius: '6px'
-            }}>
-              <div style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#28a745'
-              }}>
-                {scanStats.found}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: '#155724'
-              }}>
-                진열 상품
-              </div>
-            </div>
-            
-            <div style={{
-              textAlign: 'center',
-              padding: '8px',
-              backgroundColor: '#f8d7da',
-              borderRadius: '6px'
-            }}>
-              <div style={{
-                fontSize: '18px',
-                fontWeight: 'bold',
-                color: '#dc3545'
-              }}>
-                {scanStats.notFound}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: '#721c24'
-              }}>
-                미진열
-              </div>
-            </div>
+              {isScanning ? '스캔 중...' : '스캔 준비'}
+            </span>
           </div>
         </div>
 
         {/* 컨트롤 버튼 */}
         <div style={{
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          gap: '12px',
           marginBottom: '16px'
         }}>
           <button
             onClick={isScanning ? stopCamera : startCamera}
             style={{
-              padding: '12px 20px',
+              flex: 1,
+              padding: '16px',
               backgroundColor: isScanning ? '#6c757d' : '#28a745',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 'bold',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: '600',
               cursor: 'pointer',
-              flex: '0 0 auto'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
             }}
           >
+            <i className={`fas ${isScanning ? 'fa-stop' : 'fa-play'}`} style={{
+              fontSize: '14px'
+            }}></i>
             {isScanning ? '스캔 중단' : '스캔 시작'}
           </button>
           
-          <div style={{
-            textAlign: 'center',
-            color: '#666',
-            flex: '1',
-            margin: '0 16px'
-          }}>
-            {sessionId && (
-              <div style={{ 
-                fontSize: '11px',
-                marginBottom: '2px'
-              }}>
-                세션: {sessionId.toString().slice(-8)}
-              </div>
-            )}
-            <div style={{ 
-              fontSize: '13px', 
-              fontWeight: 'bold',
-              color: isScanning ? '#28a745' : '#666'
-            }}>
-              {isScanning ? '스캔 중...' : '스캔 준비'}
-            </div>
-          </div>
-
           <Link
             to="/"
             style={{
-              padding: '12px 20px',
+              flex: 1,
+              padding: '16px',
               backgroundColor: '#dc3545',
               color: 'white',
               textDecoration: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              flex: '0 0 auto'
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
             }}
           >
+            <i className="fas fa-home" style={{
+              fontSize: '14px'
+            }}></i>
             홈으로
           </Link>
         </div>

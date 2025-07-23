@@ -1,41 +1,24 @@
-// 메모리 기반 세션 데이터 저장소
-let SESSIONS_DATA = [
-  {
-    id: '1',
-    storeId: '1',
-    status: 'completed',
-    startTime: '2024-01-15 14:00',
-    endTime: '2024-01-15 14:30',
-    scannedItems: 45,
-    totalItems: 50,
-    createdAt: new Date('2024-01-15T14:00:00'),
-    updatedAt: new Date('2024-01-15T14:30:00')
-  },
-  {
-    id: '2',
-    storeId: '1',
-    status: 'completed',
-    startTime: '2024-01-14 10:00',
-    endTime: '2024-01-14 10:45',
-    scannedItems: 38,
-    totalItems: 50,
-    createdAt: new Date('2024-01-14T10:00:00'),
-    updatedAt: new Date('2024-01-14T10:45:00')
-  }
-];
+const { connectToDatabase } = require('./config/database');
 
-// 스캔 세션 관리 API
+// 스캔 세션 관리 API (MongoDB 연동)
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const { storeId } = req.query;
       console.log('세션 조회 요청, storeId:', storeId);
       
-      const sessions = SESSIONS_DATA
-        .filter(session => !storeId || session.storeId === storeId)
-        .filter(session => session.status === 'completed')
-        .sort((a, b) => new Date(b.endTime) - new Date(a.endTime))
-        .slice(0, 10);
+      const { db } = await connectToDatabase();
+      const collection = db.collection('sessions');
+      
+      const query = { status: 'completed' };
+      if (storeId) {
+        query.storeId = storeId;
+      }
+      
+      const sessions = await collection.find(query)
+        .sort({ endTime: -1 })
+        .limit(10)
+        .toArray();
       
       res.status(200).json(sessions);
     } catch (error) {
@@ -47,18 +30,22 @@ module.exports = async function handler(req, res) {
       const sessionData = req.body;
       console.log('세션 저장 요청:', sessionData);
       
+      const { db } = await connectToDatabase();
+      const collection = db.collection('sessions');
+      
+      const sessionCount = await collection.countDocuments();
       const newSession = {
         ...sessionData,
-        id: String(SESSIONS_DATA.length + 1),
+        _id: String(sessionCount + 1),
         createdAt: new Date(),
         updatedAt: new Date()
       };
       
-      SESSIONS_DATA.push(newSession);
+      const result = await collection.insertOne(newSession);
       
       res.status(201).json({ 
         success: true, 
-        sessionId: newSession.id,
+        sessionId: newSession._id,
         message: '스캔 세션이 저장되었습니다.'
       });
     } catch (error) {
@@ -71,15 +58,20 @@ module.exports = async function handler(req, res) {
       const updateData = req.body;
       console.log('세션 업데이트 요청, sessionId:', sessionId);
       
-      const sessionIndex = SESSIONS_DATA.findIndex(session => session.id === sessionId);
+      const { db } = await connectToDatabase();
+      const collection = db.collection('sessions');
       
-      if (sessionIndex !== -1) {
-        SESSIONS_DATA[sessionIndex] = {
-          ...SESSIONS_DATA[sessionIndex],
-          ...updateData,
-          updatedAt: new Date()
-        };
-        
+      const result = await collection.updateOne(
+        { _id: sessionId },
+        { 
+          $set: {
+            ...updateData,
+            updatedAt: new Date()
+          }
+        }
+      );
+      
+      if (result.matchedCount > 0) {
         res.status(200).json({ 
           success: true, 
           message: '세션이 업데이트되었습니다.'
