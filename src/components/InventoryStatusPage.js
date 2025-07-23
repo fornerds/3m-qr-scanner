@@ -84,11 +84,11 @@ const InventoryStatusPage = () => {
     fetchData();
   }, [storeId]);
 
-  // 전체 미진열 제품 목록 생성 (스캔되지 않은 모든 제품)
+  // 미진열 제품 목록 생성 (API에서 이미 스캔된 제품 제외됨)
   const getNotDisplayedItems = () => {
     if (!inventory || !inventory.notDisplayedProducts) return [];
 
-    // 모든 미진열 제품을 판매량 순으로 정렬
+    // API에서 이미 스캔된 제품이 제외되어 전달되므로 그대로 사용
     return inventory.notDisplayedProducts
       .map(item => ({
         id: item.productCode,

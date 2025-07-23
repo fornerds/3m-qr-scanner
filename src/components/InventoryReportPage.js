@@ -10,6 +10,20 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 제품 순위 계산 (판매량 기준)
+  const getProductRank = (productCode) => {
+    if (!reportData || !reportData.products) return 1;
+    
+    const product = reportData.products.find(p => p.productCode === productCode);
+    if (!product) return 1;
+    
+    // 판매량으로 정렬하여 순위 계산
+    const sortedProducts = [...reportData.products].sort((a, b) => (b.salesAvg || 0) - (a.salesAvg || 0));
+    const rank = sortedProducts.findIndex(p => p.productCode === productCode) + 1;
+    
+    return rank;
+  };
+
   // API에서 보고서 데이터 가져오기
   useEffect(() => {
     const fetchReportData = async () => {
@@ -372,15 +386,15 @@ const InventoryReportPage = () => {
               fontWeight: 'bold',
               color: '#333'
             }}>
-              전체 상품 ({reportData?.summary?.totalProducts || 0})
+              전체 상품 ({reportData?.products?.length || 0})
             </h3>
             <div style={{
               fontSize: '12px',
               color: '#666',
               marginTop: '4px'
             }}>
-              미진열: {reportData?.summary?.notDisplayedCount || 0}개 | 
-              진열완료: {reportData?.summary?.displayedCount || 0}개
+              미진열: {reportData?.products?.filter(item => item.status === 'not_displayed').length || 0}개 | 
+              진열완료: {reportData?.products?.filter(item => item.status === 'displayed').length || 0}개
             </div>
           </div>
 
@@ -404,7 +418,7 @@ const InventoryReportPage = () => {
           </div>
 
           {/* 테이블 데이터 */}
-          {reportData?.products?.map((item, index) => {
+          {reportData?.products?.filter(item => item.status === 'not_displayed').map((item, index) => {
             const rank = getProductRank(item.productCode);
             return (
               <div 

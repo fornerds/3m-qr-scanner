@@ -65,8 +65,8 @@ const generateInventoryData = async (storeId) => {
     const totalItems = await productsCollection.countDocuments();
     const progress = totalItems > 0 ? Math.round((scannedItems / totalItems) * 100) : 0;
     
-    // 스캔되지 않은 제품들을 미진열로 분류
-    const scannedProductCodes = await collection.find({ storeId: normalizedStoreId }).distinct('productCode');
+    // 스캔되지 않은 제품들만 미진열로 분류
+    const scannedProductCodes = await collection.distinct('productCode', { storeId: normalizedStoreId });
     const notDisplayedProducts = await productsCollection.find({
       sku: { $nin: scannedProductCodes }
     }).sort({ salesAvg: -1 }).toArray();

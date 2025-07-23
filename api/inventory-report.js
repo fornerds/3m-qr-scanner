@@ -13,7 +13,7 @@ const generateProductStatusData = async (storeId) => {
     
     // 스캔된 제품 코드 목록 조회
     const scanRecordsCollection = db.collection('scan_records');
-    const scannedProductCodes = await scanRecordsCollection.find({ storeId: storeId }).distinct('productCode');
+    const scannedProductCodes = await scanRecordsCollection.distinct('productCode', { storeId: storeId });
     
     // 제품별 실제 상태 설정 (스캔 기록 기반)
     const sampleProducts = allProducts.map((product) => {
@@ -22,7 +22,10 @@ const generateProductStatusData = async (storeId) => {
       return {
         productCode: product.sku,
         productName: product.name,
-        status: isScanned ? 'displayed' : 'not_displayed'
+        category: product.category,
+        salesAvg: product.salesAvg,
+        status: isScanned ? 'displayed' : 'not_displayed',
+        priority: 'medium' // 기본 우선순위
       };
     });
     
