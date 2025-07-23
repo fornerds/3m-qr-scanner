@@ -71,7 +71,7 @@ const QRScannerMain = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '20px 16px',
+        padding: '17px',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',
