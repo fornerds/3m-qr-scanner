@@ -499,7 +499,7 @@ const QRScanPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '16px',
+        padding: '12px 16px',
         position: 'relative',
         display: 'flex',
         alignItems: 'center',

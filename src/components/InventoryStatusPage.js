@@ -199,8 +199,10 @@ const InventoryStatusPage = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -211,7 +213,8 @@ const InventoryStatusPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            marginRight: '12px'
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -220,11 +223,9 @@ const InventoryStatusPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
-          진열 안된 제품
+          미진열 현황
         </h1>
       </div>
 
