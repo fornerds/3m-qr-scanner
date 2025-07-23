@@ -204,10 +204,11 @@ const InventoryReportPage = () => {
         {/* 헤더 */}
         <div style={{ 
           backgroundColor: '#dc3545', 
-          padding: '12px 16px',
+          padding: '16px',
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          position: 'relative'
+          justifyContent: 'center'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -228,11 +229,9 @@ const InventoryReportPage = () => {
             margin: 0, 
             fontSize: '18px', 
             fontWeight: 'bold', 
-            color: 'white',
-            flex: 1,
-            textAlign: 'center'
+            color: 'white'
           }}>
-            재고 보고서
+            미진열 현황 보고서
           </h1>
         </div>
 

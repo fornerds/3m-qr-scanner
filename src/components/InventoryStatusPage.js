@@ -143,11 +143,11 @@ const InventoryStatusPage = () => {
 
         <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>
           {/* 로딩 상태 */}
-          <div style={{ 
+              <div style={{
             textAlign: 'center', 
             padding: '40px 20px',
-            color: '#666'
-          }}>
+                color: '#666'
+              }}>
             재고 현황을 불러오는 중...
           </div>
         </div>
@@ -180,8 +180,8 @@ const InventoryStatusPage = () => {
             <span style={{ fontSize: '12px' }}>스캔</span>
           </Link>
         </div>
-      </div>
-    );
+    </div>
+  );
   }
 
 
