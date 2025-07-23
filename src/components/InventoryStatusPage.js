@@ -293,7 +293,7 @@ const InventoryStatusPage = () => {
         <div style={{
           backgroundColor: 'white',
           padding: '20px',
-          borderBottom: '8px solid #f5f5f5',
+          borderBottom: '16px solid #f5f5f5',
           position: 'relative'
         }}>
           {/* 보고서 아이콘 */}

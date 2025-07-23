@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Html5QrcodeScanner, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeScanner, Html5QrcodeSupportedFormats, Html5QrcodeScanType } from 'html5-qrcode';
 
 const QRScanPage = () => {
   const navigate = useNavigate();
@@ -189,11 +189,16 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 가장 기본적인 HTML5-QRCode 설정 (정사각형 스캔 박스)
+      // 자동 카메라 시작 설정 (정사각형 스캔 박스)
       const config = {
         fps: 10,
         qrbox: { width: 280, height: 280 }, // 명시적으로 정사각형 설정
-        aspectRatio: 1.0 // 정사각형 비율 강제
+        aspectRatio: 1.0, // 정사각형 비율 강제
+        rememberLastUsedCamera: true, // 마지막 사용 카메라 기억
+        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 카메라만 사용
+        showTorchButtonIfSupported: false, // 플래시 버튼 숨김
+        showZoomSliderIfSupported: false, // 줌 슬라이더 숨김
+        defaultZoomValueIfSupported: 1 // 기본 줌 값
       };
 
       // 스캔 성공 콜백
@@ -216,12 +221,28 @@ const QRScanPage = () => {
         // 스캔 에러는 정상적인 상황이므로 무시
       };
 
-      // HTML5-QRCode 스캐너 생성 및 시작
+      // Html5Qrcode 직접 사용으로 바로 카메라 시작
       try {
-        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose= */ false);
-        await scannerRef.current.render(onScanSuccess, onScanError);
-
-        // 카메라 기능 완전 보장 - UI 조정 제거
+        scannerRef.current = new Html5Qrcode("qr-reader");
+        
+        // 카메라 설정
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+          onScanSuccess(decodedText, decodedResult);
+        };
+        
+        const cameraConfig = {
+          fps: 10,
+          qrbox: { width: 280, height: 280 },
+          aspectRatio: 1.0
+        };
+        
+        // 후면 카메라로 바로 시작
+        await scannerRef.current.start(
+          { facingMode: "environment" }, // 후면 카메라 사용
+          cameraConfig,
+          qrCodeSuccessCallback,
+          onScanError
+        );
 
         setIsScanning(true);
         setScanStatus('바코드 스캔 중...');
@@ -231,7 +252,11 @@ const QRScanPage = () => {
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
         setScanStatus('카메라 초기화 실패');
-        throw renderError; // 외부 catch로 전달
+        // 권한이 거부된 경우 알림 표시
+        if (renderError.name === 'NotAllowedError') {
+          alert('카메라 권한이 필요합니다. 브라우저 설정에서 카메라 권한을 허용해주세요.');
+        }
+        throw renderError;
       }
 
     } catch (error) {
@@ -241,7 +266,7 @@ const QRScanPage = () => {
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = async () => {
     try {
       // 비디오 요소 안전하게 정지
       const qrReaderDiv = document.getElementById('qr-reader');
@@ -262,7 +287,11 @@ const QRScanPage = () => {
       }
       
       if (scannerRef.current) {
-        scannerRef.current.clear();
+        try {
+          await scannerRef.current.stop();
+        } catch (stopError) {
+          console.log('스캐너 정지 중 무시 가능한 오류:', stopError);
+        }
         scannerRef.current = null;
       }
       
@@ -521,7 +550,8 @@ const QRScanPage = () => {
       <div style={{
         padding: '20px',
         paddingBottom: '100px', // 하단 네비게이션바와 간격
-        backgroundColor: '#f5f5f5'
+        backgroundColor: '#f5f5f5',
+        minHeight: 'calc(100vh - 60px)' // 헤더를 제외한 전체 높이
       }}>
         {/* 스캔 통계 */}
         <div style={{
