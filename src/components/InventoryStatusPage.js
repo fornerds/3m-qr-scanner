@@ -84,45 +84,25 @@ const InventoryStatusPage = () => {
     fetchData();
   }, [storeId]);
 
-  // API 데이터를 기반으로 우선순위별 아이템 생성 (미진열 제품만)
-  const getPriorityItems = () => {
-    if (!inventory) return { high: [], medium: [], low: [] };
+  // 전체 미진열 제품 목록 생성 (스캔되지 않은 모든 제품)
+  const getNotDisplayedItems = () => {
+    if (!inventory || !inventory.notDisplayedProducts) return [];
 
-    const highPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'high').map(item => ({
-      name: item.productName,
-      code: '미진열',
-      time: '진열 필요',
-      type: 'not_displayed',
-      rank: item.rank || 0,
-      salesAvg: item.salesAvg || 0
-    })) || [];
-
-    const mediumPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'medium').map(item => ({
-      name: item.productName,
-      code: '미진열',
-      time: '확인 필요',
-      type: 'not_displayed',
-      rank: item.rank || 0,
-      salesAvg: item.salesAvg || 0
-    })) || [];
-
-    const lowPriorityItems = inventory.notDisplayedProducts?.filter(item => item.priority === 'low').map(item => ({
-      name: item.productName,
-      code: '미진열',
-      time: '모니터링',
-      type: 'not_displayed',
-      rank: item.rank || 0,
-      salesAvg: item.salesAvg || 0
-    })) || [];
-
-    return {
-      high: highPriorityItems,
-      medium: mediumPriorityItems,
-      low: lowPriorityItems
-    };
+    // 모든 미진열 제품을 판매량 순으로 정렬
+    return inventory.notDisplayedProducts
+      .map(item => ({
+        id: item.productCode,
+        name: item.productName,
+        code: item.productCode,
+        category: item.category || '기타',
+        priority: item.priority,
+        salesAvg: item.salesAvg || 0,
+        type: 'not_displayed'
+      }))
+      .sort((a, b) => b.salesAvg - a.salesAvg); // 판매량 높은 순으로 정렬
   };
 
-  const priorityItems = getPriorityItems();
+  const notDisplayedItems = getNotDisplayedItems();
 
   if (loading) {
     return (
@@ -131,8 +111,10 @@ const InventoryStatusPage = () => {
         <div style={{ 
           backgroundColor: '#dc3545', 
           padding: '16px',
+          position: 'relative',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -143,7 +125,8 @@ const InventoryStatusPage = () => {
               fontSize: '18px',
               cursor: 'pointer',
               padding: '4px',
-              marginRight: '12px'
+              position: 'absolute',
+              left: '16px'
             }}
           >
             ←
@@ -152,11 +135,9 @@ const InventoryStatusPage = () => {
             margin: 0, 
             fontSize: '18px', 
             fontWeight: 'bold', 
-            color: 'white',
-            flex: 1,
-            textAlign: 'center'
+            color: 'white'
           }}>
-            재고 현황
+            미진열 현황
           </h1>
         </div>
 
@@ -203,106 +184,7 @@ const InventoryStatusPage = () => {
     );
   }
 
-  const PrioritySection = ({ title, items, bgColor, textColor, badgeColor, icon }) => (
-    <div style={{ marginBottom: '16px' }}>
-      {/* 섹션 헤더 */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        marginBottom: '8px',
-        paddingLeft: '16px'
-      }}>
-        {icon && (
-          <i className={icon} style={{
-            color: textColor,
-            fontSize: '14px',
-            marginRight: '8px'
-          }}></i>
-        )}
-        <h3 style={{
-          margin: 0,
-          fontSize: '16px',
-          fontWeight: 'bold',
-          color: textColor
-        }}>
-          {title}
-        </h3>
-      </div>
 
-      {/* 품목 리스트 */}
-      {items.map((item, index) => (
-        <div 
-          key={index}
-          style={{
-            backgroundColor: bgColor,
-            margin: '0 16px 8px 16px',
-            padding: '16px',
-            borderRadius: '12px'
-          }}
-        >
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start'
-          }}>
-            <div style={{ flex: 1 }}>
-              <h4 style={{
-                margin: '0 0 8px 0',
-                fontSize: '16px',
-                fontWeight: '600',
-                color: '#333'
-              }}>
-                {item.name}
-              </h4>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '16px',
-                fontSize: '14px',
-                color: '#666'
-              }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <i className="fas fa-box" style={{ fontSize: '12px' }}></i>
-                  {item.code}
-                </span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <i className="fas fa-clock" style={{ fontSize: '12px' }}></i>
-                  {item.time}
-                </span>
-                {item.rank && (
-                  <span style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '4px',
-                    backgroundColor: '#f8f9fa',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontSize: '12px',
-                    fontWeight: '500'
-                  }}>
-                    <i className="fas fa-chart-line" style={{ fontSize: '10px' }}></i>
-                    판매 {item.rank}위
-                  </span>
-                )}
-              </div>
-            </div>
-            <span style={{
-              backgroundColor: badgeColor,
-              color: 'white',
-              fontSize: '12px',
-              padding: '6px 12px',
-              borderRadius: '16px',
-              fontWeight: '500',
-              minWidth: '40px',
-              textAlign: 'center'
-            }}>
-              {title.includes('높은') ? '높음' : title.includes('보통') ? '보통' : '낮음'}
-            </span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div style={{
@@ -342,7 +224,7 @@ const InventoryStatusPage = () => {
           flex: 1,
           textAlign: 'center'
         }}>
-          재고 현황
+          진열 안된 제품
         </h1>
       </div>
 
@@ -473,50 +355,136 @@ const InventoryStatusPage = () => {
           </div>
         </div>
 
-        {/* 우선순위별 섹션 */}
+        {/* 진열 안된 제품 목록 */}
         <div style={{ padding: '16px 0' }}>
-          {priorityItems.high.length > 0 && (
-          <PrioritySection
-            title="높은 우선순위"
-              items={priorityItems.high}
-            bgColor="#fff5f5"
-            textColor="#dc3545"
-            badgeColor="#dc3545"
-          />
-          )}
+          <div style={{
+            margin: '0 16px 16px 16px'
+          }}>
+            <h3 style={{
+              margin: '0 0 8px 0',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: '#333'
+            }}>
+              미진열 제품 목록
+            </h3>
+            <p style={{
+              margin: 0,
+              fontSize: '14px',
+              color: '#666'
+            }}>
+              아래 제품들을 스캔하면 목록에서 제거됩니다
+            </p>
+          </div>
 
-          {priorityItems.medium.length > 0 && (
-          <PrioritySection
-            title="보통 우선순위"
-              items={priorityItems.medium}
-            bgColor="#fffbf0"
-            textColor="#ffc107"
-            badgeColor="#ffc107"
-            icon="fas fa-exclamation-triangle"
-          />
-          )}
+          {notDisplayedItems.length > 0 ? (
+            <div style={{
+              backgroundColor: 'white',
+              margin: '0 16px',
+              borderRadius: '12px',
+              overflow: 'hidden'
+            }}>
+              {notDisplayedItems.map((item, index) => (
+                <div 
+                  key={item.id}
+                  style={{
+                    padding: '16px',
+                    borderBottom: index < notDisplayedItems.length - 1 ? '1px solid #f0f0f0' : 'none'
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start'
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{
+                        margin: '0 0 4px 0',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#333'
+                      }}>
+                        {item.name}
+                      </h4>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        marginBottom: '8px'
+                      }}>
+                        <span style={{
+                          fontSize: '14px',
+                          color: '#666',
+                          backgroundColor: '#f8f9fa',
+                          padding: '4px 8px',
+                          borderRadius: '4px'
+                        }}>
+                          {item.code}
+                        </span>
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          판매량: {item.salesAvg.toLocaleString()}
+                        </span>
+                      </div>
+                      {item.category && (
+                        <span style={{
+                          fontSize: '12px',
+                          color: '#999'
+                        }}>
+                          {item.category}
+                        </span>
+                      )}
+                    </div>
 
-          {priorityItems.low.length > 0 && (
-          <PrioritySection
-            title="낮은 우선순위"
-              items={priorityItems.low}
-            bgColor="#f0fff4"
-            textColor="#28a745"
-            badgeColor="#28a745"
-            icon="fas fa-check-circle"
-          />
-          )}
-          
-          {priorityItems.high.length === 0 && priorityItems.medium.length === 0 && priorityItems.low.length === 0 && (
+                    <span style={{
+                      backgroundColor: item.priority === 'high' ? '#dc3545' : 
+                                    item.priority === 'medium' ? '#ffc107' : '#28a745',
+                      color: 'white',
+                      fontSize: '12px',
+                      padding: '6px 12px',
+                      borderRadius: '16px',
+                      fontWeight: '500',
+                      minWidth: '40px',
+                      textAlign: 'center'
+                    }}>
+                      {item.priority === 'high' ? '높음' : 
+                       item.priority === 'medium' ? '보통' : '낮음'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
             <div style={{
               textAlign: 'center',
               padding: '40px 20px',
               color: '#666',
               backgroundColor: 'white',
-              margin: '16px',
+              margin: '0 16px',
               borderRadius: '12px'
             }}>
-              현재 주의가 필요한 품목이 없습니다.
+              <i className="fas fa-check-circle" style={{
+                fontSize: '32px',
+                color: '#28a745',
+                marginBottom: '12px',
+                display: 'block'
+              }}></i>
+              <p style={{
+                margin: '0 0 8px 0',
+                fontSize: '16px',
+                fontWeight: '500'
+              }}>
+                모든 제품이 진열되었습니다!
+              </p>
+              <p style={{
+                margin: 0,
+                fontSize: '14px',
+                color: '#999'
+              }}>
+                진열이 필요한 제품이 없습니다
+              </p>
             </div>
           )}
         </div>

@@ -43,8 +43,10 @@ const StoreSelectPage = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -55,7 +57,8 @@ const StoreSelectPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            marginRight: '12px'
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -64,13 +67,10 @@ const StoreSelectPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
           스캔할 매장 선택
         </h1>
-        <div style={{ width: '28px' }}></div>
       </div>
 
       <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)', paddingBottom: '80px' }}>

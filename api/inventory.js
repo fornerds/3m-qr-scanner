@@ -36,14 +36,21 @@ const generateInventoryData = async (storeId) => {
     const { db } = await connectToDatabase();
     const collection = db.collection('scan_records');
     
+    // storeId 타입 통일 (문자열로 변환)
+    const normalizedStoreId = String(storeId);
+    console.log('재고 조회 - storeId:', normalizedStoreId);
+    
     // 실제 스캔 기록 조회
-    const scannedItems = await collection.countDocuments({ storeId: storeId });
+    const scannedItems = await collection.countDocuments({ storeId: normalizedStoreId });
+    console.log('스캔된 아이템 수:', scannedItems);
     
     // 최근 스캔 10개만 가져오기 (더 많은 데이터 표시)
-    const recentScansData = await collection.find({ storeId: storeId })
+    const recentScansData = await collection.find({ storeId: normalizedStoreId })
       .sort({ timestamp: -1 })
       .limit(10)
       .toArray();
+    
+    console.log('최근 스캔 데이터:', recentScansData.length, '개');
     
     const recentScans = recentScansData.map(scan => ({
       productCode: scan.productCode,
@@ -59,7 +66,7 @@ const generateInventoryData = async (storeId) => {
     const progress = totalItems > 0 ? Math.round((scannedItems / totalItems) * 100) : 0;
     
     // 스캔되지 않은 제품들을 미진열로 분류
-    const scannedProductCodes = await collection.find({ storeId: storeId }).distinct('productCode');
+    const scannedProductCodes = await collection.find({ storeId: normalizedStoreId }).distinct('productCode');
     const notDisplayedProducts = await productsCollection.find({
       sku: { $nin: scannedProductCodes }
     }).sort({ salesAvg: -1 }).toArray();
@@ -77,7 +84,7 @@ const generateInventoryData = async (storeId) => {
       }))
     );
     
-    return {
+    const result = {
       totalItems,
       scannedItems,
       notDisplayedItems: notDisplayedProducts.length, // 실제 미진열 제품 수
@@ -85,6 +92,17 @@ const generateInventoryData = async (storeId) => {
       recentScans,
       notDisplayedProducts: sampleNotDisplayedItems
     };
+    
+    console.log('재고 데이터 생성 결과:', {
+      storeId: normalizedStoreId,
+      totalItems,
+      scannedItems,
+      notDisplayedItems: notDisplayedProducts.length,
+      progress,
+      recentScansCount: recentScans.length
+    });
+    
+    return result;
   } catch (error) {
     console.error('재고 데이터 생성 오류:', error);
     return {
@@ -113,7 +131,8 @@ module.exports = async function handler(req, res) {
       try {
         const { db } = await connectToDatabase();
         const collection = db.collection('scan_records');
-        const scannedProducts = await collection.find({ storeId: storeId }).toArray();
+        const normalizedStoreId = String(storeId || '1');
+        const scannedProducts = await collection.find({ storeId: normalizedStoreId }).toArray();
         scannedProductCodes = new Set(scannedProducts.map(scan => scan.productCode));
       } catch (error) {
         console.error('스캔 기록 조회 실패:', error);

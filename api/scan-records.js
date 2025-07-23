@@ -6,7 +6,10 @@ module.exports = async function handler(req, res) {
     try {
       const { storeId, productCode, productName, sessionId } = req.body;
       
-      console.log('스캔 기록 저장 요청:', { storeId, productCode, productName, sessionId });
+      // storeId 타입 통일 (문자열로 변환)
+      const normalizedStoreId = String(storeId);
+      
+      console.log('스캔 기록 저장 요청:', { storeId: normalizedStoreId, productCode, productName, sessionId });
       
       if (!storeId || !productCode || !productName) {
         return res.status(400).json({
@@ -20,7 +23,7 @@ module.exports = async function handler(req, res) {
       
       // 중복 스캔 확인 (같은 세션에서 같은 제품)
       const existingScan = await collection.findOne({
-        storeId: storeId,
+        storeId: normalizedStoreId,
         productCode: productCode,
         sessionId: sessionId || 'unknown'
       });
@@ -35,7 +38,7 @@ module.exports = async function handler(req, res) {
       
       // 새 스캔 기록 추가
       const newScan = {
-        storeId: storeId,
+        storeId: normalizedStoreId,
         productCode,
         productName,
         timestamp: new Date(),
@@ -46,7 +49,7 @@ module.exports = async function handler(req, res) {
       const result = await collection.insertOne(newScan);
       
       // 해당 매장의 총 스캔 수 조회
-      const totalScans = await collection.countDocuments({ storeId: storeId });
+      const totalScans = await collection.countDocuments({ storeId: normalizedStoreId });
       
       // 응답
       res.status(200).json({

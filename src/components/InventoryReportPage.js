@@ -285,8 +285,10 @@ const InventoryReportPage = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -297,7 +299,8 @@ const InventoryReportPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            marginRight: '12px'
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -306,11 +309,9 @@ const InventoryReportPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
-          재고 현황 보고서
+          미진열 현황 보고서
         </h1>
         <button 
           onClick={downloadPDF}
@@ -320,7 +321,9 @@ const InventoryReportPage = () => {
             color: 'white',
             fontSize: '16px',
             cursor: 'pointer',
-            padding: '8px'
+            padding: '8px',
+            position: 'absolute',
+            right: '16px'
           }}
           title="PDF 다운로드"
         >

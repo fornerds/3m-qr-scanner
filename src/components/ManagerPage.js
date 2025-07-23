@@ -70,8 +70,10 @@ const ManagerPage = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <Link 
           to="/"
@@ -83,7 +85,8 @@ const ManagerPage = () => {
             cursor: 'pointer',
             padding: '4px',
             textDecoration: 'none',
-            marginRight: '12px'
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -92,9 +95,7 @@ const ManagerPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
           관리자 페이지
         </h1>

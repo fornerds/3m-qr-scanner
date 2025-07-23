@@ -72,8 +72,10 @@ const QRScannerMain = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <div style={{
           width: '32px',
@@ -86,7 +88,8 @@ const QRScannerMain = () => {
           fontWeight: 'bold',
           color: '#dc3545',
           fontSize: '14px',
-          marginRight: '12px'
+          position: 'absolute',
+          left: '16px'
         }}>
           3M
         </div>
@@ -94,9 +97,7 @@ const QRScannerMain = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
           QR Scanner
         </h1>
@@ -106,7 +107,9 @@ const QRScannerMain = () => {
             color: 'white',
             fontSize: '16px',
             textDecoration: 'none',
-            padding: '4px'
+            padding: '4px',
+            position: 'absolute',
+            right: '16px'
           }}
         >
           <i className="fas fa-cog"></i>

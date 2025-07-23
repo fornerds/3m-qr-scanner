@@ -130,10 +130,11 @@ const StoreDetailPage = () => {
         {/* 헤더 */}
         <div style={{ 
           backgroundColor: '#dc3545', 
-          padding: '12px 16px',
+          padding: '16px',
+          position: 'relative',
           display: 'flex',
           alignItems: 'center',
-          position: 'relative'
+          justifyContent: 'center'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -154,9 +155,7 @@ const StoreDetailPage = () => {
             margin: 0, 
             fontSize: '18px', 
             fontWeight: 'bold', 
-            color: 'white',
-            flex: 1,
-            textAlign: 'center'
+            color: 'white'
           }}>
             매장 상세
           </h1>
@@ -218,8 +217,10 @@ const StoreDetailPage = () => {
       <div style={{ 
         backgroundColor: '#dc3545', 
         padding: '16px',
+        position: 'relative',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center'
       }}>
         <button 
           onClick={() => navigate('/store-list')}
@@ -230,7 +231,8 @@ const StoreDetailPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            marginRight: '12px'
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -239,9 +241,7 @@ const StoreDetailPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white',
-          flex: 1,
-          textAlign: 'center'
+          color: 'white'
         }}>
           매장 상세
         </h1>
@@ -525,7 +525,7 @@ const StoreDetailPage = () => {
           <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>매장</span>
         </Link>
-        <Link to={`/scan?storeId=${storeId}`} style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+        <Link to="/store-select" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
         </Link>

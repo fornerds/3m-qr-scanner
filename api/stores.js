@@ -56,7 +56,10 @@ const getScanRecordsCount = async (storeId) => {
   try {
     const { db } = await connectToDatabase();
     const collection = db.collection('scan_records');
-    const count = await collection.countDocuments({ storeId: storeId });
+    // storeId 타입 통일 (문자열로 변환)
+    const normalizedStoreId = String(storeId);
+    const count = await collection.countDocuments({ storeId: normalizedStoreId });
+    console.log(`매장 ${normalizedStoreId} 스캔 기록 수:`, count);
     return count;
   } catch (error) {
     console.error(`매장 ${storeId} 스캔 기록 조회 실패:`, error);
