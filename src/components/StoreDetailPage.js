@@ -36,62 +36,91 @@ const StoreDetailPage = () => {
   };
 
   // API에서 매장 상세 정보와 재고 현황 가져오기
-  useEffect(() => {
-    const fetchStoreData = async () => {
-      try {
-        setLoading(true);
-        
-        // 매장 정보 가져오기
-        const storeResponse = await fetch(`/api/stores`);
-        if (!storeResponse.ok) {
-          throw new Error('매장 정보를 가져올 수 없습니다.');
-        }
-        const stores = await storeResponse.json();
-        const currentStore = stores.find(s => s.id === storeId) || stores[0];
-        setStore(currentStore);
+  const fetchStoreData = async () => {
+    try {
+      setLoading(true);
+      
+      // 매장 정보 가져오기
+      const storeResponse = await fetch(`/api/stores`);
+      if (!storeResponse.ok) {
+        throw new Error('매장 정보를 가져올 수 없습니다.');
+      }
+      const stores = await storeResponse.json();
+      const currentStore = stores.find(s => s.id === storeId) || stores[0];
+      setStore(currentStore);
 
-        // 재고 현황 가져오기
-        const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
-        if (!inventoryResponse.ok) {
-          throw new Error('재고 현황을 가져올 수 없습니다.');
-        }
-        const inventoryData = await inventoryResponse.json();
-        setInventory(inventoryData);
-        
-        // 최근 스캔된 제품 데이터 설정
-        if (inventoryData.recentScans) {
-          setRecentProducts(inventoryData.recentScans.map(product => ({
-            id: product.productCode,
-            name: product.productName,
-            lastScan: getRelativeTime(product.timestamp)
-          })));
-        }
-      } catch (err) {
-        console.error('매장 데이터 조회 오류:', err);
-        setError(err.message);
-        
-        // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
-        setStore({
-          id: storeId,
-          name: '매장 정보 없음',
-          address: '주소 정보 없음'
-        });
-        
-        setInventory({
-          totalItems: 0,
-          scannedItems: 0,
-          progress: 0,
-          recentScans: []
-        });
-        
+      // 재고 현황 가져오기
+      const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
+      if (!inventoryResponse.ok) {
+        throw new Error('재고 현황을 가져올 수 없습니다.');
+      }
+      const inventoryData = await inventoryResponse.json();
+      setInventory(inventoryData);
+      
+      // 최근 스캔된 제품 데이터 설정
+      if (inventoryData.recentScans && inventoryData.recentScans.length > 0) {
+        setRecentProducts(inventoryData.recentScans.map(product => ({
+          id: product.productCode,
+          name: product.productName,
+          lastScan: getRelativeTime(product.timestamp)
+        })));
+      } else {
         setRecentProducts([]);
-      } finally {
-        setLoading(false);
+      }
+    } catch (err) {
+      console.error('매장 데이터 조회 오류:', err);
+      setError(err.message);
+      
+      // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
+      setStore({
+        id: storeId,
+        name: '매장 정보 없음',
+        address: '주소 정보 없음'
+      });
+      
+      setInventory({
+        totalItems: 0,
+        scannedItems: 0,
+        progress: 0,
+        recentScans: []
+      });
+      
+      setRecentProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStoreData();
+  }, [storeId]);
+
+  // 페이지가 포커스될 때마다 데이터 새로고침 (스캔 후 돌아왔을 때)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // 페이지가 보이게 될 때 데이터 새로고침
+        setTimeout(() => {
+          fetchStoreData();
+        }, 500); // 500ms 지연 후 새로고침
       }
     };
 
-    fetchStoreData();
-  }, [storeId]);
+    const handleFocus = () => {
+      // 페이지에 포커스가 오면 데이터 새로고침
+      setTimeout(() => {
+        fetchStoreData();
+      }, 500);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
 
 
@@ -399,49 +428,78 @@ const StoreDetailPage = () => {
         </div>
 
         {/* 제품 목록 */}
-        {recentProducts.map((product, index) => (
-          <div key={product.id}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '16px 0'
-            }}>
-              <div style={{ flex: 1 }}>
-                <h4 style={{
-                  margin: '0 0 4px 0',
-                  fontSize: '16px',
-                  fontWeight: '600',
-                  color: '#333'
-                }}>
-                  {product.name}
-                </h4>
-              </div>
+        {recentProducts.length > 0 ? (
+          recentProducts.map((product, index) => (
+            <div key={product.id}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                justifyContent: 'space-between',
+                padding: '16px 0'
               }}>
-                <span style={{
-                  fontSize: '13px',
-                  color: '#999',
+                <div style={{ flex: 1 }}>
+                  <h4 style={{
+                    margin: '0 0 4px 0',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#333'
+                  }}>
+                    {product.name}
+                  </h4>
+                </div>
+                <div style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px'
+                  gap: '8px'
                 }}>
-                  <i className="fas fa-clock" style={{ fontSize: '11px' }}></i>
-                  {product.lastScan}
-                </span>
+                  <span style={{
+                    fontSize: '13px',
+                    color: '#999',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    <i className="fas fa-clock" style={{ fontSize: '11px' }}></i>
+                    {product.lastScan}
+                  </span>
+                </div>
               </div>
+              {index < recentProducts.length - 1 && (
+                <div style={{ 
+                  height: '1px', 
+                  backgroundColor: '#f0f0f0' 
+                }}></div>
+              )}
             </div>
-            {index < recentProducts.length - 1 && (
-              <div style={{ 
-                height: '1px', 
-                backgroundColor: '#f0f0f0' 
-              }}></div>
-            )}
+          ))
+        ) : (
+          <div style={{
+            textAlign: 'center',
+            padding: '40px 20px',
+            color: '#666'
+          }}>
+            <i className="fas fa-qrcode" style={{
+              fontSize: '32px',
+              color: '#ddd',
+              marginBottom: '12px',
+              display: 'block'
+            }}></i>
+            <p style={{
+              margin: '0 0 8px 0',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}>
+              아직 스캔된 제품이 없습니다
+            </p>
+            <p style={{
+              margin: 0,
+              fontSize: '14px',
+              color: '#999'
+            }}>
+              QR 스캔을 시작해보세요
+            </p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* 하단 네비게이션 */}

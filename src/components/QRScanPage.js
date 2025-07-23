@@ -11,12 +11,14 @@ const QRScanPage = () => {
   const [scanResult, setScanResult] = useState(null);
   const [sessionId, setSessionId] = useState(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
+  const [lastScanTime, setLastScanTime] = useState(0);
   const [scanStats, setScanStats] = useState({
     totalScans: 0
   });
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
+  const SCAN_COOLDOWN = 2000; // 2초 쿨다운
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
@@ -100,7 +102,7 @@ const QRScanPage = () => {
         
         // 스캔 기록 DB에 저장 (3M 제품만)
         try {
-          await fetch('/api/scan-records', {
+          const saveResponse = await fetch('/api/scan-records', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -112,17 +114,38 @@ const QRScanPage = () => {
               sessionId
             })
           });
+          
+          const saveResult = await saveResponse.json();
+          
+          // API에서 중복이라고 응답하면 중복 처리
+          if (saveResult.isDuplicate) {
+            scanResult = {
+              productCode,
+              productName: product.name,
+              category: product.category,
+              price: `${product.price.toLocaleString()}원`,
+              status: 'already_scanned',
+              statusMessage: '이미 스캔됨',
+              statusColor: '#ffc107',
+              timestamp: new Date()
+            };
+            
+            // 스캔한 제품 목록에는 추가하지 않음
+            // 통계도 업데이트하지 않음
+          } else {
+            // 정상적으로 새로 스캔된 경우에만 처리
+            // 스캔한 제품 목록에 추가 (3M 제품만)
+            setScannedProducts(prev => new Set([...prev, productCode]));
+            
+            // 통계 업데이트 (3M 제품만 카운트)
+            setScanStats(prev => ({
+              totalScans: prev.totalScans + 1
+            }));
+          }
         } catch (error) {
           console.error('스캔 기록 저장 실패:', error);
         }
-        
-        // 스캔한 제품 목록에 추가 (3M 제품만)
-        setScannedProducts(prev => new Set([...prev, productCode]));
-        
-        // 통계 업데이트 (3M 제품만 카운트)
-        setScanStats(prev => ({
-          totalScans: prev.totalScans + 1
-        }));
+
       } else {
         // 제품을 찾지 못한 경우
         scanResult = {
@@ -140,8 +163,13 @@ const QRScanPage = () => {
       // 결과 표시
       setScanResult(scanResult);
       
-      // 2초 후 결과 초기화
-      setTimeout(() => setScanResult(null), 2000);
+      // 스캔 성공시 진동 피드백 (지원하는 기기에서)
+      if (navigator.vibrate && scanResult.status === 'found') {
+        navigator.vibrate(200);
+      }
+      
+      // 3초 후 결과 초기화 (더 긴 시간으로 사용자가 확인할 수 있도록)
+      setTimeout(() => setScanResult(null), 3000);
       
       console.log(`QR 코드 처리됨: ${productCode} - ${scanResult.statusMessage}`);
     } catch (error) {
@@ -191,7 +219,7 @@ const QRScanPage = () => {
       
       // 자동 카메라 시작 설정 (정사각형 스캔 박스)
       const config = {
-        fps: 10,
+        fps: 3, // 더 낮은 FPS로 스캔 빈도 대폭 감소
         qrbox: { width: 280, height: 280 }, // 명시적으로 정사각형 설정
         aspectRatio: 1.0, // 정사각형 비율 강제
         rememberLastUsedCamera: true, // 마지막 사용 카메라 기억
@@ -203,17 +231,29 @@ const QRScanPage = () => {
 
       // 스캔 성공 콜백
       const onScanSuccess = (decodedText, decodedResult) => {
-        // 중복 스캔 방지
-        if (decodedText !== lastScannedCode) {
-          setLastScannedCode(decodedText);
-          setScanStatus(`제품 검색 중...`);
-          
-          // 제품 검색
-          processQR(decodedText);
-          
-          // 3초 후 중복 방지 해제
-          setTimeout(() => setLastScannedCode(''), 3000);
+        const currentTime = Date.now();
+        
+        // 강화된 중복 스캔 방지
+        // 1. 같은 코드인지 확인
+        // 2. 쿨다운 시간 확인 (2초)
+        if (decodedText === lastScannedCode && (currentTime - lastScanTime) < SCAN_COOLDOWN) {
+          console.log('스캔 쿨다운 중:', decodedText);
+          return;
         }
+        
+        // 스캔 허용
+        setLastScannedCode(decodedText);
+        setLastScanTime(currentTime);
+        setScanStatus(`제품 검색 중...`);
+        
+        // 제품 검색
+        processQR(decodedText);
+        
+        // 5초 후 중복 방지 해제 (더 긴 시간으로 설정)
+        setTimeout(() => {
+          setLastScannedCode('');
+          setLastScanTime(0);
+        }, 5000);
       };
 
       // 스캔 에러 콜백 (무시)
@@ -231,7 +271,7 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 10,
+          fps: 3, // FPS를 더 낮춰서 스캔 빈도 감소
           qrbox: { width: 280, height: 280 },
           aspectRatio: 1.0
         };

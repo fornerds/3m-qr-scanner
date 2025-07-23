@@ -70,6 +70,7 @@ const StoreSelectPage = () => {
         }}>
           스캔할 매장 선택
         </h1>
+        <div style={{ width: '28px' }}></div>
       </div>
 
       <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)', paddingBottom: '80px' }}>

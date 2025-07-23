@@ -39,10 +39,10 @@ const generateInventoryData = async (storeId) => {
     // 실제 스캔 기록 조회
     const scannedItems = await collection.countDocuments({ storeId: storeId });
     
-    // 최근 스캔 3개만 가져오기
+    // 최근 스캔 10개만 가져오기 (더 많은 데이터 표시)
     const recentScansData = await collection.find({ storeId: storeId })
       .sort({ timestamp: -1 })
-      .limit(3)
+      .limit(10)
       .toArray();
     
     const recentScans = recentScansData.map(scan => ({
