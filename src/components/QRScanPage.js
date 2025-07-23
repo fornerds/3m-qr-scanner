@@ -424,10 +424,10 @@ const QRScanPage = () => {
 
   return (
     <div className="mobile-container">
-      {/* QR 스캔 영역 상하 간격 조정 및 정사각형 강제 */}
+      {/* QR 스캔 영역 비디오 전체 화면 */}
       <style jsx>{`
         #qr-shaded-region {
-          border-width: 80px 66.5px !important;
+          border-width: 80px 0px !important;
         }
         
         #qr-reader canvas {
@@ -436,7 +436,14 @@ const QRScanPage = () => {
         }
         
         #qr-reader video {
-          aspect-ratio: 1 !important;
+          width: 100% !important;
+          height: 500px !important;
+          object-fit: cover !important;
+        }
+        
+        #qr-reader__scan_region {
+          width: 100% !important;
+          height: 500px !important;
         }
         
         #qr-reader__dashboard {
@@ -478,7 +485,8 @@ const QRScanPage = () => {
       <div style={{
         position: 'relative',
         width: '100%',
-        backgroundColor: 'white' // 간단히 흰색 배경만
+        backgroundColor: 'black', // 카메라 배경을 검은색으로
+        minHeight: '500px'
       }}>
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
         <div 
