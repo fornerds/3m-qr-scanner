@@ -336,15 +336,19 @@ const QRScanPage = () => {
       const scale = newDistance / pinchDistance;
       
       let newZoom = currentZoom * scale;
-      newZoom = Math.max(1, Math.min(3, newZoom)); // 1x~3x 제한
+      newZoom = Math.max(1, Math.min(2, newZoom)); // 1x~2x로 제한 (박스 벗어남 방지)
       
       setCurrentZoom(newZoom);
       setPinchDistance(newDistance);
       
-      // 실제 비디오 요소에 줌 적용
+      // 실제 비디오 요소에 줌 적용 (박스 내에서만)
       const video = scannerDivRef.current?.querySelector('video');
-      if (video) {
+      const scanRegion = scannerDivRef.current?.querySelector('#qr-reader__scan_region');
+      if (video && scanRegion) {
         video.style.transform = `scale(${newZoom})`;
+        video.style.transformOrigin = 'center center';
+        // 비디오가 스캔 영역을 벗어나지 않도록 클리핑
+        scanRegion.style.overflow = 'hidden';
       }
     }
   };
@@ -424,10 +428,10 @@ const QRScanPage = () => {
 
   return (
     <div className="mobile-container">
-      {/* QR 스캔 영역 비디오 전체 화면 */}
+      {/* QR 스캔 영역 정사각형 박스 */}
       <style jsx>{`
         #qr-shaded-region {
-          border-width: 80px 0px !important;
+          border-width: 80px 67px !important;
         }
         
         #qr-reader canvas {
@@ -437,13 +441,15 @@ const QRScanPage = () => {
         
         #qr-reader video {
           width: 100% !important;
-          height: 500px !important;
+          height: 440px !important;
           object-fit: cover !important;
+          transform-origin: center center !important;
         }
         
         #qr-reader__scan_region {
           width: 100% !important;
-          height: 500px !important;
+          height: 440px !important;
+          overflow: hidden !important;
         }
         
         #qr-reader__dashboard {
@@ -486,7 +492,7 @@ const QRScanPage = () => {
         position: 'relative',
         width: '100%',
         backgroundColor: 'black', // 카메라 배경을 검은색으로
-        minHeight: '500px'
+        height: '440px' // 정사각형 스캔박스에 맞는 고정 높이
       }}>
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
         <div 
