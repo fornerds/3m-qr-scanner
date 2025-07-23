@@ -562,17 +562,16 @@ const QRScanPage = () => {
 
       {/* 하단 컨트롤 */}
       <div style={{
-        padding: '20px',
-        paddingBottom: '100px', // 하단 네비게이션바와 간격
-        backgroundColor: '#f5f5f5',
-        minHeight: 'calc(100vh - 60px)' // 헤더를 제외한 전체 높이
+        padding: '16px',
+        paddingBottom: '80px', // 하단 네비게이션바와 간격 줄임
+        backgroundColor: '#f5f5f5'
       }}>
         {/* 스캔 통계 */}
         <div style={{
           backgroundColor: 'white',
           borderRadius: '12px',
-          padding: '20px',
-          marginBottom: '20px',
+          padding: '16px',
+          marginBottom: '16px',
           boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
           border: '1px solid #e9ecef'
         }}>
@@ -611,11 +610,11 @@ const QRScanPage = () => {
               textAlign: 'center'
             }}>
               <div style={{
-                fontSize: '48px',
+                fontSize: '40px',
                 fontWeight: '700',
                 color: '#dc3545',
                 lineHeight: '1',
-                marginBottom: '8px',
+                marginBottom: '6px',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
               }}>
                 {scanStats.totalScans}
@@ -667,13 +666,13 @@ const QRScanPage = () => {
         <div style={{
           display: 'flex',
           gap: '12px',
-          marginBottom: '16px'
+          marginBottom: '12px'
         }}>
           <button
             onClick={isScanning ? stopCamera : startCamera}
             style={{
               flex: 1,
-              padding: '16px',
+              padding: '14px',
               backgroundColor: isScanning ? '#6c757d' : '#28a745',
               color: 'white',
               border: 'none',
@@ -699,7 +698,7 @@ const QRScanPage = () => {
             to="/"
             style={{
               flex: 1,
-              padding: '16px',
+              padding: '14px',
               backgroundColor: '#dc3545',
               color: 'white',
               textDecoration: 'none',
