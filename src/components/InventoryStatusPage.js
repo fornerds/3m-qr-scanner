@@ -168,6 +168,35 @@ const InventoryStatusPage = () => {
             재고 현황을 불러오는 중...
           </div>
         </div>
+
+        {/* 하단 네비게이션 */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: '414px',
+          backgroundColor: 'white',
+          borderTop: '1px solid #e0e0e0',
+          padding: '8px 0',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center'
+        }}>
+          <Link to="/" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+            <i className="fas fa-home" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+            <span style={{ fontSize: '12px' }}>홈</span>
+          </Link>
+          <Link to="/store-list" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+            <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+            <span style={{ fontSize: '12px' }}>매장</span>
+          </Link>
+          <Link to="/scan?storeId=1" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+            <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
+            <span style={{ fontSize: '12px' }}>스캔</span>
+          </Link>
+        </div>
       </div>
     );
   }
