@@ -126,22 +126,47 @@ const InventoryStatusPage = () => {
 
   if (loading) {
     return (
-      <div style={{
-        width: '100%',
-        maxWidth: '414px',
-        margin: '0 auto',
-        backgroundColor: '#f5f5f5',
-        minHeight: '100vh',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
+      <div className="mobile-container">
+        {/* 헤더 */}
         <div style={{ 
-          textAlign: 'center', 
-          color: '#666'
+          backgroundColor: '#dc3545', 
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center'
         }}>
-          재고 현황을 불러오는 중...
+          <button 
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '18px',
+              cursor: 'pointer',
+              padding: '4px',
+              marginRight: '12px'
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '18px', 
+            fontWeight: 'bold', 
+            color: 'white' 
+          }}>
+            재고 현황
+          </h1>
+        </div>
+
+        <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>
+          {/* 로딩 상태 */}
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px',
+            color: '#666'
+          }}>
+            재고 현황을 불러오는 중...
+          </div>
         </div>
       </div>
     );
@@ -293,7 +318,7 @@ const InventoryStatusPage = () => {
         <div style={{
           backgroundColor: 'white',
           padding: '20px',
-          borderBottom: '16px solid #f5f5f5',
+          borderBottom: '8px solid #f5f5f5',
           position: 'relative'
         }}>
           {/* 보고서 아이콘 */}

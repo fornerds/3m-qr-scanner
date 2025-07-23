@@ -89,15 +89,47 @@ const InventoryReportPage = () => {
 
   if (loading) {
     return (
-      <div className="mobile-container" style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '100vh',
-        backgroundColor: '#f5f5f5'
-      }}>
-        <div style={{ textAlign: 'center', color: '#666' }}>
-          보고서를 불러오는 중...
+      <div className="mobile-container">
+        {/* 헤더 */}
+        <div style={{ 
+          backgroundColor: '#dc3545', 
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <button 
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '18px',
+              cursor: 'pointer',
+              padding: '4px',
+              marginRight: '12px'
+            }}
+          >
+            ←
+          </button>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: '18px', 
+            fontWeight: 'bold', 
+            color: 'white' 
+          }}>
+            재고 보고서
+          </h1>
+        </div>
+
+        <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>
+          {/* 로딩 상태 */}
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px 20px',
+            color: '#666'
+          }}>
+            보고서를 불러오는 중...
+          </div>
         </div>
       </div>
     );
