@@ -433,7 +433,7 @@ const StoreListPage = () => {
           <i className="fas fa-store" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>매장</span>
         </Link>
-        <Link to="/scan" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
+        <Link to="/store-select" style={{ textDecoration: 'none', color: '#666', textAlign: 'center' }}>
           <i className="fas fa-qrcode" style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}></i>
           <span style={{ fontSize: '12px' }}>스캔</span>
         </Link>

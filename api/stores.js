@@ -10,26 +10,26 @@ const getStoresData = async () => {
     const storesCount = await collection.countDocuments();
     if (storesCount === 0) {
       const defaultStores = [
-        {
+  {
           _id: '1',
-          name: '3M 강남점',
-          address: '서울 강남구 강남대로 123',
+    name: '3M 강남점',
+    address: '서울 강남구 강남대로 123',
           lastVisit: new Date('2024-01-15T14:30:00.000Z'),
           createdAt: new Date(),
           updatedAt: new Date()
-        },
-        {
+  },
+  {
           _id: '2',
-          name: '3M 홍대점',
-          address: '서울 마포구 홍익로 456',
+    name: '3M 홍대점',
+    address: '서울 마포구 홍익로 456',
           lastVisit: new Date('2024-01-14T16:20:00.000Z'),
           createdAt: new Date(),
           updatedAt: new Date()
-        },
-        {
+  },
+  {
           _id: '3',
-          name: '3M 명동점',
-          address: '서울 중구 명동길 789',
+    name: '3M 명동점',
+    address: '서울 중구 명동길 789',
           lastVisit: new Date('2024-01-13T11:15:00.000Z'),
           createdAt: new Date(),
           updatedAt: new Date()

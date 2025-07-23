@@ -13,24 +13,24 @@ const ioHandler = async (req, res) => {
             const { db } = await connectToDatabase();
             const collection = db.collection('sessions');
             
-            const sessionId = Date.now().toString();
+          const sessionId = Date.now().toString();
             const newSession = {
               _id: sessionId,
-              storeId: data.storeId,
-              userId: data.userId,
-              startTime: new Date(),
-              status: 'active',
+            storeId: data.storeId,
+            userId: data.userId,
+            startTime: new Date(),
+            status: 'active',
               scannedItems: [],
               createdAt: new Date()
             };
             
             await collection.insertOne(newSession);
-            
-            res.status(200).json({ 
-              success: true,
-              sessionId,
-              message: '카메라 세션 시작됨'
-            });
+          
+          res.status(200).json({ 
+            success: true,
+            sessionId,
+            message: '카메라 세션 시작됨'
+          });
           } catch (error) {
             console.error('세션 시작 오류:', error);
             res.status(500).json({
@@ -47,16 +47,16 @@ const ioHandler = async (req, res) => {
             const scanRecordsCollection = db.collection('scan_records');
             
             const session = await sessionsCollection.findOne({ _id: data.sessionId });
-            if (session) {
-              const scannedItem = {
-                productCode: data.productCode,
-                productName: data.productName,
-                category: data.category,
-                price: data.price,
-                stock: data.stock,
-                timestamp: new Date()
-              };
-              
+          if (session) {
+            const scannedItem = {
+              productCode: data.productCode,
+              productName: data.productName,
+              category: data.category,
+              price: data.price,
+              stock: data.stock,
+              timestamp: new Date()
+            };
+            
               // 세션에 스캔 아이템 추가
               await sessionsCollection.updateOne(
                 { _id: data.sessionId },
@@ -72,16 +72,16 @@ const ioHandler = async (req, res) => {
                 timestamp: new Date(),
                 createdAt: new Date()
               });
-              
-              res.status(200).json({
-                success: true,
-                scannedItem,
-                message: 'QR 코드 처리 완료'
-              });
-            } else {
-              res.status(404).json({
-                success: false,
-                message: '세션을 찾을 수 없습니다'
+            
+            res.status(200).json({
+              success: true,
+              scannedItem,
+              message: 'QR 코드 처리 완료'
+            });
+          } else {
+            res.status(404).json({
+              success: false,
+              message: '세션을 찾을 수 없습니다'
               });
             }
           } catch (error) {
@@ -111,15 +111,15 @@ const ioHandler = async (req, res) => {
             );
             
             if (result.value) {
-              res.status(200).json({
-                success: true,
+            res.status(200).json({
+              success: true,
                 session: result.value,
-                message: '카메라 세션 종료됨'
-              });
-            } else {
-              res.status(404).json({
-                success: false,
-                message: '세션을 찾을 수 없습니다'
+              message: '카메라 세션 종료됨'
+            });
+          } else {
+            res.status(404).json({
+              success: false,
+              message: '세션을 찾을 수 없습니다'
               });
             }
           } catch (error) {
@@ -152,11 +152,11 @@ const ioHandler = async (req, res) => {
       
       const activeSessions = await collection.find({ status: 'active' }).toArray();
       
-      res.status(200).json({
-        success: true,
+    res.status(200).json({
+      success: true,
         sessions: activeSessions,
-        message: '활성 세션 조회 완료'
-      });
+      message: '활성 세션 조회 완료'
+    });
     } catch (error) {
       console.error('세션 조회 오류:', error);
       res.status(500).json({

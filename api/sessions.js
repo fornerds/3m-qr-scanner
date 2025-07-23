@@ -65,12 +65,12 @@ module.exports = async function handler(req, res) {
         { _id: sessionId },
         { 
           $set: {
-            ...updateData,
-            updatedAt: new Date()
+          ...updateData,
+          updatedAt: new Date()
           }
         }
       );
-      
+        
       if (result.matchedCount > 0) {
         res.status(200).json({ 
           success: true, 
