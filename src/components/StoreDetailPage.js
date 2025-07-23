@@ -103,7 +103,8 @@ const StoreDetailPage = () => {
           backgroundColor: '#dc3545', 
           padding: '12px 16px',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          position: 'relative'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -114,7 +115,8 @@ const StoreDetailPage = () => {
               fontSize: '18px',
               cursor: 'pointer',
               padding: '4px',
-              marginRight: '12px'
+              position: 'absolute',
+              left: '16px'
             }}
           >
             ←
@@ -123,7 +125,9 @@ const StoreDetailPage = () => {
             margin: 0, 
             fontSize: '18px', 
             fontWeight: 'bold', 
-            color: 'white' 
+            color: 'white',
+            flex: 1,
+            textAlign: 'center'
           }}>
             매장 상세
           </h1>
@@ -131,12 +135,12 @@ const StoreDetailPage = () => {
 
         <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>
           {/* 로딩 상태 */}
-          <div style={{ 
-            textAlign: 'center', 
-            padding: '40px 20px',
-            color: '#666'
-          }}>
-            매장 정보를 불러오는 중...
+        <div style={{ 
+          textAlign: 'center', 
+          padding: '40px 20px',
+          color: '#666'
+        }}>
+          매장 정보를 불러오는 중...
           </div>
         </div>
 

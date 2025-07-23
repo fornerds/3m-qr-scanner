@@ -73,7 +73,9 @@ const QRScannerMain = () => {
         backgroundColor: '#dc3545', 
         padding: '12px 16px',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative'
       }}>
         <div style={{
           width: '32px',
@@ -83,7 +85,8 @@ const QRScannerMain = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          marginRight: '12px',
+          position: 'absolute',
+          left: '16px',
           fontWeight: 'bold',
           color: '#dc3545',
           fontSize: '14px'
@@ -98,6 +101,19 @@ const QRScannerMain = () => {
         }}>
           QR Scanner
         </h1>
+        <Link
+          to="/manager"
+          style={{
+            position: 'absolute',
+            right: '16px',
+            color: 'white',
+            fontSize: '16px',
+            textDecoration: 'none',
+            padding: '4px'
+          }}
+        >
+          <i className="fas fa-cog"></i>
+        </Link>
       </div>
 
       {/* 메인 컨텐츠 */}

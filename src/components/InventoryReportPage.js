@@ -144,7 +144,7 @@ const InventoryReportPage = () => {
         </head>
         <body>
           <h1 style="text-align: center; color: #dc3545; margin-bottom: 30px;">
-            📊 ${reportData.storeInfo.name} 재고 현황 보고서
+            ${reportData.storeInfo.name} 재고 현황 보고서
           </h1>
           <div style="text-align: center; margin-bottom: 30px; color: #666;">
             생성일시: ${new Date().toLocaleString('ko-KR')}
@@ -206,7 +206,8 @@ const InventoryReportPage = () => {
           backgroundColor: '#dc3545', 
           padding: '12px 16px',
           display: 'flex',
-          alignItems: 'center'
+          alignItems: 'center',
+          position: 'relative'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -217,7 +218,8 @@ const InventoryReportPage = () => {
               fontSize: '18px',
               cursor: 'pointer',
               padding: '4px',
-              marginRight: '12px'
+              position: 'absolute',
+              left: '16px'
             }}
           >
             ←
@@ -226,7 +228,9 @@ const InventoryReportPage = () => {
             margin: 0, 
             fontSize: '18px', 
             fontWeight: 'bold', 
-            color: 'white' 
+            color: 'white',
+            flex: 1,
+            textAlign: 'center'
           }}>
             재고 보고서
           </h1>
@@ -283,7 +287,7 @@ const InventoryReportPage = () => {
         padding: '12px 16px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between'
+        position: 'relative'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -293,7 +297,9 @@ const InventoryReportPage = () => {
             color: 'white',
             fontSize: '18px',
             cursor: 'pointer',
-            padding: '4px'
+            padding: '4px',
+            position: 'absolute',
+            left: '16px'
           }}
         >
           ←
@@ -302,7 +308,9 @@ const InventoryReportPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white' 
+          color: 'white',
+          flex: 1,
+          textAlign: 'center'
         }}>
           재고 현황 보고서
         </h1>
@@ -314,7 +322,9 @@ const InventoryReportPage = () => {
             color: 'white',
             fontSize: '16px',
             cursor: 'pointer',
-            padding: '8px'
+            padding: '8px',
+            position: 'absolute',
+            right: '16px'
           }}
           title="PDF 다운로드"
         >
@@ -390,8 +400,8 @@ const InventoryReportPage = () => {
           }}>
             <div>상품코드</div>
             <div>품목명</div>
-            <div>판매순위</div>
-            <div>우선순위</div>
+            <div>판매<br/>순위</div>
+            <div>우선<br/>순위</div>
             <div>상태</div>
           </div>
 
