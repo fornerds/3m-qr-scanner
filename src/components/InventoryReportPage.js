@@ -69,6 +69,71 @@ const InventoryReportPage = () => {
     }
   };
 
+  const downloadPDF = () => {
+    if (!reportData) {
+      alert('보고서 데이터가 없습니다.');
+      return;
+    }
+
+    // 현재 페이지의 HTML을 기반으로 PDF 생성
+    const printContent = document.querySelector('.mobile-container').cloneNode(true);
+    
+    // 헤더의 버튼들 제거 (PDF에서는 불필요)
+    const buttons = printContent.querySelectorAll('button');
+    buttons.forEach(btn => btn.remove());
+    
+    // 네비게이션 제거
+    const nav = printContent.querySelector('div[style*="position: fixed"]');
+    if (nav) nav.remove();
+
+    // PDF용 스타일 적용
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${reportData.storeInfo.name} - 재고 현황 보고서</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; 
+            margin: 0; 
+            padding: 20px;
+            background: white;
+          }
+          .mobile-container { 
+            max-width: none; 
+            margin: 0;
+            box-shadow: none;
+          }
+          h1, h2, h3 { color: #333; }
+          .priority-badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+          }
+          @media print {
+            body { margin: 0; }
+            * { -webkit-print-color-adjust: exact !important; }
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.outerHTML}
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    
+    // PDF 다운로드 실행
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'not_displayed':
@@ -195,13 +260,20 @@ const InventoryReportPage = () => {
         }}>
           재고 현황 보고서
         </h1>
-        <div style={{
-          color: 'white',
-          fontSize: '16px',
-          cursor: 'pointer'
-        }}>
-          ↓
-        </div>
+        <button 
+          onClick={downloadPDF}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: '16px',
+            cursor: 'pointer',
+            padding: '8px'
+          }}
+          title="PDF 다운로드"
+        >
+          <i className="fas fa-file-pdf"></i>
+        </button>
       </div>
 
       <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)', paddingBottom: '100px' }}>
