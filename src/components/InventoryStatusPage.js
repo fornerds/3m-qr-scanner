@@ -288,7 +288,7 @@ const InventoryStatusPage = () => {
         </h1>
       </div>
 
-      <div style={{ backgroundColor: '#ffffff', paddingBottom: '100px' }}>
+      <div style={{ backgroundColor: '#ffffff', paddingBottom: '100px', minHeight: 'calc(100vh - 60px)' }}>
         {/* 매장 정보 및 통계 */}
         <div style={{
           backgroundColor: 'white',

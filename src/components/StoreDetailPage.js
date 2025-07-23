@@ -311,7 +311,8 @@ const StoreDetailPage = () => {
         backgroundColor: 'white',
         margin: '8px 0 0 0',
         padding: '20px 16px',
-        paddingBottom: '100px'
+        paddingBottom: '100px',
+        minHeight: 'calc(100vh - 300px)'
       }}>
         <div style={{
           display: 'flex',

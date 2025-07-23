@@ -24,8 +24,12 @@ const QRScannerMain = () => {
       return '1일 전';
     } else if (diffInDays < 7) {
       return `${Math.floor(diffInDays)}일 전`;
+    } else if (diffInDays < 14) {
+      return '1주일 전';
+    } else if (diffInDays < 21) {
+      return '2주일 전';
     } else {
-      return `${Math.floor(diffInDays / 7)}주일 전`;
+      return '3주일 전';
     }
   };
 

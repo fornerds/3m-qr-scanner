@@ -116,16 +116,13 @@ const StoreListPage = () => {
         <div style={{ width: '24px' }}></div>
       </div>
 
-      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 120px)', paddingBottom: '80px' }}>
+      <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>
         {/* 로딩 상태 */}
         {loading && (
           <div style={{ 
             textAlign: 'center', 
             padding: '40px 20px',
-            color: '#666',
-            backgroundColor: 'white',
-            margin: '16px',
-            borderRadius: '12px'
+            color: '#666'
           }}>
             매장 목록을 불러오는 중...
           </div>
@@ -138,8 +135,7 @@ const StoreListPage = () => {
             padding: '20px',
             color: '#dc3545',
             backgroundColor: '#fff5f5',
-            borderRadius: '8px',
-            margin: '16px'
+            borderRadius: '8px'
           }}>
             {error}
           </div>

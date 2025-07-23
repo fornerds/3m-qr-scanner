@@ -165,34 +165,35 @@ const QRScanPage = () => {
 
   const startCamera = async () => {
     try {
-      // HTML5-QRCode 스캐너 설정
+      // 이전 스캐너 완전히 정리
+      const qrReaderDiv = document.getElementById('qr-reader');
+      if (qrReaderDiv) {
+        // 비디오 요소 안전하게 정지
+        const video = qrReaderDiv.querySelector('video');
+        if (video) {
+          video.pause();
+          video.srcObject = null;
+        }
+      }
+      
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+      }
+      
+      // QR reader DOM 완전히 정리
+      if (qrReaderDiv) {
+        qrReaderDiv.innerHTML = '';
+      }
+      
+      // 잠깐 대기 (DOM 정리 시간)
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // 가장 기본적인 HTML5-QRCode 설정 (정사각형 스캔 박스)
       const config = {
         fps: 10,
-        qrbox: { width: 300, height: 300 },
-        aspectRatio: 1.0,
-        disableFlip: false,
-        // 모든 바코드 형식 지원
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.CODABAR,
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E
-        ],
-        videoConstraints: {
-          facingMode: 'environment',
-          advanced: [
-            { focusMode: 'continuous' },
-            { exposureMode: 'continuous' },
-            { whiteBalanceMode: 'continuous' },
-            { zoom: { min: 1, max: 3 } }
-          ]
-        }
+        qrbox: { width: 280, height: 280 }, // 명시적으로 정사각형 설정
+        aspectRatio: 1.0 // 정사각형 비율 강제
       };
 
       // 스캔 성공 콜백
@@ -216,49 +217,22 @@ const QRScanPage = () => {
       };
 
       // HTML5-QRCode 스캐너 생성 및 시작
-      scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose= */ false);
-      scannerRef.current.render(onScanSuccess, onScanError);
+      try {
+        scannerRef.current = new Html5QrcodeScanner("qr-reader", config, /* verbose= */ false);
+        await scannerRef.current.render(onScanSuccess, onScanError);
 
-      // 기본 UI 요소들 숨기기
-      setTimeout(() => {
-        const qrReaderDiv = document.getElementById('qr-reader');
-        if (qrReaderDiv) {
-          // 권한 요청 메시지와 기본 버튼들 숨기기
-          const selectElements = qrReaderDiv.querySelectorAll('select');
-          const spanElements = qrReaderDiv.querySelectorAll('span');
-          const divElements = qrReaderDiv.querySelectorAll('div');
-          
-          selectElements.forEach(el => el.style.display = 'none');
-          spanElements.forEach(el => {
-            if (el.innerText && (
-              el.innerText.includes('Request') || 
-              el.innerText.includes('Camera') || 
-              el.innerText.includes('Permission') ||
-              el.innerText.includes('Select') ||
-              el.innerText.includes('Choose')
-            )) {
-              el.style.display = 'none';
-            }
-          });
-          
-          // 불필요한 컨트롤 숨기기
-          divElements.forEach(el => {
-            if (el.style && el.style.textAlign === 'center' && el.children.length > 0) {
-              const hasSelect = el.querySelector('select');
-              const hasSpan = el.querySelector('span');
-              if (hasSelect || (hasSpan && hasSpan.innerText && hasSpan.innerText.includes('Camera'))) {
-                el.style.display = 'none';
-              }
-            }
-          });
-        }
-      }, 100);
+        // 카메라 기능 완전 보장 - UI 조정 제거
 
-      setIsScanning(true);
-      setScanStatus('바코드 스캔 중...');
+        setIsScanning(true);
+        setScanStatus('바코드 스캔 중...');
 
-      // 세션 시작
-      await startSession();
+        // 세션 시작
+        await startSession();
+      } catch (renderError) {
+        console.error('스캐너 렌더링 오류:', renderError);
+        setScanStatus('카메라 초기화 실패');
+        throw renderError; // 외부 catch로 전달
+      }
 
     } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
@@ -268,14 +242,45 @@ const QRScanPage = () => {
   };
 
   const stopCamera = () => {
-    if (scannerRef.current) {
-      scannerRef.current.clear();
-      scannerRef.current = null;
+    try {
+      // 비디오 요소 안전하게 정지
+      const qrReaderDiv = document.getElementById('qr-reader');
+      if (qrReaderDiv) {
+        const video = qrReaderDiv.querySelector('video');
+        if (video) {
+          try {
+            video.pause();
+            if (video.srcObject) {
+              const tracks = video.srcObject.getTracks();
+              tracks.forEach(track => track.stop());
+            }
+            video.srcObject = null;
+          } catch (videoError) {
+            console.log('비디오 정리 중 무시 가능한 오류:', videoError);
+          }
+        }
+      }
+      
+      if (scannerRef.current) {
+        scannerRef.current.clear();
+        scannerRef.current = null;
+      }
+      
+      // DOM 정리는 약간의 지연 후 실행
+      setTimeout(() => {
+        const qrReaderDiv = document.getElementById('qr-reader');
+        if (qrReaderDiv) {
+          qrReaderDiv.innerHTML = '';
+        }
+      }, 100);
+      
+      setIsScanning(false);
+      setScanResult(null);
+      setLastScannedCode('');
+      setScanStatus('바코드 스캔 중지됨');
+    } catch (error) {
+      console.error('카메라 정지 오류:', error);
     }
-    setIsScanning(false);
-    setScanResult(null);
-    setLastScannedCode('');
-    setScanStatus('바코드 스캔 중지됨');
   };
 
   // 핀치 줌 기능
@@ -337,36 +342,72 @@ const QRScanPage = () => {
 
 
   useEffect(() => {
-    startCamera();
+    // 컴포넌트 마운트 후 약간의 지연을 두고 카메라 시작
+    const timer = setTimeout(() => {
+      startCamera();
+    }, 100);
     
     return () => {
-      stopCamera();
+      // 타이머 정리
+      clearTimeout(timer);
+      
+      // 컴포넌트 언마운트 시 완전한 정리
+      try {
+        const qrReaderDiv = document.getElementById('qr-reader');
+        if (qrReaderDiv) {
+          // 비디오 요소 안전하게 정지
+          const video = qrReaderDiv.querySelector('video');
+          if (video) {
+            try {
+              video.pause();
+              if (video.srcObject) {
+                const tracks = video.srcObject.getTracks();
+                tracks.forEach(track => track.stop());
+              }
+              video.srcObject = null;
+            } catch (videoError) {
+              console.log('비디오 정리 중 무시 가능한 오류:', videoError);
+            }
+          }
+        }
+        
+        if (scannerRef.current) {
+          try {
+            scannerRef.current.clear();
+          } catch (scannerError) {
+            console.log('스캐너 정리 중 무시 가능한 오류:', scannerError);
+          }
+          scannerRef.current = null;
+        }
+        
+        // DOM 정리는 비동기로 실행
+        setTimeout(() => {
+          const qrReaderDiv = document.getElementById('qr-reader');
+          if (qrReaderDiv) {
+            qrReaderDiv.innerHTML = '';
+          }
+        }, 100);
+      } catch (error) {
+        console.error('Cleanup 오류:', error);
+      }
     };
   }, []);
 
   return (
     <div className="mobile-container">
-      {/* CSS 스타일로 HTML5-QRCode 기본 UI 숨기기 */}
+      {/* QR 스캔 영역 상하 간격 조정 및 정사각형 강제 */}
       <style jsx>{`
-        #qr-reader select,
-        #qr-reader span:contains("Request"),
-        #qr-reader span:contains("Camera"),
-        #qr-reader span:contains("Permission"),
-        #qr-reader span:contains("Select"),
-        #qr-reader span:contains("Choose"),
-        #qr-reader__dashboard_section,
-        #qr-reader__camera_selection,
-        #qr-reader__camera_permission_button {
-          display: none !important;
+        #qr-shaded-region {
+          border-width: 80px 66.5px !important;
+        }
+        
+        #qr-reader canvas {
+          width: 280px !important;
+          height: 280px !important;
         }
         
         #qr-reader video {
-          border-radius: 0 !important;
-          object-fit: cover !important;
-        }
-        
-        #qr-reader__scan_region {
-          border: none !important;
+          aspect-ratio: 1 !important;
         }
         
         #qr-reader__dashboard {
@@ -408,7 +449,7 @@ const QRScanPage = () => {
       <div style={{
         position: 'relative',
         width: '100%',
-        backgroundColor: '#000'
+        backgroundColor: 'white' // 간단히 흰색 배경만
       }}>
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
         <div 
@@ -419,7 +460,6 @@ const QRScanPage = () => {
           onTouchEnd={handleTouchEnd}
           style={{
             width: '100%',
-            minHeight: '400px',
             touchAction: 'none' // 기본 터치 제스처 비활성화
           }}
         ></div>
@@ -495,7 +535,6 @@ const QRScanPage = () => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            paddingBottom: '16px',
             borderBottom: '1px solid #f8f9fa'
           }}>
             <div style={{
