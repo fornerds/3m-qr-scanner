@@ -130,10 +130,9 @@ const InventoryStatusPage = () => {
         {/* 헤더 */}
         <div style={{ 
           backgroundColor: '#dc3545', 
-          padding: '12px 16px',
+          padding: '16px',
           display: 'flex',
-          alignItems: 'center',
-          position: 'relative'
+          alignItems: 'center'
         }}>
           <button 
             onClick={() => navigate(-1)}
@@ -144,8 +143,7 @@ const InventoryStatusPage = () => {
               fontSize: '18px',
               cursor: 'pointer',
               padding: '4px',
-              position: 'absolute',
-              left: '16px'
+              marginRight: '12px'
             }}
           >
             ←
@@ -318,7 +316,7 @@ const InventoryStatusPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
         alignItems: 'center'
       }}>
@@ -340,7 +338,9 @@ const InventoryStatusPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white' 
+          color: 'white',
+          flex: 1,
+          textAlign: 'center'
         }}>
           재고 현황
         </h1>

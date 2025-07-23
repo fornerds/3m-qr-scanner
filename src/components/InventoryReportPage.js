@@ -284,10 +284,9 @@ const InventoryReportPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
-        alignItems: 'center',
-        position: 'relative'
+        alignItems: 'center'
       }}>
         <button 
           onClick={() => navigate(-1)}
@@ -298,8 +297,7 @@ const InventoryReportPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            position: 'absolute',
-            left: '16px'
+            marginRight: '12px'
           }}
         >
           ←
@@ -322,9 +320,7 @@ const InventoryReportPage = () => {
             color: 'white',
             fontSize: '16px',
             cursor: 'pointer',
-            padding: '8px',
-            position: 'absolute',
-            right: '16px'
+            padding: '8px'
           }}
           title="PDF 다운로드"
         >

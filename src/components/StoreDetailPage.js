@@ -188,7 +188,7 @@ const StoreDetailPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
         alignItems: 'center'
       }}>
@@ -209,8 +209,10 @@ const StoreDetailPage = () => {
         <h1 style={{ 
           margin: 0, 
           fontSize: '18px', 
-          fontWeight: '600', 
-          color: 'white' 
+          fontWeight: 'bold', 
+          color: 'white',
+          flex: 1,
+          textAlign: 'center'
         }}>
           매장 상세
         </h1>

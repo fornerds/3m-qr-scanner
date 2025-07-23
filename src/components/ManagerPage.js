@@ -69,10 +69,9 @@ const ManagerPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
-        alignItems: 'center',
-        position: 'relative'
+        alignItems: 'center'
       }}>
         <Link 
           to="/"
@@ -83,9 +82,8 @@ const ManagerPage = () => {
             fontSize: '18px',
             cursor: 'pointer',
             padding: '4px',
-            position: 'absolute',
-            left: '16px',
-            textDecoration: 'none'
+            textDecoration: 'none',
+            marginRight: '12px'
           }}
         >
           ←

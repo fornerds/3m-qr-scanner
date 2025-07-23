@@ -87,10 +87,9 @@ const StoreListPage = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+        alignItems: 'center'
       }}>
         <button 
           onClick={() => navigate('/')}
@@ -100,7 +99,8 @@ const StoreListPage = () => {
             color: 'white',
             fontSize: '18px',
             cursor: 'pointer',
-            padding: '4px'
+            padding: '4px',
+            marginRight: '12px'
           }}
         >
           ←
@@ -109,11 +109,12 @@ const StoreListPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white' 
+          color: 'white',
+          flex: 1,
+          textAlign: 'center'
         }}>
           작업 매장 전체
         </h1>
-        <div style={{ width: '24px' }}></div>
       </div>
 
       <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 110px)', paddingBottom: '80px' }}>

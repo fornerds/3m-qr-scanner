@@ -71,11 +71,9 @@ const QRScannerMain = () => {
       {/* 헤더 */}
       <div style={{ 
         backgroundColor: '#dc3545', 
-        padding: '12px 16px',
+        padding: '16px',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative'
+        alignItems: 'center'
       }}>
         <div style={{
           width: '32px',
@@ -85,27 +83,26 @@ const QRScannerMain = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          position: 'absolute',
-          left: '16px',
           fontWeight: 'bold',
           color: '#dc3545',
-          fontSize: '14px'
+          fontSize: '14px',
+          marginRight: '12px'
         }}>
           3M
         </div>
         <h1 style={{ 
           margin: 0, 
           fontSize: '18px', 
-          fontWeight: '600', 
-          color: 'white' 
+          fontWeight: 'bold', 
+          color: 'white',
+          flex: 1,
+          textAlign: 'center'
         }}>
           QR Scanner
         </h1>
         <Link
           to="/manager"
           style={{
-            position: 'absolute',
-            right: '16px',
             color: 'white',
             fontSize: '16px',
             textDecoration: 'none',
