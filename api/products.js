@@ -47,37 +47,45 @@ const processExcelFile = (buffer) => {
           return false;
         }
         
-        const sku = String(row[3] || '');
-        const name = String(row[4] || '');
+        const sku = String(row[5] || ''); // DAISO SKU ID (F열)
+        const name = String(row[6] || ''); // DAISO SKU Name (G열)
+        const category = String(row[1] || ''); // 다이소 대분류 (B열)
+        const subCategory = String(row[2] || ''); // 다이소 소분류 (C열)
         
-        // 기본적인 유효성 검사만 수행
+        // 헤더 행 제거
+        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name' || 
+            category === '다이소 대분류' || subCategory === '다이소 소분류') {
+          console.log('헤더 행 필터링:', { sku, name, category, subCategory });
+          return false;
+        }
+        
+        // SKU가 숫자가 아닌 경우 필터링 (헤더나 잘못된 데이터)
+        if (!sku.match(/^[0-9]+$/)) {
+          console.log('숫자가 아닌 SKU 필터링:', { sku, name });
+          return false;
+        }
+        
+        // 기본적인 유효성 검사
         if (!sku || !name || sku.trim() === '' || name.trim() === '') {
           console.log('빈 SKU 또는 이름 필터링:', { sku, name });
           return false;
         }
         
-        // 헤더 행만 제거
-        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') {
-          console.log('헤더 행 필터링:', { sku, name });
-          return false;
-        }
-        
-        // 모든 데이터를 허용 (디버깅용)
-        console.log('유효한 데이터:', { sku, name });
+        console.log('유효한 데이터:', { sku, name, category, subCategory });
         return true;
       })
               .map((row, index) => {
           // 숫자에서 쉼표 제거 후 변환
-          const priceStr = String(row[5] || '').replace(/,/g, '');
-          const salesAvgStr = String(row[6] || '').replace(/,/g, '');
+          const priceStr = String(row[7] || '').replace(/,/g, ''); // 판매가 (VAT+)
+          const salesAvgStr = String(row[8] || '').replace(/,/g, ''); // 6YTD AVG
           
           return {
-            sku: String(row[3] || '').trim(), // DAISO SKU ID
-            name: String(row[4] || '').trim(), // DAISO SKU Name
-            category: String(row[1] || '').trim(), // 다이소 대분류
-            subCategory: String(row[2] || '').trim(), // 다이소 소분류
-            price: parseInt(priceStr) || 0, // 판매가 (VAT+)
-            salesAvg: parseInt(salesAvgStr) || 0, // 6YTD AVG
+            sku: String(row[5] || '').trim(), // DAISO SKU ID (F열)
+            name: String(row[6] || '').trim(), // DAISO SKU Name (G열)
+            category: String(row[1] || '').trim(), // 다이소 대분류 (B열)
+            subCategory: String(row[2] || '').trim(), // 다이소 소분류 (C열)
+            price: parseInt(priceStr) || 0, // 판매가 (VAT+) (H열)
+            salesAvg: parseInt(salesAvgStr) || 0, // 6YTD AVG (I열)
             salesRep: 'JW Park', // 기본값
             active: true,
             displayOrder: index + 1,
