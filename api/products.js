@@ -50,36 +50,20 @@ const processExcelFile = (buffer) => {
         const sku = String(row[3] || '');
         const name = String(row[4] || '');
         
-        // 디버깅: 필터링되는 데이터 확인
-        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') {
-          console.log('헤더 행 필터링:', { sku, name });
-          return false;
-        }
-        if (sku === 'Sales \r\nRep.' || sku === 'JW Park' || sku === 'P/C') {
-          console.log('잘못된 SKU 필터링:', { sku, name });
-          return false;
-        }
-        if (name === '1470' || name === 'P/C') {
-          console.log('잘못된 이름 필터링:', { sku, name });
-          return false;
-        }
-        // SKU가 영문자와 공백만 있는 경우만 필터링 (헤더 행 등)
-        if (sku.match(/^[A-Za-z\s\r\n]+$/) && !sku.match(/^[0-9]+$/)) {
-          console.log('영문자만 있는 SKU 필터링:', { sku, name });
-          return false;
-        }
-        // 제품명이 숫자만 있는 경우 필터링 (잘못된 데이터)
-        if (name.match(/^[0-9]+$/) && name.length < 5) {
-          console.log('숫자만 있는 이름 필터링:', { sku, name });
-          return false;
-        }
-        
-        // SKU와 이름이 유효한지 확인
+        // 기본적인 유효성 검사만 수행
         if (!sku || !name || sku.trim() === '' || name.trim() === '') {
           console.log('빈 SKU 또는 이름 필터링:', { sku, name });
           return false;
         }
         
+        // 헤더 행만 제거
+        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') {
+          console.log('헤더 행 필터링:', { sku, name });
+          return false;
+        }
+        
+        // 모든 데이터를 허용 (디버깅용)
+        console.log('유효한 데이터:', { sku, name });
         return true;
       })
               .map((row, index) => {
