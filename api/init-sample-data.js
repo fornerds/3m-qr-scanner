@@ -2,9 +2,86 @@ const { connectToDatabase } = require('./config/database');
 const fs = require('fs');
 const path = require('path');
 
+// 제품 DB 초기화 함수
+async function initializeProducts(force = false) {
+  try {
+    const { db } = await connectToDatabase();
+    const productsCollection = db.collection('products');
+    
+    // products.js 파일 읽어서 제품 데이터 추출
+    const productsFilePath = path.join(process.cwd(), 'src', 'data', 'products.js');
+    const productsFileContent = fs.readFileSync(productsFilePath, 'utf8');
+    
+    // export 키워드 제거하고 DAISO_PRODUCTS 추출
+    const cleanContent = productsFileContent.replace(/export\s+/g, '');
+    let DAISO_PRODUCTS;
+    eval(cleanContent);
+    
+    // 기존 데이터 확인
+    const existingCount = await productsCollection.countDocuments();
+    
+    if (existingCount > 0 && !force) {
+      return {
+        success: true,
+        message: '제품 데이터가 이미 존재합니다. force: true로 재초기화 가능합니다.',
+        existingCount: existingCount
+      };
+    }
+    
+    // 기존 데이터 삭제 (force가 true인 경우)
+    if (force && existingCount > 0) {
+      await productsCollection.deleteMany({});
+      console.log('기존 제품 데이터 삭제 완료');
+    }
+    
+    // 제품 데이터에 메타데이터 추가
+    const productsWithMeta = DAISO_PRODUCTS.map((product, index) => ({
+      ...product,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      active: true,
+      displayOrder: index + 1
+    }));
+    
+    // 제품 데이터 삽입
+    const result = await productsCollection.insertMany(productsWithMeta);
+    
+    console.log(`${result.insertedCount}개의 제품 데이터 초기화 완료`);
+    
+    return {
+      success: true,
+      message: '제품 데이터 초기화 완료',
+      insertedCount: result.insertedCount,
+      products: productsWithMeta.length
+    };
+    
+  } catch (error) {
+    console.error('제품 초기화 오류:', error);
+    throw error;
+  }
+}
+
 // 초기 샘플 데이터 생성 API (MongoDB 연동)
 module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
+    const { action, force = false } = req.body;
+    
+    // 제품 초기화 액션
+    if (action === 'init-products') {
+      try {
+        const result = await initializeProducts(force);
+        res.status(200).json(result);
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: '제품 초기화 중 오류가 발생했습니다.',
+          error: error.message
+        });
+      }
+      return;
+    }
+    
+    // 기존 샘플 데이터 생성 로직
     try {
       console.log('초기 샘플 데이터 생성 시작...');
       

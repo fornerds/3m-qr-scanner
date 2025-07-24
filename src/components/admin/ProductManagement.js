@@ -97,8 +97,8 @@ const ProductManagement = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/products-upload', {
-        method: 'POST',
+      const response = await fetch('/api/products', {
+        method: 'PUT',
         body: formData,
       });
 

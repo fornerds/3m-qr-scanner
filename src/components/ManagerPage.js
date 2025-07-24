@@ -11,7 +11,7 @@ const ManagerPage = () => {
   const checkProductStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/init-products');
+      const response = await fetch('/api/init-sample-data');
       const data = await response.json();
       
       if (data.success) {
@@ -33,12 +33,12 @@ const ManagerPage = () => {
       setInitLoading(true);
       setMessage('');
       
-      const response = await fetch('/api/init-products', {
+      const response = await fetch('/api/init-sample-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ force })
+        body: JSON.stringify({ action: 'init-products', force })
       });
       
       const data = await response.json();

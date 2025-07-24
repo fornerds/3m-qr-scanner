@@ -1,8 +1,22 @@
 const { connectToDatabase } = require('./config/database');
 
-// 시스템 상태 확인 API (MongoDB 연동)
+// 시스템 상태 확인 및 헬스체크 API (MongoDB 연동)
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
+    const { action } = req.query;
+    
+    // 헬스체크
+    if (action === 'health') {
+      return res.status(200).json({ 
+        status: 'ok', 
+        message: 'API is working!',
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        url: req.url
+      });
+    }
+    
+    // 시스템 상태 확인 (기본)
     try {
       // MongoDB 연결 테스트
       const { db } = await connectToDatabase();
