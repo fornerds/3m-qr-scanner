@@ -34,41 +34,73 @@ const processExcelFile = (buffer) => {
     const headers = jsonData[0];
     const dataRows = jsonData.slice(1);
     
+    // 디버깅: 원본 데이터 확인
+    console.log('원본 헤더:', headers);
+    console.log('원본 데이터 샘플 (처음 3행):', dataRows.slice(0, 3));
+    
     // 이미지에서 보이는 컬럼 구조에 맞춰 매핑
     const products = dataRows
       .filter(row => {
         // 빈 행 제거
-        if (!row || row.length < 7) return false;
+        if (!row || row.length < 7) {
+          console.log('빈 행 또는 컬럼 부족:', row);
+          return false;
+        }
         
-        // 헤더 행 제거 (첫 번째 행이 헤더인 경우)
         const sku = String(row[3] || '');
         const name = String(row[4] || '');
         
-        // 잘못된 데이터 필터링
-        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') return false;
-        if (sku === 'Sales \r\nRep.' || sku === 'JW Park' || sku === 'P/C') return false;
-        if (name === '1470' || name === 'P/C') return false;
-        if (sku.match(/^[A-Za-z\s\r\n]+$/)) return false; // 영문자와 공백만 있는 SKU
-        if (name.match(/^[0-9]+$/)) return false; // 숫자만 있는 이름
+        // 디버깅: 필터링되는 데이터 확인
+        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') {
+          console.log('헤더 행 필터링:', { sku, name });
+          return false;
+        }
+        if (sku === 'Sales \r\nRep.' || sku === 'JW Park' || sku === 'P/C') {
+          console.log('잘못된 SKU 필터링:', { sku, name });
+          return false;
+        }
+        if (name === '1470' || name === 'P/C') {
+          console.log('잘못된 이름 필터링:', { sku, name });
+          return false;
+        }
+        // SKU가 영문자와 공백만 있는 경우만 필터링 (헤더 행 등)
+        if (sku.match(/^[A-Za-z\s\r\n]+$/) && !sku.match(/^[0-9]+$/)) {
+          console.log('영문자만 있는 SKU 필터링:', { sku, name });
+          return false;
+        }
+        // 제품명이 숫자만 있는 경우 필터링 (잘못된 데이터)
+        if (name.match(/^[0-9]+$/) && name.length < 5) {
+          console.log('숫자만 있는 이름 필터링:', { sku, name });
+          return false;
+        }
         
         // SKU와 이름이 유효한지 확인
-        return sku && name && sku.trim() !== '' && name.trim() !== '';
+        if (!sku || !name || sku.trim() === '' || name.trim() === '') {
+          console.log('빈 SKU 또는 이름 필터링:', { sku, name });
+          return false;
+        }
+        
+        return true;
       })
-      .map((row, index) => {
-        return {
-          sku: String(row[3] || '').trim(), // DAISO SKU ID
-          name: String(row[4] || '').trim(), // DAISO SKU Name
-          category: String(row[1] || '').trim(), // 다이소 대분류
-          subCategory: String(row[2] || '').trim(), // 다이소 소분류
-          price: parseInt(row[5]) || 0, // 판매가 (VAT+)
-          salesAvg: parseInt(row[6]) || 0, // 6YTD AVG
-          salesRep: 'JW Park', // 기본값
-          active: true,
-          displayOrder: index + 1,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-      });
+              .map((row, index) => {
+          // 숫자에서 쉼표 제거 후 변환
+          const priceStr = String(row[5] || '').replace(/,/g, '');
+          const salesAvgStr = String(row[6] || '').replace(/,/g, '');
+          
+          return {
+            sku: String(row[3] || '').trim(), // DAISO SKU ID
+            name: String(row[4] || '').trim(), // DAISO SKU Name
+            category: String(row[1] || '').trim(), // 다이소 대분류
+            subCategory: String(row[2] || '').trim(), // 다이소 소분류
+            price: parseInt(priceStr) || 0, // 판매가 (VAT+)
+            salesAvg: parseInt(salesAvgStr) || 0, // 6YTD AVG
+            salesRep: 'JW Park', // 기본값
+            active: true,
+            displayOrder: index + 1,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+        });
     
     return products;
   } catch (error) {
