@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const InventoryStatusPage = () => {
@@ -84,8 +84,8 @@ const InventoryStatusPage = () => {
     fetchData();
   }, [storeId]);
 
-  // 미진열 제품 목록 생성 (클라이언트에서 스캔된 제품 제외)
-  const getNotDisplayedItems = () => {
+  // 미진열 제품 목록 생성 (클라이언트에서 스캔된 제품 제외) - useMemo로 최적화
+  const notDisplayedItems = useMemo(() => {
     if (!inventory || !inventory.notDisplayedProducts) return [];
 
     // 스캔된 제품 코드 Set 생성 (빠른 검색용)
@@ -104,9 +104,7 @@ const InventoryStatusPage = () => {
         type: 'not_displayed'
       }))
       .sort((a, b) => b.salesAvg - a.salesAvg); // 판매량 높은 순으로 정렬
-  };
-
-  const notDisplayedItems = getNotDisplayedItems();
+  }, [inventory]);
 
   if (loading) {
     return (

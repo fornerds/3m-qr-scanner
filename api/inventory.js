@@ -1,32 +1,13 @@
 const { connectToDatabase } = require('./config/database');
 
-// 제품 중요도 계산 함수 (MongoDB 기반)
-const getProductImportance = async (productSku) => {
-  try {
-    const { db } = await connectToDatabase();
-    const collection = db.collection('products');
-    
-    // 모든 제품을 판매량 기준으로 정렬하여 순위 계산
-    const allProducts = await collection.find({}).sort({ salesAvg: -1 }).toArray();
-    
-    // 제품의 순위 찾기 (1부터 시작)
-    const rank = allProducts.findIndex(product => product.sku === productSku) + 1;
-    
-    if (rank === 0) {
-      return 'medium'; // 제품을 찾을 수 없으면 보통으로 처리
-    }
-    
-    // 중요도 판단
-    if (rank <= 80) {
-      return 'high';      // 1-80위: 높음
-    } else if (rank <= 130) {
-      return 'medium';    // 81-130위: 보통
-    } else {
-      return 'low';       // 131-150위: 낮음
-    }
-  } catch (error) {
-    console.error('제품 중요도 계산 오류:', error);
-    return 'medium';
+// 제품 중요도 계산 함수 (배치 처리)
+const getProductImportance = (rank) => {
+  if (rank <= 80) {
+    return 'high';      // 1-80위: 높음
+  } else if (rank <= 130) {
+    return 'medium';    // 81-130위: 보통
+  } else {
+    return 'low';       // 131-150위: 낮음
   }
 };
 
@@ -72,18 +53,16 @@ const generateInventoryData = async (storeId) => {
     // 클라이언트에서 필터링할 수 있도록 스캔된 제품 정보도 포함
     const notDisplayedProducts = allProducts;
     
-    // 미진열 제품들의 중요도 계산
-    const sampleNotDisplayedItems = await Promise.all(
-      notDisplayedProducts.map(async (product) => ({
-        productCode: product.sku,
-        productName: product.name,
-        category: product.category,
-        status: 'not_displayed',
-        priority: await getProductImportance(product.sku),
-        rank: 0, // 순위는 getProductImportance에서 계산됨
-        salesAvg: product.salesAvg
-      }))
-    );
+    // 미진열 제품들의 중요도 계산 (배치 처리로 최적화)
+    const sampleNotDisplayedItems = notDisplayedProducts.map((product, index) => ({
+      productCode: product.sku,
+      productName: product.name,
+      category: product.category,
+      status: 'not_displayed',
+      priority: getProductImportance(index + 1), // 이미 정렬된 상태이므로 인덱스 + 1이 순위
+      rank: index + 1,
+      salesAvg: product.salesAvg
+    }));
     
     const result = {
       totalItems,

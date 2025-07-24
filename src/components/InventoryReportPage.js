@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const InventoryReportPage = () => {
@@ -10,8 +10,8 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 미진열 제품만 필터링 (클라이언트에서 처리)
-  const getNotDisplayedProducts = () => {
+  // 미진열 제품만 필터링 (클라이언트에서 처리) - useMemo로 최적화
+  const notDisplayedProducts = useMemo(() => {
     if (!reportData || !reportData.products) return [];
     
     const scannedProductCodes = new Set(reportData.scannedProductCodes || []);
@@ -22,7 +22,7 @@ const InventoryReportPage = () => {
         ...product,
         status: 'not_displayed'
       }));
-  };
+  }, [reportData]);
 
   // 제품 순위 계산 (판매량 기준)
   const getProductRank = (productCode) => {
@@ -407,7 +407,7 @@ const InventoryReportPage = () => {
               color: '#666',
               marginTop: '4px'
             }}>
-              미진열: {getNotDisplayedProducts().length}개 | 
+              미진열: {notDisplayedProducts.length}개 | 
               진열완료: {(reportData?.scannedProductCodes?.length || 0)}개
             </div>
           </div>
@@ -432,7 +432,7 @@ const InventoryReportPage = () => {
           </div>
 
           {/* 테이블 데이터 */}
-          {getNotDisplayedProducts().map((item, index) => {
+                      {notDisplayedProducts.map((item, index) => {
             const rank = getProductRank(item.productCode);
             return (
               <div 

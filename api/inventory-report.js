@@ -16,14 +16,15 @@ const generateProductStatusData = async (storeId) => {
     const scannedProductCodes = await scanRecordsCollection.distinct('productCode', { storeId: storeId });
     
     // 모든 제품을 반환하고 클라이언트에서 필터링 (성능 최적화)
-    const sampleProducts = allProducts.map((product) => {
+    const sampleProducts = allProducts.map((product, index) => {
       return {
         productCode: product.sku,
         productName: product.name,
         category: product.category,
         salesAvg: product.salesAvg,
         status: 'not_displayed', // 기본값, 클라이언트에서 계산
-        priority: 'medium' // 기본 우선순위
+        priority: getProductImportance(index + 1), // 이미 정렬된 상태이므로 인덱스 + 1이 순위
+        rank: index + 1
       };
     });
     
@@ -37,26 +38,11 @@ const generateProductStatusData = async (storeId) => {
   }
 };
 
-// 제품 중요도 계산 함수 (MongoDB 기반)
-const getProductImportance = async (productSku) => {
-  try {
-    const { db } = await connectToDatabase();
-    const collection = db.collection('products');
-    
-    // 모든 제품을 판매량 기준으로 정렬하여 순위 계산
-    const allProducts = await collection.find({}).sort({ salesAvg: -1 }).toArray();
-    
-    // 제품의 순위 찾기 (1부터 시작)
-    const rank = allProducts.findIndex(product => product.sku === productSku) + 1;
-    
-    if (rank === 0) return 'medium';
-    if (rank <= 80) return 'high';
-    if (rank <= 130) return 'medium';
-    return 'low';
-  } catch (error) {
-    console.error('제품 중요도 계산 오류:', error);
-    return 'medium';
-  }
+// 제품 중요도 계산 함수 (배치 처리)
+const getProductImportance = (rank) => {
+  if (rank <= 80) return 'high';
+  if (rank <= 130) return 'medium';
+  return 'low';
 };
 
 // 재고 보고서 API
@@ -93,16 +79,13 @@ module.exports = async function handler(req, res) {
       
       // 이미 storeData에서 스캔 기록을 고려한 상태가 설정됨
       
-      // 제품 데이터 처리 및 우선순위 계산
-      const products = await Promise.all(
-        storeData.products.map(async (product) => {
-          return {
-            ...product,
-            priority: await getProductImportance(product.productCode),
-            isAutoDetected: product.status === 'displayed'
-          };
-        })
-      );
+      // 제품 데이터 처리 (이미 우선순위가 계산되어 있음)
+      const products = storeData.products.map((product) => {
+        return {
+          ...product,
+          isAutoDetected: product.status === 'displayed'
+        };
+      });
       
       // 통계 계산
       const summary = {
