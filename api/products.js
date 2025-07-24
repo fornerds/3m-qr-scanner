@@ -267,12 +267,25 @@ module.exports = async function handler(req, res) {
     }
   } else if (req.method === 'PUT') {
     // 파일 업로드 처리
+    console.log('PUT 요청 시작 - 파일 업로드');
+    
     upload.single('file')(req, res, async (err) => {
+      console.log('multer 처리 완료, err:', err);
+      
       if (err) {
         console.error('파일 업로드 오류:', err);
         return res.status(400).json({ 
           success: false, 
           message: err.message || '파일 업로드 중 오류가 발생했습니다.' 
+        });
+      }
+
+      console.log('req.file 확인:', req.file ? '파일 있음' : '파일 없음');
+      if (req.file) {
+        console.log('파일 정보:', {
+          originalname: req.file.originalname,
+          mimetype: req.file.mimetype,
+          size: req.file.size
         });
       }
 
@@ -287,7 +300,18 @@ module.exports = async function handler(req, res) {
         console.log('파일 업로드 시작:', req.file.originalname);
         
         // 엑셀 파일 처리
-        const products = processExcelFile(req.file.buffer);
+        console.log('엑셀 파일 처리 시작');
+        let products;
+        try {
+          products = processExcelFile(req.file.buffer);
+          console.log('엑셀 파일 처리 완료, 제품 수:', products.length);
+        } catch (excelError) {
+          console.error('엑셀 파일 처리 중 오류:', excelError);
+          return res.status(400).json({ 
+            success: false, 
+            message: `엑셀 파일 처리 중 오류: ${excelError.message}` 
+          });
+        }
         
         if (products.length === 0) {
           return res.status(400).json({ 
