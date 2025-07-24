@@ -24,6 +24,7 @@ const Dashboard = () => {
       // 제품 수 조회
       const productsResponse = await fetch('/api/products');
       const productsData = await productsResponse.json();
+      console.log('제품 데이터 응답:', productsData); // 디버깅용
       
       // 스캔 기록 수 조회
       const scansResponse = await fetch('/api/scan-records');
@@ -31,7 +32,7 @@ const Dashboard = () => {
       
       setStats({
         totalStores: storesData.length || 0,
-        totalProducts: productsData.length || 0,
+        totalProducts: productsData.products?.length || productsData.length || 0,
         totalScans: scansData.length || 0,
         recentActivity: scansData.slice(0, 5) || []
       });
@@ -56,23 +57,48 @@ const Dashboard = () => {
       <div style={{
         borderBottom: '1px solid #e0e0e0',
         paddingBottom: '20px',
-        marginBottom: '30px'
+        marginBottom: '30px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start'
       }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: '28px',
-          color: '#333',
-          fontWeight: 'bold'
-        }}>
-          대시보드
-        </h1>
-        <p style={{
-          margin: '8px 0 0 0',
-          color: '#666',
-          fontSize: '16px'
-        }}>
-          3M QR 스캐너 시스템 현황
-        </p>
+        <div>
+          <h1 style={{
+            margin: 0,
+            fontSize: '28px',
+            color: '#333',
+            fontWeight: 'bold'
+          }}>
+            대시보드
+          </h1>
+          <p style={{
+            margin: '8px 0 0 0',
+            color: '#666',
+            fontSize: '16px'
+          }}>
+            3M QR 스캐너 시스템 현황
+          </p>
+        </div>
+        <button
+          onClick={fetchDashboardStats}
+          disabled={loading}
+          style={{
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            padding: '8px 16px',
+            borderRadius: '6px',
+            fontSize: '14px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            opacity: loading ? 0.6 : 1,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <i className="fas fa-sync-alt" style={{ fontSize: '14px' }}></i>
+          새로고침
+        </button>
       </div>
 
       {/* 통계 카드 */}
