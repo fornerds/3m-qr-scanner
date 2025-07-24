@@ -1,4 +1,4 @@
-const { connectToDatabase } = require('./db');
+const { connectToDatabase } = require('./config/database');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
