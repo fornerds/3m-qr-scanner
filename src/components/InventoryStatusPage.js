@@ -110,17 +110,17 @@ const InventoryStatusPage = () => {
     return (
       <div className="mobile-container">
         {/* 헤더 */}
-        <div style={{ 
+      <div style={{
           backgroundColor: '#dc3545', 
           padding: '16px',
           position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
+        display: 'flex',
+        alignItems: 'center',
           justifyContent: 'center'
         }}>
           <button 
             onClick={() => navigate(-1)}
-            style={{
+          style={{
               background: 'none',
               border: 'none',
               color: 'white',
@@ -225,7 +225,7 @@ const InventoryStatusPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white'
+          color: 'white' 
         }}>
           미진열 현황
         </h1>

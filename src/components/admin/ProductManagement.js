@@ -122,6 +122,31 @@ const ProductManagement = () => {
     setFormData({ name: '', sku: '', category: '', subCategory: '', price: 0, salesRep: '', salesAvg: 0 });
   };
 
+  const handleCleanupData = async () => {
+    if (!window.confirm('중복된 제품 데이터를 정리하시겠습니까?\n\n이 작업은 다음을 수행합니다:\n- 잘못된 데이터 삭제 (헤더 행 등)\n- SKU 중복 제거\n- displayOrder 재정렬\n\n이 작업은 되돌릴 수 없습니다.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/cleanup-products', {
+        method: 'POST',
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        fetchProducts();
+        const summary = result.summary;
+        alert(`데이터 정리 완료!\n\n처리 결과:\n- 잘못된 데이터 삭제: ${summary.invalidDataRemoved}개\n- 중복 데이터 삭제: ${summary.duplicateDataRemoved}개\n- 정리 후 총 제품 수: ${summary.totalProductsAfterCleanup}개\n- displayOrder 업데이트: ${summary.displayOrderUpdated}개`);
+      } else {
+        alert(`데이터 정리 중 오류가 발생했습니다: ${result.message || '알 수 없는 오류'}`);
+      }
+    } catch (error) {
+      console.error('데이터 정리 오류:', error);
+      alert('데이터 정리 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -163,6 +188,27 @@ const ProductManagement = () => {
           display: 'flex',
           gap: '12px'
         }}>
+          <button
+            onClick={handleCleanupData}
+            style={{
+              backgroundColor: '#dc3545',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '6px',
+              fontSize: '14px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            <i className="fas fa-broom"></i>
+            데이터 정리
+          </button>
+          
           <label style={{
             backgroundColor: '#007bff',
             color: 'white',

@@ -36,26 +36,26 @@ const StoreDetailPage = () => {
   };
 
   // API에서 매장 상세 정보와 재고 현황 가져오기
-  const fetchStoreData = async () => {
-    try {
-      setLoading(true);
-      
-      // 매장 정보 가져오기
-      const storeResponse = await fetch(`/api/stores`);
-      if (!storeResponse.ok) {
-        throw new Error('매장 정보를 가져올 수 없습니다.');
-      }
-      const stores = await storeResponse.json();
-      const currentStore = stores.find(s => s.id === storeId) || stores[0];
-      setStore(currentStore);
+    const fetchStoreData = async () => {
+      try {
+        setLoading(true);
+        
+        // 매장 정보 가져오기
+        const storeResponse = await fetch(`/api/stores`);
+        if (!storeResponse.ok) {
+          throw new Error('매장 정보를 가져올 수 없습니다.');
+        }
+        const stores = await storeResponse.json();
+        const currentStore = stores.find(s => s.id === storeId) || stores[0];
+        setStore(currentStore);
 
-      // 재고 현황 가져오기
-      const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
-      if (!inventoryResponse.ok) {
-        throw new Error('재고 현황을 가져올 수 없습니다.');
-      }
-      const inventoryData = await inventoryResponse.json();
-      setInventory(inventoryData);
+        // 재고 현황 가져오기
+        const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
+        if (!inventoryResponse.ok) {
+          throw new Error('재고 현황을 가져올 수 없습니다.');
+        }
+        const inventoryData = await inventoryResponse.json();
+        setInventory(inventoryData);
       
       // 최근 스캔된 제품 데이터 설정
       if (inventoryData.recentScans && inventoryData.recentScans.length > 0) {
@@ -67,29 +67,29 @@ const StoreDetailPage = () => {
       } else {
         setRecentProducts([]);
       }
-    } catch (err) {
-      console.error('매장 데이터 조회 오류:', err);
-      setError(err.message);
-      
+      } catch (err) {
+        console.error('매장 데이터 조회 오류:', err);
+        setError(err.message);
+        
       // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
-      setStore({
-        id: storeId,
+        setStore({
+          id: storeId,
         name: '매장 정보 없음',
         address: '주소 정보 없음'
-      });
-      
-      setInventory({
+        });
+        
+        setInventory({
         totalItems: 0,
         scannedItems: 0,
         progress: 0,
         recentScans: []
-      });
+        });
       
       setRecentProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
     fetchStoreData();
@@ -128,7 +128,7 @@ const StoreDetailPage = () => {
     return (
       <div className="mobile-container">
         {/* 헤더 */}
-        <div style={{ 
+      <div style={{
           backgroundColor: '#dc3545', 
           padding: '16px',
           position: 'relative',
@@ -241,7 +241,7 @@ const StoreDetailPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white'
+          color: 'white' 
         }}>
           매장 상세
         </h1>
@@ -430,47 +430,47 @@ const StoreDetailPage = () => {
         {/* 제품 목록 */}
         {recentProducts.length > 0 ? (
           recentProducts.map((product, index) => (
-            <div key={product.id}>
+          <div key={product.id}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '16px 0'
+            }}>
+              <div style={{ flex: 1 }}>
+                <h4 style={{
+                  margin: '0 0 4px 0',
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#333'
+                }}>
+                  {product.name}
+                </h4>
+              </div>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 0'
+                gap: '8px'
               }}>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{
-                    margin: '0 0 4px 0',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#333'
-                  }}>
-                    {product.name}
-                  </h4>
-                </div>
-                <div style={{
+                <span style={{
+                  fontSize: '13px',
+                  color: '#999',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px'
+                  gap: '4px'
                 }}>
-                  <span style={{
-                    fontSize: '13px',
-                    color: '#999',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px'
-                  }}>
-                    <i className="fas fa-clock" style={{ fontSize: '11px' }}></i>
-                    {product.lastScan}
-                  </span>
-                </div>
+                  <i className="fas fa-clock" style={{ fontSize: '11px' }}></i>
+                  {product.lastScan}
+                </span>
               </div>
-              {index < recentProducts.length - 1 && (
-                <div style={{ 
-                  height: '1px', 
-                  backgroundColor: '#f0f0f0' 
-                }}></div>
-              )}
             </div>
+            {index < recentProducts.length - 1 && (
+              <div style={{ 
+                height: '1px', 
+                backgroundColor: '#f0f0f0' 
+              }}></div>
+            )}
+          </div>
           ))
         ) : (
           <div style={{

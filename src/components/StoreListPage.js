@@ -112,7 +112,7 @@ const StoreListPage = () => {
           margin: 0, 
           fontSize: '18px', 
           fontWeight: 'bold', 
-          color: 'white'
+          color: 'white' 
         }}>
           작업 매장 전체
         </h1>
