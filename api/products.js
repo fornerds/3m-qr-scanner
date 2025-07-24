@@ -36,13 +36,30 @@ const processExcelFile = (buffer) => {
     
     // 이미지에서 보이는 컬럼 구조에 맞춰 매핑
     const products = dataRows
-      .filter(row => row.length >= 7 && row[0]) // 빈 행 제거
+      .filter(row => {
+        // 빈 행 제거
+        if (!row || row.length < 7) return false;
+        
+        // 헤더 행 제거 (첫 번째 행이 헤더인 경우)
+        const sku = String(row[3] || '');
+        const name = String(row[4] || '');
+        
+        // 잘못된 데이터 필터링
+        if (sku === 'DAISO SKU ID' || name === 'DAISO SKU Name') return false;
+        if (sku === 'Sales \r\nRep.' || sku === 'JW Park' || sku === 'P/C') return false;
+        if (name === '1470' || name === 'P/C') return false;
+        if (sku.match(/^[A-Za-z\s\r\n]+$/)) return false; // 영문자와 공백만 있는 SKU
+        if (name.match(/^[0-9]+$/)) return false; // 숫자만 있는 이름
+        
+        // SKU와 이름이 유효한지 확인
+        return sku && name && sku.trim() !== '' && name.trim() !== '';
+      })
       .map((row, index) => {
         return {
-          sku: String(row[3] || ''), // DAISO SKU ID
-          name: String(row[4] || ''), // DAISO SKU Name
-          category: String(row[1] || ''), // 다이소 대분류
-          subCategory: String(row[2] || ''), // 다이소 소분류
+          sku: String(row[3] || '').trim(), // DAISO SKU ID
+          name: String(row[4] || '').trim(), // DAISO SKU Name
+          category: String(row[1] || '').trim(), // 다이소 대분류
+          subCategory: String(row[2] || '').trim(), // 다이소 소분류
           price: parseInt(row[5]) || 0, // 판매가 (VAT+)
           salesAvg: parseInt(row[6]) || 0, // 6YTD AVG
           salesRep: 'JW Park', // 기본값
@@ -51,8 +68,7 @@ const processExcelFile = (buffer) => {
           createdAt: new Date(),
           updatedAt: new Date()
         };
-      })
-      .filter(product => product.sku && product.name); // SKU와 이름이 있는 제품만
+      });
     
     return products;
   } catch (error) {
@@ -249,6 +265,11 @@ module.exports = async function handler(req, res) {
         }
 
         console.log(`처리된 제품 수: ${products.length}개`);
+        
+        // 디버깅: 처음 몇 개 제품 출력
+        if (products.length > 0) {
+          console.log('처리된 제품 샘플:', products.slice(0, 3));
+        }
 
         // 데이터베이스 연결
         const { db } = await connectToDatabase();
