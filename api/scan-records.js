@@ -72,22 +72,18 @@ module.exports = async function handler(req, res) {
     
   } else if (req.method === 'GET') {
     try {
-      const { storeId, sessionId } = req.query;
+      const { storeId, sessionId, limit = 50 } = req.query;
       
-      console.log('스캔 기록 조회 요청:', { storeId, sessionId });
+      console.log('스캔 기록 조회 요청:', { storeId, sessionId, limit });
       
-      if (!storeId) {
-        return res.status(400).json({
-          success: false,
-          message: '매장 ID가 필요합니다.'
-        });
-      }
-
       const { db } = await connectToDatabase();
       const collection = db.collection('scan_records');
       
       // 조회 조건 설정
-      const query = { storeId: storeId };
+      const query = {};
+      if (storeId) {
+        query.storeId = String(storeId);
+      }
       if (sessionId) {
         query.sessionId = sessionId;
       }
@@ -95,22 +91,28 @@ module.exports = async function handler(req, res) {
       // 스캔 기록 조회 (최신순 정렬)
       const scans = await collection.find(query)
         .sort({ timestamp: -1 })
+        .limit(parseInt(limit))
         .toArray();
       
-      // 통계 계산
-      const stats = {
-        totalScans: scans.length,
-        uniqueProducts: new Set(scans.map(scan => scan.productCode)).size,
-        latestScan: scans.length > 0 ? scans[0] : null
-      };
-      
-      res.status(200).json({
-        success: true,
-        storeId,
-        sessionId,
-        scans: scans,
-        stats
-      });
+      // storeId가 지정된 경우 통계 포함
+      if (storeId) {
+        const stats = {
+          totalScans: scans.length,
+          uniqueProducts: new Set(scans.map(scan => scan.productCode)).size,
+          latestScan: scans.length > 0 ? scans[0] : null
+        };
+        
+        res.status(200).json({
+          success: true,
+          storeId,
+          sessionId,
+          scans: scans,
+          stats
+        });
+      } else {
+        // 전체 스캔 기록 반환 (대시보드용)
+        res.status(200).json(scans);
+      }
       
     } catch (error) {
       console.error('스캔 기록 조회 오류:', error);

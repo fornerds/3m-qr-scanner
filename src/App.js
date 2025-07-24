@@ -8,6 +8,7 @@ import InventoryStatusPage from './components/InventoryStatusPage';
 import QRScanPage from './components/QRScanPage';
 import StoreSelectPage from './components/StoreSelectPage';
 import ManagerPage from './components/ManagerPage';
+import AdminPage from './components/AdminPage';
 
 import './App.css';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/store-select" element={<StoreSelectPage />} />
           <Route path="/scan" element={<QRScanPage />} />
           <Route path="/manager" element={<ManagerPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </div>
     </Router>

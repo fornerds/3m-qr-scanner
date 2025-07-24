@@ -101,19 +101,35 @@ const QRScannerMain = () => {
         }}>
           QR Scanner
         </h1>
-        <Link
-          to="/manager"
-          style={{
-            color: 'white',
-            fontSize: '16px',
-            textDecoration: 'none',
-            padding: '4px',
-            position: 'absolute',
-            right: '16px'
-          }}
-        >
-          <i className="fas fa-cog"></i>
-        </Link>
+        <div style={{
+          position: 'absolute',
+          right: '16px',
+          display: 'flex',
+          gap: '12px'
+        }}>
+          <Link
+            to="/admin"
+            style={{
+              color: 'white',
+              fontSize: '16px',
+              textDecoration: 'none',
+              padding: '4px'
+            }}
+          >
+            <i className="fas fa-tools"></i>
+          </Link>
+          <Link
+            to="/manager"
+            style={{
+              color: 'white',
+              fontSize: '16px',
+              textDecoration: 'none',
+              padding: '4px'
+            }}
+          >
+            <i className="fas fa-cog"></i>
+          </Link>
+        </div>
       </div>
 
       {/* 메인 컨텐츠 */}

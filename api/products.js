@@ -104,13 +104,28 @@ module.exports = async function handler(req, res) {
     }
   } else if (req.method === 'DELETE') {
     try {
-      const { sku } = req.query;
+      const { sku, id } = req.query;
       
       const { db } = await connectToDatabase();
       const collection = db.collection('products');
       
-      if (sku) {
-        // 특정 제품 삭제
+      if (id) {
+        // ID로 특정 제품 삭제
+        const result = await collection.deleteOne({ _id: id });
+        
+        if (result.deletedCount > 0) {
+          res.status(200).json({
+            success: true,
+            message: '제품이 삭제되었습니다.'
+          });
+        } else {
+          res.status(404).json({
+            success: false,
+            message: '제품을 찾을 수 없습니다.'
+          });
+        }
+      } else if (sku) {
+        // SKU로 특정 제품 삭제
         const result = await collection.deleteOne({ sku: sku });
         
         if (result.deletedCount > 0) {

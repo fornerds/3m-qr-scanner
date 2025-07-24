@@ -153,8 +153,77 @@ module.exports = async function handler(req, res) {
         message: '매장 추가에 실패했습니다.' 
       });
     }
+  } else if (req.method === 'PUT') {
+    try {
+      const { storeId } = req.query;
+      const updateData = req.body;
+      
+      // 매장 수정
+      const { db } = await connectToDatabase();
+      const collection = db.collection('stores');
+      
+      const result = await collection.updateOne(
+        { _id: storeId },
+        { 
+          $set: {
+            ...updateData,
+            updatedAt: new Date()
+          }
+        }
+      );
+      
+      if (result.matchedCount === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: '매장을 찾을 수 없습니다.' 
+        });
+      }
+      
+      console.log('매장 수정:', storeId, updateData);
+      
+      res.status(200).json({ 
+        success: true, 
+        message: '매장이 성공적으로 수정되었습니다.'
+      });
+    } catch (error) {
+      console.error('매장 수정 오류:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '매장 수정에 실패했습니다.' 
+      });
+    }
+  } else if (req.method === 'DELETE') {
+    try {
+      const { storeId } = req.query;
+      
+      // 매장 삭제
+      const { db } = await connectToDatabase();
+      const collection = db.collection('stores');
+      
+      const result = await collection.deleteOne({ _id: storeId });
+      
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: '매장을 찾을 수 없습니다.' 
+        });
+      }
+      
+      console.log('매장 삭제:', storeId);
+      
+      res.status(200).json({ 
+        success: true, 
+        message: '매장이 성공적으로 삭제되었습니다.'
+      });
+    } catch (error) {
+      console.error('매장 삭제 오류:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '매장 삭제에 실패했습니다.' 
+      });
+    }
   } else {
-    res.setHeader('Allow', ['GET', 'POST']);
+    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }; 
