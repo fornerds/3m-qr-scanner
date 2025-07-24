@@ -84,12 +84,16 @@ const InventoryStatusPage = () => {
     fetchData();
   }, [storeId]);
 
-  // 미진열 제품 목록 생성 (API에서 이미 스캔된 제품 제외됨)
+  // 미진열 제품 목록 생성 (클라이언트에서 스캔된 제품 제외)
   const getNotDisplayedItems = () => {
     if (!inventory || !inventory.notDisplayedProducts) return [];
 
-    // API에서 이미 스캔된 제품이 제외되어 전달되므로 그대로 사용
+    // 스캔된 제품 코드 Set 생성 (빠른 검색용)
+    const scannedProductCodes = new Set(inventory.scannedProductCodes || []);
+
+    // 스캔되지 않은 제품만 필터링
     return inventory.notDisplayedProducts
+      .filter(item => !scannedProductCodes.has(item.productCode))
       .map(item => ({
         id: item.productCode,
         name: item.productName,

@@ -65,11 +65,12 @@ const generateInventoryData = async (storeId) => {
     const totalItems = await productsCollection.countDocuments();
     const progress = totalItems > 0 ? Math.round((scannedItems / totalItems) * 100) : 0;
     
-    // 스캔되지 않은 제품들만 미진열로 분류
+    // 모든 제품을 가져와서 클라이언트에서 필터링 (성능 최적화)
     const scannedProductCodes = await collection.distinct('productCode', { storeId: normalizedStoreId });
-    const notDisplayedProducts = await productsCollection.find({
-      sku: { $nin: scannedProductCodes }
-    }).sort({ salesAvg: -1 }).toArray();
+    const allProducts = await productsCollection.find({}).sort({ salesAvg: -1 }).toArray();
+    
+    // 클라이언트에서 필터링할 수 있도록 스캔된 제품 정보도 포함
+    const notDisplayedProducts = allProducts;
     
     // 미진열 제품들의 중요도 계산
     const sampleNotDisplayedItems = await Promise.all(
@@ -87,10 +88,11 @@ const generateInventoryData = async (storeId) => {
     const result = {
       totalItems,
       scannedItems,
-      notDisplayedItems: notDisplayedProducts.length, // 실제 미진열 제품 수
+      notDisplayedItems: totalItems - scannedItems, // 클라이언트에서 계산
       progress,
       recentScans,
-      notDisplayedProducts: sampleNotDisplayedItems
+      notDisplayedProducts: sampleNotDisplayedItems,
+      scannedProductCodes: scannedProductCodes // 클라이언트 필터링용
     };
     
     console.log('재고 데이터 생성 결과:', {
@@ -123,33 +125,10 @@ module.exports = async function handler(req, res) {
       const { storeId } = req.query;
       console.log('재고 조회 요청, storeId:', storeId);
       
-      // 동적으로 재고 데이터 생성
-      let inventory = await generateInventoryData(storeId || '1');
+      // 동적으로 재고 데이터 생성 (이미 스캔 기록 포함됨)
+      const inventory = await generateInventoryData(storeId || '1');
       
-      // 스캔 기록 조회하여 진열 상태 자동 업데이트
-      let scannedProductCodes = new Set();
-      try {
-        const { db } = await connectToDatabase();
-        const collection = db.collection('scan_records');
-        const normalizedStoreId = String(storeId || '1');
-        const scannedProducts = await collection.find({ storeId: normalizedStoreId }).toArray();
-        scannedProductCodes = new Set(scannedProducts.map(scan => scan.productCode));
-      } catch (error) {
-        console.error('스캔 기록 조회 실패:', error);
-      }
-      
-      // 판매량 기준으로 priority 재계산 및 진열 상태 자동 판단
-      if (inventory.notDisplayedProducts) {
-        inventory.notDisplayedProducts = await Promise.all(
-          inventory.notDisplayedProducts
-            .filter(item => !scannedProductCodes.has(item.productCode)) // 스캔된 것은 제외
-            .map(async item => ({
-              ...item,
-              priority: await getProductImportance(item.productCode)
-            }))
-        );
-      }
-      
+      console.log('API 응답 전송:', inventory);
       res.status(200).json(inventory);
     } catch (error) {
       console.error('재고 조회 오류:', error);

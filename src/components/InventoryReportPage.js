@@ -10,6 +10,20 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 미진열 제품만 필터링 (클라이언트에서 처리)
+  const getNotDisplayedProducts = () => {
+    if (!reportData || !reportData.products) return [];
+    
+    const scannedProductCodes = new Set(reportData.scannedProductCodes || []);
+    
+    return reportData.products
+      .filter(product => !scannedProductCodes.has(product.productCode))
+      .map(product => ({
+        ...product,
+        status: 'not_displayed'
+      }));
+  };
+
   // 제품 순위 계산 (판매량 기준)
   const getProductRank = (productCode) => {
     if (!reportData || !reportData.products) return 1;
@@ -393,8 +407,8 @@ const InventoryReportPage = () => {
               color: '#666',
               marginTop: '4px'
             }}>
-              미진열: {reportData?.products?.filter(item => item.status === 'not_displayed').length || 0}개 | 
-              진열완료: {reportData?.products?.filter(item => item.status === 'displayed').length || 0}개
+              미진열: {getNotDisplayedProducts().length}개 | 
+              진열완료: {(reportData?.scannedProductCodes?.length || 0)}개
             </div>
           </div>
 
@@ -418,7 +432,7 @@ const InventoryReportPage = () => {
           </div>
 
           {/* 테이블 데이터 */}
-          {reportData?.products?.filter(item => item.status === 'not_displayed').map((item, index) => {
+          {getNotDisplayedProducts().map((item, index) => {
             const rank = getProductRank(item.productCode);
             return (
               <div 

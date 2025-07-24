@@ -15,21 +15,22 @@ const generateProductStatusData = async (storeId) => {
     const scanRecordsCollection = db.collection('scan_records');
     const scannedProductCodes = await scanRecordsCollection.distinct('productCode', { storeId: storeId });
     
-    // 제품별 실제 상태 설정 (스캔 기록 기반)
+    // 모든 제품을 반환하고 클라이언트에서 필터링 (성능 최적화)
     const sampleProducts = allProducts.map((product) => {
-      const isScanned = scannedProductCodes.includes(product.sku);
-      
       return {
         productCode: product.sku,
         productName: product.name,
         category: product.category,
         salesAvg: product.salesAvg,
-        status: isScanned ? 'displayed' : 'not_displayed',
+        status: 'not_displayed', // 기본값, 클라이언트에서 계산
         priority: 'medium' // 기본 우선순위
       };
     });
     
-    return { products: sampleProducts };
+    return { 
+      products: sampleProducts,
+      scannedProductCodes: scannedProductCodes // 클라이언트 필터링용
+    };
   } catch (error) {
     console.error('제품 상태 데이터 생성 오류:', error);
     return { products: [] };
