@@ -72,9 +72,13 @@ const QRScanPage = () => {
     }
     
     if (video) {
+      // 비디오만 확대 (컨테이너는 그대로)
       video.style.transform = `scale(${zoomLevel})`;
       video.style.transformOrigin = 'center center';
       video.style.transition = 'transform 0.2s ease';
+      video.style.maxWidth = 'none'; // 확대 시 maxWidth 제한 제거
+      video.style.maxHeight = 'none';
+      
       console.log('줌 적용됨:', zoomLevel);
     } else {
       console.log('비디오 요소를 찾을 수 없음');
@@ -457,12 +461,17 @@ const QRScanPage = () => {
     style.textContent = `
       #qr-reader__scan_region {
         overflow: hidden !important;
+        position: relative !important;
       }
       #qr-reader video {
         object-fit: cover !important;
       }
       #qr-reader__dashboard_section_swaplink {
         display: none !important;
+      }
+      /* 스캔 박스가 확대되지 않도록 */
+      #qr-reader__scan_region > div {
+        transform: none !important;
       }
     `;
     document.head.appendChild(style);
@@ -595,7 +604,8 @@ const QRScanPage = () => {
           width: '100%',
           backgroundColor: 'black', // 카메라 배경을 검은색으로
           height: '440px', // 정사각형 스캔박스에 맞는 고정 높이
-          touchAction: 'none' // 모든 터치 제스처 차단하고 JS로 처리
+          touchAction: 'none', // 모든 터치 제스처 차단하고 JS로 처리
+          overflow: 'hidden' // 확대 시 넘침 방지
         }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
