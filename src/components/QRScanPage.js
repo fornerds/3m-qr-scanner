@@ -365,23 +365,15 @@ const QRScanPage = () => {
         
         // 카메라가 로드된 후 터치 이벤트 추가
         setTimeout(() => {
-          const qrReader = document.getElementById('qr-reader');
           const video = document.querySelector('#qr-reader video');
+          console.log('카메라 로드 확인 - Video:', !!video);
           
-          console.log('카메라 로드 확인 - QR Reader:', !!qrReader, 'Video:', !!video);
-          
+          // QR reader의 pointerEvents를 auto로 변경하여 터치 가능하게
+          const qrReader = document.getElementById('qr-reader');
           if (qrReader) {
-            // 기존 리스너 제거
-            qrReader.removeEventListener('touchstart', handleTouchStart);
-            qrReader.removeEventListener('touchmove', handleTouchMove);
-            qrReader.removeEventListener('touchend', handleTouchEnd);
-            
-            // 새 리스너 추가
-            qrReader.addEventListener('touchstart', handleTouchStart, { passive: false });
-            qrReader.addEventListener('touchmove', handleTouchMove, { passive: false });
-            qrReader.addEventListener('touchend', handleTouchEnd, { passive: false });
-            console.log('터치 이벤트 리스너 추가됨');
+            qrReader.style.pointerEvents = 'auto';
           }
+          
           applyZoom(1);
         }, 1000); // 1초로 늘림
       } catch (renderError) {
@@ -447,13 +439,6 @@ const QRScanPage = () => {
       setCurrentZoom(1);
       setPinchDistance(0);
       
-      // 터치 이벤트 리스너 제거
-      const qrReader = document.getElementById('qr-reader');
-      if (qrReader) {
-        qrReader.removeEventListener('touchstart', handleTouchStart);
-        qrReader.removeEventListener('touchmove', handleTouchMove);
-        qrReader.removeEventListener('touchend', handleTouchEnd);
-      }
     } catch (error) {
       console.error('카메라 정지 오류:', error);
     }
@@ -604,19 +589,25 @@ const QRScanPage = () => {
       </div>
 
       {/* HTML5-QRCode 스캐너 */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        backgroundColor: 'black', // 카메라 배경을 검은색으로
-        height: '440px' // 정사각형 스캔박스에 맞는 고정 높이
-      }}>
+      <div 
+        style={{
+          position: 'relative',
+          width: '100%',
+          backgroundColor: 'black', // 카메라 배경을 검은색으로
+          height: '440px', // 정사각형 스캔박스에 맞는 고정 높이
+          touchAction: 'none' // 모든 터치 제스처 차단하고 JS로 처리
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* HTML5-QRCode가 여기에 렌더링됨 */}
         <div 
           id="qr-reader" 
           ref={scannerDivRef}
           style={{
             width: '100%',
-            touchAction: 'none' // 기본 터치 제스처 비활성화
+            pointerEvents: 'none' // 하위 요소의 터치 이벤트 차단
           }}
         ></div>
 

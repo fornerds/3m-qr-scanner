@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinch Zoom Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        #test-box {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(45deg, #007bff 0%, #28a745 100%);
+            margin: 50px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            touch-action: none;
+            transform-origin: center center;
+            transition: transform 0.1s ease;
+        }
+        #info {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <div>터치 수: <span id="touches">0</span></div>
+        <div>핀치 거리: <span id="distance">0</span></div>
+        <div>줌 레벨: <span id="zoom">100</span>%</div>
+    </div>
+    
+    <div id="test-box">핀치로 확대/축소</div>
+    
+    <script>
+        let pinchDistance = 0;
+        let currentZoom = 1;
+        const box = document.getElementById('test-box');
+        
+        function getDistance(touch1, touch2) {
+            const dx = touch1.clientX - touch2.clientX;
+            const dy = touch1.clientY - touch2.clientY;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        box.addEventListener('touchstart', (e) => {
+            document.getElementById('touches').textContent = e.touches.length;
+            if (e.touches.length === 2) {
+                pinchDistance = getDistance(e.touches[0], e.touches[1]);
+                document.getElementById('distance').textContent = pinchDistance.toFixed(0);
+            }
+        }, { passive: false });
+        
+        box.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 2 && pinchDistance > 0) {
+                const distance = getDistance(e.touches[0], e.touches[1]);
+                const scale = distance / pinchDistance;
+                const newZoom = Math.min(Math.max(currentZoom * scale, 0.5), 3);
+                
+                if (Math.abs(newZoom - currentZoom) > 0.02) {
+                    currentZoom = newZoom;
+                    box.style.transform = `scale(${currentZoom})`;
+                    document.getElementById('zoom').textContent = (currentZoom * 100).toFixed(0);
+                    pinchDistance = distance;
+                    document.getElementById('distance').textContent = distance.toFixed(0);
+                }
+            }
+        }, { passive: false });
+        
+        box.addEventListener('touchend', (e) => {
+            document.getElementById('touches').textContent = e.touches.length;
+            if (e.touches.length < 2) {
+                pinchDistance = 0;
+            }
+        }, { passive: false });
+    </script>
+</body>
+</html> 
