@@ -18,12 +18,57 @@ const QRScanPage = () => {
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
-  const SCAN_COOLDOWN = 2000; // 2초 쿨다운
+  const SCAN_COOLDOWN = 1000; // 1초로 단축하여 빠른 재스캔
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
   const [pinchDistance, setPinchDistance] = useState(0);
   const [currentZoom, setCurrentZoom] = useState(1);
+
+  // 핀치 줌 관련 함수들
+  const getDistance = (touch1, touch2) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 2) {
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      setPinchDistance(distance);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches.length === 2 && pinchDistance > 0) {
+      e.preventDefault();
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      const scale = distance / pinchDistance;
+      
+      const newZoom = Math.min(Math.max(currentZoom * scale, 1), 3);
+      
+      if (Math.abs(newZoom - currentZoom) > 0.02) {
+        setCurrentZoom(newZoom);
+        applyZoom(newZoom);
+        setPinchDistance(distance);
+      }
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (e.touches.length < 2) {
+      setPinchDistance(0);
+    }
+  };
+
+  const applyZoom = (zoomLevel) => {
+    const video = document.querySelector('#qr-reader video');
+    if (video) {
+      video.style.transform = `scale(${zoomLevel})`;
+      video.style.transformOrigin = 'center center';
+      video.style.transition = 'transform 0.2s ease';
+    }
+  };
 
   // 세션 시작
   const startSession = async () => {
@@ -271,9 +316,15 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 3, // FPS를 더 낮춰서 스캔 빈도 감소
-          qrbox: { width: 280, height: 280 },
-          aspectRatio: 1.0
+          fps: 30, // 높은 FPS로 빠른 인식
+          qrbox: { width: 300, height: 300 }, // 더 큰 스캔 영역
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1920 }, // Full HD 화질
+            height: { ideal: 1080 },
+            frameRate: { ideal: 30 } // 30fps
+          }
         };
         
         // 후면 카메라로 바로 시작
@@ -287,8 +338,22 @@ const QRScanPage = () => {
         setIsScanning(true);
         setScanStatus('바코드 스캔 중...');
 
+        // 줌 초기화
+        setCurrentZoom(1);
+
         // 세션 시작
         await startSession();
+        
+        // 카메라가 로드된 후 터치 이벤트 추가
+        setTimeout(() => {
+          const qrReader = document.getElementById('qr-reader');
+          if (qrReader) {
+            qrReader.addEventListener('touchstart', handleTouchStart, { passive: false });
+            qrReader.addEventListener('touchmove', handleTouchMove, { passive: false });
+            qrReader.addEventListener('touchend', handleTouchEnd, { passive: false });
+          }
+          applyZoom(1);
+        }, 500);
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
         setScanStatus('카메라 초기화 실패');
@@ -347,55 +412,20 @@ const QRScanPage = () => {
       setScanResult(null);
       setLastScannedCode('');
       setScanStatus('바코드 스캔 중지됨');
+      
+      // 줌 상태 초기화
+      setCurrentZoom(1);
+      setPinchDistance(0);
+      
+      // 터치 이벤트 리스너 제거
+      const qrReader = document.getElementById('qr-reader');
+      if (qrReader) {
+        qrReader.removeEventListener('touchstart', handleTouchStart);
+        qrReader.removeEventListener('touchmove', handleTouchMove);
+        qrReader.removeEventListener('touchend', handleTouchEnd);
+      }
     } catch (error) {
       console.error('카메라 정지 오류:', error);
-    }
-  };
-
-  // 핀치 줌 기능
-  const getDistance = (touches) => {
-    const touch1 = touches[0];
-    const touch2 = touches[1];
-    return Math.sqrt(
-      Math.pow(touch2.clientX - touch1.clientX, 2) +
-      Math.pow(touch2.clientY - touch1.clientY, 2)
-    );
-  };
-
-  const handleTouchStart = (e) => {
-    if (e.touches.length === 2) {
-      const distance = getDistance(e.touches);
-      setPinchDistance(distance);
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    if (e.touches.length === 2 && pinchDistance > 0) {
-      e.preventDefault();
-      const newDistance = getDistance(e.touches);
-      const scale = newDistance / pinchDistance;
-      
-      let newZoom = currentZoom * scale;
-      newZoom = Math.max(1, Math.min(2, newZoom)); // 1x~2x로 제한 (박스 벗어남 방지)
-      
-      setCurrentZoom(newZoom);
-      setPinchDistance(newDistance);
-      
-      // 실제 비디오 요소에 줌 적용 (박스 내에서만)
-      const video = scannerDivRef.current?.querySelector('video');
-      const scanRegion = scannerDivRef.current?.querySelector('#qr-reader__scan_region');
-      if (video && scanRegion) {
-        video.style.transform = `scale(${newZoom})`;
-        video.style.transformOrigin = 'center center';
-        // 비디오가 스캔 영역을 벗어나지 않도록 클리핑
-        scanRegion.style.overflow = 'hidden';
-      }
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (e.touches.length < 2) {
-      setPinchDistance(0);
     }
   };
 
@@ -541,18 +571,49 @@ const QRScanPage = () => {
         <div 
           id="qr-reader" 
           ref={scannerDivRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
           style={{
             width: '100%',
             touchAction: 'none' // 기본 터치 제스처 비활성화
           }}
         ></div>
 
-
-
-
+        {/* 줌 레벨 표시 */}
+        {currentZoom > 1 && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            zIndex: 1000
+          }}>
+            <i className="fas fa-search-plus"></i>
+            {(currentZoom * 100).toFixed(0)}%
+            <button
+              onClick={() => {
+                setCurrentZoom(1);
+                applyZoom(1);
+              }}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer',
+                padding: '0 0 0 8px',
+                fontSize: '16px'
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* 스캔 결과 표시 */}
         {scanResult && (
