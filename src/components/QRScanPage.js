@@ -33,9 +33,11 @@ const QRScanPage = () => {
   };
 
   const handleTouchStart = (e) => {
+    console.log('터치 시작, 터치 수:', e.touches.length);
     if (e.touches.length === 2) {
       const distance = getDistance(e.touches[0], e.touches[1]);
       setPinchDistance(distance);
+      console.log('핀치 시작 거리:', distance);
     }
   };
 
@@ -48,6 +50,7 @@ const QRScanPage = () => {
       const newZoom = Math.min(Math.max(currentZoom * scale, 1), 3);
       
       if (Math.abs(newZoom - currentZoom) > 0.02) {
+        console.log('줌 변경:', currentZoom, '->', newZoom);
         setCurrentZoom(newZoom);
         applyZoom(newZoom);
         setPinchDistance(distance);
@@ -62,11 +65,19 @@ const QRScanPage = () => {
   };
 
   const applyZoom = (zoomLevel) => {
-    const video = document.querySelector('#qr-reader video');
+    // 다양한 선택자로 비디오 요소 찾기
+    let video = document.querySelector('#qr-reader video');
+    if (!video) {
+      video = document.querySelector('video');
+    }
+    
     if (video) {
       video.style.transform = `scale(${zoomLevel})`;
       video.style.transformOrigin = 'center center';
       video.style.transition = 'transform 0.2s ease';
+      console.log('줌 적용됨:', zoomLevel);
+    } else {
+      console.log('비디오 요소를 찾을 수 없음');
     }
   };
 
@@ -264,14 +275,22 @@ const QRScanPage = () => {
       
       // 자동 카메라 시작 설정 (정사각형 스캔 박스)
       const config = {
-        fps: 3, // 더 낮은 FPS로 스캔 빈도 대폭 감소
-        qrbox: { width: 280, height: 280 }, // 명시적으로 정사각형 설정
+        fps: 30, // 높은 FPS로 빠른 초기 인식
+        qrbox: { width: 300, height: 300 }, // 더 큰 스캔 영역
         aspectRatio: 1.0, // 정사각형 비율 강제
         rememberLastUsedCamera: true, // 마지막 사용 카메라 기억
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 카메라만 사용
         showTorchButtonIfSupported: false, // 플래시 버튼 숨김
         showZoomSliderIfSupported: false, // 줌 슬라이더 숨김
-        defaultZoomValueIfSupported: 1 // 기본 줌 값
+        defaultZoomValueIfSupported: 1, // 기본 줌 값
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.QR_CODE,
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39
+        ], // QR과 바코드 포맷 지원
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true // 네이티브 바코드 감지 사용
+        }
       };
 
       // 스캔 성공 콜백
@@ -347,13 +366,24 @@ const QRScanPage = () => {
         // 카메라가 로드된 후 터치 이벤트 추가
         setTimeout(() => {
           const qrReader = document.getElementById('qr-reader');
+          const video = document.querySelector('#qr-reader video');
+          
+          console.log('카메라 로드 확인 - QR Reader:', !!qrReader, 'Video:', !!video);
+          
           if (qrReader) {
+            // 기존 리스너 제거
+            qrReader.removeEventListener('touchstart', handleTouchStart);
+            qrReader.removeEventListener('touchmove', handleTouchMove);
+            qrReader.removeEventListener('touchend', handleTouchEnd);
+            
+            // 새 리스너 추가
             qrReader.addEventListener('touchstart', handleTouchStart, { passive: false });
             qrReader.addEventListener('touchmove', handleTouchMove, { passive: false });
             qrReader.addEventListener('touchend', handleTouchEnd, { passive: false });
+            console.log('터치 이벤트 리스너 추가됨');
           }
           applyZoom(1);
-        }, 500);
+        }, 1000); // 1초로 늘림
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
         setScanStatus('카메라 초기화 실패');
@@ -436,13 +466,26 @@ const QRScanPage = () => {
     setScannedProducts(new Set()); // 스캔한 제품 목록도 초기화
   };
 
-
-
-
-
-
-
-
+  // QR 스캐너 스타일 오버라이드
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      #qr-reader__scan_region {
+        overflow: hidden !important;
+      }
+      #qr-reader video {
+        object-fit: cover !important;
+      }
+      #qr-reader__dashboard_section_swaplink {
+        display: none !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   useEffect(() => {
     // 컴포넌트 마운트 후 약간의 지연을 두고 카메라 시작
