@@ -344,9 +344,9 @@ const QRScanPage = () => {
           aspectRatio: 1.0,
           videoConstraints: {
             facingMode: "environment",
-            width: { ideal: 1920 }, // Full HD 화질
-            height: { ideal: 1080 },
-            frameRate: { ideal: 30 } // 30fps
+            width: { ideal: 3840, min: 1920 }, // 4K 화질 (최고 화질)
+            height: { ideal: 2160, min: 1080 },
+            frameRate: { ideal: 60, min: 30 } // 60fps (최고 프레임률)
           }
         };
         
