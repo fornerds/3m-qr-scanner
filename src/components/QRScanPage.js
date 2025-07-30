@@ -22,7 +22,7 @@ const QRScanPage = () => {
   // 제품 캐시 시스템 (최고 속도를 위한 로컬 캐싱)
   const [productCache, setProductCache] = useState(new Map());
   const [isPreloading, setIsPreloading] = useState(false);
-  const SCAN_COOLDOWN = 50; // 50ms로 극단축하여 최고 속도
+  const SCAN_COOLDOWN = 30; // 30ms로 극한 최적화
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
@@ -336,12 +336,12 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (극한 최적화 실험)
+      // 자동 카메라 시작 설정 (극한 최적화)
       const config = {
-        fps: 24, // 영화급 FPS로 더 최적화
+        fps: 15, // 극한 최적화 FPS
         qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // 더 작은 스캔 박스로 극한 최적화
-          let minEdgePercentage = 0.65; // 화면의 65% (더 집중)
+          // 극한 최적화 스캔 박스
+          let minEdgePercentage = 0.6; // 화면의 60%
           let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
           let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
           return {
@@ -420,10 +420,10 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 24, // 영화급 FPS로 더 최적화 (config와 일치)
+          fps: 15, // 극한 최적화 FPS
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // 더 작은 스캔 박스로 극한 최적화
-            let minEdgePercentage = 0.65; // 화면의 65% (더 집중)
+            // 극한 최적화 스캔 박스
+            let minEdgePercentage = 0.6; // 화면의 60%
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return {
@@ -433,13 +433,13 @@ const QRScanPage = () => {
           },
           aspectRatio: 1.0,
           videoConstraints: {
-            facingMode: "environment", // 후면 카메라 우선
-            width: { ideal: 960, min: 480 }, // HD보다 낮춤 (극한 최적화)
-            height: { ideal: 540, min: 360 },
-            frameRate: { ideal: 24, min: 12 }, // 24fps (영화급 프레임률)
-            focusMode: { ideal: "continuous" }, // 연속 초점 모드
-            whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
-            exposureMode: { ideal: "continuous" } // 연속 노출 모드
+            facingMode: "environment",
+            width: { ideal: 640, min: 320 }, // VGA 수준 극한 최적화
+            height: { ideal: 480, min: 240 },
+            frameRate: { ideal: 15, min: 10 }, // 15fps 극한 최적화
+            focusMode: { ideal: "continuous" },
+            whiteBalanceMode: { ideal: "continuous" },
+            exposureMode: { ideal: "continuous" }
           }
         };
         
@@ -481,7 +481,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus('바코드 스캔 중... (극한 최적화)');
+        setScanStatus('바코드 스캔 중...');
 
         // 줌 초기화
         setCurrentZoom(1);
@@ -670,25 +670,25 @@ const QRScanPage = () => {
   // 단계적 카메라 설정 폴백 시스템
   const tryDifferentCameraSettings = async () => {
     const settingsToTry = [
-      {
-        name: '고성능 설정',
-        config: {
-          fps: 60,
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            let minEdgePercentage = 0.75;
-            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-            return { width: qrboxSize, height: qrboxSize };
-          },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 60, min: 30 }
+              {
+          name: '표준 설정',
+          config: {
+            fps: 30,
+            qrbox: function(viewfinderWidth, viewfinderHeight) {
+              let minEdgePercentage = 0.7;
+              let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+              let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+              return { width: qrboxSize, height: qrboxSize };
+            },
+            aspectRatio: 1.0,
+            videoConstraints: {
+              facingMode: "environment",
+              width: { ideal: 1280, min: 640 },
+              height: { ideal: 720, min: 480 },
+              frameRate: { ideal: 30, min: 15 }
+            }
           }
-        }
-      },
+        },
       {
         name: '표준 설정',
         config: {
@@ -1250,7 +1250,7 @@ const QRScanPage = () => {
           justifyContent: 'center',
           gap: '8px'
         }}>
-          🚀 QR 코드를 카메라에 맞추면 자동으로 인식됩니다 (극한 최적화)
+          QR 코드를 카메라에 맞추면 자동으로 인식됩니다
         </div>
       </div>
 
