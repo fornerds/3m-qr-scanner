@@ -196,24 +196,46 @@ module.exports = async function handler(req, res) {
     try {
       const { storeId } = req.query;
       
-      // 매장 삭제
+      if (!storeId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '매장 ID가 필요합니다.' 
+        });
+      }
+      
       const { db } = await connectToDatabase();
-      const collection = db.collection('stores');
       
-      const result = await collection.deleteOne({ _id: storeId });
+      // 1. 먼저 매장이 존재하는지 확인
+      const storesCollection = db.collection('stores');
+      const store = await storesCollection.findOne({ _id: storeId });
       
-      if (result.deletedCount === 0) {
+      if (!store) {
         return res.status(404).json({ 
           success: false, 
           message: '매장을 찾을 수 없습니다.' 
         });
       }
       
-      console.log('매장 삭제:', storeId);
+      // 2. 해당 매장의 스캔 기록 삭제
+      const scanRecordsCollection = db.collection('scan_records');
+      const scanDeleteResult = await scanRecordsCollection.deleteMany({ 
+        storeId: String(storeId) 
+      });
+      
+      // 3. 해당 매장의 세션 데이터 삭제
+      const sessionsCollection = db.collection('sessions');
+      const sessionDeleteResult = await sessionsCollection.deleteMany({ 
+        storeId: String(storeId) 
+      });
+      
+      // 4. 매장 삭제
+      const storeDeleteResult = await storesCollection.deleteOne({ _id: storeId });
+      
+      console.log(`매장 삭제 완료: ${storeId}, 스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionDeleteResult.deletedCount}개 삭제`);
       
       res.status(200).json({ 
         success: true, 
-        message: '매장이 성공적으로 삭제되었습니다.'
+        message: `매장이 성공적으로 삭제되었습니다. (스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionDeleteResult.deletedCount}개 함께 삭제)`
       });
     } catch (error) {
       console.error('매장 삭제 오류:', error);

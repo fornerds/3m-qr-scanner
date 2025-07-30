@@ -32,7 +32,7 @@ const StoreManagement = () => {
     
     try {
       const url = editingStore 
-        ? `/api/stores/${editingStore.id}` 
+        ? `/api/stores?storeId=${editingStore.id}` 
         : '/api/stores';
       
       const method = editingStore ? 'PUT' : 'POST';
@@ -70,12 +70,17 @@ const StoreManagement = () => {
   };
 
   const handleDelete = async (storeId) => {
-    if (!window.confirm('정말로 이 매장을 삭제하시겠습니까?')) {
+    const store = stores.find(s => s.id === storeId);
+    const storeName = store ? store.name : `매장 ID: ${storeId}`;
+    
+    const confirmMessage = `정말로 "${storeName}"을(를) 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없으며, 관련된 모든 스캔 기록과 세션 데이터가 함께 삭제됩니다.`;
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/stores/${storeId}`, {
+      const response = await fetch(`/api/stores?storeId=${storeId}`, {
         method: 'DELETE',
       });
 
@@ -83,7 +88,8 @@ const StoreManagement = () => {
         fetchStores();
         alert('매장이 삭제되었습니다.');
       } else {
-        alert('삭제 중 오류가 발생했습니다.');
+        const errorData = await response.json();
+        alert(errorData.message || '삭제 중 오류가 발생했습니다.');
       }
     } catch (error) {
       console.error('매장 삭제 오류:', error);
