@@ -18,7 +18,7 @@ const QRScanPage = () => {
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
-  const SCAN_COOLDOWN = 1000; // 1초로 단축하여 빠른 재스캔
+  const SCAN_COOLDOWN = 100; // 100ms로 단축하여 즉시 재스캔
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
@@ -277,21 +277,36 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (정사각형 스캔 박스)
+      // 자동 카메라 시작 설정 (최적화된 인식률)
       const config = {
-        fps: 30, // 높은 FPS로 빠른 초기 인식
-        qrbox: { width: 300, height: 300 }, // 더 큰 스캔 영역
+        fps: 60, // 최고 FPS로 즉시 인식
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          // 화면 크기에 따라 동적으로 스캔 박스 크기 조정
+          let minEdgePercentage = 0.7; // 화면의 70%
+          let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+          return {
+            width: qrboxSize,
+            height: qrboxSize
+          };
+        },
         aspectRatio: 1.0, // 정사각형 비율 강제
         rememberLastUsedCamera: true, // 마지막 사용 카메라 기억
         supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 카메라만 사용
-        showTorchButtonIfSupported: false, // 플래시 버튼 숨김
+        showTorchButtonIfSupported: true, // 플래시 버튼 표시 (어두운 환경에서 도움)
         showZoomSliderIfSupported: false, // 줌 슬라이더 숨김
         defaultZoomValueIfSupported: 1, // 기본 줌 값
+        disableFlip: false, // 수평 뒤집기 활성화 (인식률 향상)
         formatsToSupport: [
           Html5QrcodeSupportedFormats.QR_CODE,
           Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39
-        ], // QR과 바코드 포맷 지원
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.CODE_93,
+          Html5QrcodeSupportedFormats.CODABAR,
+          Html5QrcodeSupportedFormats.DATA_MATRIX,
+          Html5QrcodeSupportedFormats.AZTEC,
+          Html5QrcodeSupportedFormats.PDF_417
+        ], // 모든 지원 포맷 활성화
         experimentalFeatures: {
           useBarCodeDetectorIfSupported: true // 네이티브 바코드 감지 사용
         }
@@ -317,11 +332,11 @@ const QRScanPage = () => {
         // 제품 검색
         processQR(decodedText);
         
-        // 5초 후 중복 방지 해제 (더 긴 시간으로 설정)
+        // 2초 후 중복 방지 해제 (빠른 재스캔을 위해 단축)
         setTimeout(() => {
           setLastScannedCode('');
           setLastScanTime(0);
-        }, 5000);
+        }, 2000);
       };
 
       // 스캔 에러 콜백 (무시)
@@ -339,20 +354,61 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 30, // 높은 FPS로 빠른 인식
-          qrbox: { width: 300, height: 300 }, // 더 큰 스캔 영역
+          fps: 60, // 최고 FPS로 즉시 인식 (config와 일치)
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            // 화면 크기에 따라 동적으로 스캔 박스 크기 조정
+            let minEdgePercentage = 0.7; // 화면의 70%
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            return {
+              width: qrboxSize,
+              height: qrboxSize
+            };
+          },
           aspectRatio: 1.0,
           videoConstraints: {
-            facingMode: "environment",
+            facingMode: "environment", // 후면 카메라 우선
             width: { ideal: 3840, min: 1920 }, // 4K 화질 (최고 화질)
             height: { ideal: 2160, min: 1080 },
-            frameRate: { ideal: 60, min: 30 } // 60fps (최고 프레임률)
+            frameRate: { ideal: 60, min: 30 }, // 60fps (최고 프레임률)
+            focusMode: { ideal: "continuous" }, // 연속 초점 모드
+            whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
+            exposureMode: { ideal: "continuous" } // 연속 노출 모드
           }
         };
         
-        // 후면 카메라로 바로 시작
+        // 후면 카메라 우선 시작 (카메라 목록에서 후면 카메라 찾기)
+        let cameraId = { facingMode: "environment" };
+        
+        try {
+          // 사용 가능한 카메라 목록 가져오기
+          const cameras = await Html5Qrcode.getCameras();
+          console.log('사용 가능한 카메라:', cameras);
+          
+          if (cameras && cameras.length > 0) {
+            // 후면 카메라 찾기 (보통 "back" 또는 "environment"라는 이름 포함)
+            const backCamera = cameras.find(camera => 
+              camera.label.toLowerCase().includes('back') || 
+              camera.label.toLowerCase().includes('rear') ||
+              camera.label.toLowerCase().includes('environment') ||
+              !camera.label.toLowerCase().includes('front')
+            );
+            
+            if (backCamera) {
+              cameraId = backCamera.id;
+              console.log('후면 카메라 선택:', backCamera);
+            } else if (cameras.length > 1) {
+              // 후면 카메라를 찾지 못했지만 여러 카메라가 있다면 마지막 카메라 사용 (보통 후면)
+              cameraId = cameras[cameras.length - 1].id;
+              console.log('마지막 카메라 선택 (후면 추정):', cameras[cameras.length - 1]);
+            }
+          }
+        } catch (err) {
+          console.log('카메라 목록 조회 실패, 기본 설정 사용:', err);
+        }
+        
         await scannerRef.current.start(
-          { facingMode: "environment" }, // 후면 카메라 사용
+          cameraId,
           cameraConfig,
           qrCodeSuccessCallback,
           onScanError
