@@ -336,12 +336,12 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (최고 속도 최적화)
+      // 자동 카메라 시작 설정 (안정성과 속도의 균형)
       const config = {
-        fps: 120, // 극한 FPS로 초고속 인식
+        fps: 60, // 안정적인 고속 FPS
         qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // 스캔 박스를 더 크게 하여 인식률 향상
-          let minEdgePercentage = 0.85; // 화면의 85%로 확대
+          // 스캔 박스를 크게 하여 인식률 향상
+          let minEdgePercentage = 0.75; // 화면의 75%로 설정
           let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
           let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
           return {
@@ -420,10 +420,10 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 120, // 극한 FPS로 초고속 인식 (config와 일치)
+          fps: 60, // 안정적인 고속 FPS (config와 일치)
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // 스캔 박스를 더 크게 하여 인식률 향상
-            let minEdgePercentage = 0.85; // 화면의 85%로 확대
+            // 스캔 박스를 크게 하여 인식률 향상
+            let minEdgePercentage = 0.75; // 화면의 75%로 설정
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return {
@@ -434,9 +434,9 @@ const QRScanPage = () => {
           aspectRatio: 1.0,
           videoConstraints: {
             facingMode: "environment", // 후면 카메라 우선
-            width: { ideal: 3840, min: 1920 }, // 4K 화질 (최고 화질)
-            height: { ideal: 2160, min: 1080 },
-            frameRate: { ideal: 120, min: 60 }, // 120fps (극한 프레임률)
+            width: { ideal: 1920, min: 1280 }, // Full HD 화질 (안정성 우선)
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 60, min: 30 }, // 60fps (안정적인 고속)
             focusMode: { ideal: "continuous" }, // 연속 초점 모드
             whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
             exposureMode: { ideal: "continuous" } // 연속 노출 모드
@@ -504,7 +504,6 @@ const QRScanPage = () => {
         }, 1000); // 1초로 늘림
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
-        setScanStatus('카메라 초기화 실패');
         
         // 권한이 거부된 경우 상세한 안내 표시
         if (renderError.name === 'NotAllowedError') {
@@ -516,14 +515,24 @@ const QRScanPage = () => {
         } else if (renderError.name === 'NotReadableError') {
           setScanStatus('카메라가 다른 앱에서 사용 중입니다');
           alert('다른 앱에서 카메라를 사용 중입니다. 다른 앱을 종료한 후 다시 시도해주세요.');
+        } else if (renderError.name === 'OverconstrainedError') {
+          setScanStatus('카메라 설정이 지원되지 않습니다');
+          console.log('설정이 지원되지 않아 단계적 폴백을 시작합니다.');
+          tryDifferentCameraSettings();
+          return; // 폴백 시스템이 실행되므로 에러를 throw하지 않음
+        } else if (!renderError.name || renderError.message === 'undefined') {
+          setScanStatus('카메라 설정 문제가 발생했습니다');
+          console.log('undefined 오류 발생, 단계적 폴백을 시작합니다.');
+          tryDifferentCameraSettings();
+          return; // 폴백 시스템이 실행되므로 에러를 throw하지 않음
         } else {
           setScanStatus('카메라 접근 오류');
-          alert(`카메라 오류: ${renderError.message}`);
+          alert(`카메라 오류: ${renderError.message || 'Unknown error'}`);
         }
         throw renderError;
       }
 
-    } catch (error) {
+        } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
       
       // 에러 타입별 상세 처리
@@ -536,11 +545,11 @@ const QRScanPage = () => {
       } else if (error.name === 'NotReadableError') {
         setScanStatus('카메라가 다른 앱에서 사용 중입니다');
         alert('다른 앱에서 카메라를 사용 중입니다. 다른 앱을 종료한 후 다시 시도해주세요.');
-      } else if (error.name === 'OverconstrainedError') {
-        setScanStatus('카메라 설정이 지원되지 않습니다');
-        alert('요청한 카메라 설정이 지원되지 않습니다. 다른 설정으로 재시도합니다.');
-        // 더 낮은 설정으로 재시도
-        retryWithLowerSettings();
+      } else if (error.name === 'OverconstrainedError' || !error.name || error.message === 'undefined') {
+        setScanStatus('카메라 설정 문제 - 자동으로 다른 설정 시도');
+        console.log('설정 문제로 인해 자동으로 단계적 폴백을 시작합니다.');
+        // 자동으로 단계적 설정으로 재시도
+        setTimeout(() => tryDifferentCameraSettings(), 500);
       } else {
         setScanStatus('카메라 접근 실패');
         alert(`카메라 오류: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
@@ -658,43 +667,120 @@ const QRScanPage = () => {
     alert(message);
   };
 
-  // 낮은 설정으로 카메라 재시도
-  const retryWithLowerSettings = async () => {
-    try {
-      setScanStatus('기본 설정으로 재시도 중...');
-      
-      // 기본 설정으로 재시도
-      const basicConfig = {
-        fps: 10,
-        qrbox: { width: 250, height: 250 },
-        aspectRatio: 1.0,
-        videoConstraints: {
-          facingMode: "environment",
-          width: { ideal: 1280, min: 640 },
-          height: { ideal: 720, min: 480 },
-          frameRate: { ideal: 30, min: 15 }
+  // 단계적 카메라 설정 폴백 시스템
+  const tryDifferentCameraSettings = async () => {
+    const settingsToTry = [
+      {
+        name: '고성능 설정',
+        config: {
+          fps: 60,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            let minEdgePercentage = 0.75;
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 60, min: 30 }
+          }
         }
-      };
+      },
+      {
+        name: '표준 설정',
+        config: {
+          fps: 30,
+          qrbox: { width: 300, height: 300 },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            frameRate: { ideal: 30, min: 15 }
+          }
+        }
+      },
+      {
+        name: '기본 설정',
+        config: {
+          fps: 15,
+          qrbox: { width: 250, height: 250 },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            frameRate: { ideal: 15 }
+          }
+        }
+      },
+      {
+        name: '최소 설정',
+        config: {
+          fps: 10,
+          qrbox: { width: 200, height: 200 },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment"
+          }
+        }
+      }
+    ];
 
-      scannerRef.current = new Html5Qrcode("qr-reader");
-      
-      const qrCodeSuccessCallback = (decodedText, decodedResult) => {
-        onScanSuccess(decodedText, decodedResult);
-      };
+    for (let i = 0; i < settingsToTry.length; i++) {
+      const setting = settingsToTry[i];
+      try {
+        setScanStatus(`${setting.name}으로 시도 중...`);
+        
+        // 이전 스캐너 정리
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+            scannerRef.current = null;
+          } catch (e) {
+            console.log('기존 스캐너 정리 중 무시 가능한 오류:', e);
+          }
+        }
 
-      await scannerRef.current.start(
-        { facingMode: "environment" },
-        basicConfig,
-        qrCodeSuccessCallback,
-        () => {} // 에러 무시
-      );
+        // DOM 정리
+        const qrReaderDiv = document.getElementById('qr-reader');
+        if (qrReaderDiv) {
+          qrReaderDiv.innerHTML = '';
+        }
 
-      setIsScanning(true);
-      setScanStatus('바코드 스캔 중... (기본 설정)');
-      
-    } catch (retryError) {
-      console.error('기본 설정 재시도 실패:', retryError);
-      setScanStatus('카메라 시작 실패');
+        // 잠깐 대기
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        scannerRef.current = new Html5Qrcode("qr-reader");
+        
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+          onScanSuccess(decodedText, decodedResult);
+        };
+
+        // 카메라 시작
+        await scannerRef.current.start(
+          { facingMode: "environment" },
+          setting.config,
+          qrCodeSuccessCallback,
+          () => {} // 에러 무시
+        );
+
+        setIsScanning(true);
+        setScanStatus(`바코드 스캔 중... (${setting.name})`);
+        console.log(`카메라 시작 성공: ${setting.name}`);
+        return; // 성공하면 반복 중단
+        
+      } catch (error) {
+        console.log(`${setting.name} 실패:`, error);
+        if (i === settingsToTry.length - 1) {
+          // 모든 설정 실패
+          setScanStatus('카메라 시작 실패 - 모든 설정 시도 완료');
+          alert('카메라를 시작할 수 없습니다. 브라우저나 기기의 카메라 지원을 확인해주세요.');
+        }
+      }
     }
   };
 
@@ -1079,7 +1165,7 @@ const QRScanPage = () => {
                 🔄 새로고침
               </button>
               <button
-                onClick={retryWithLowerSettings}
+                onClick={tryDifferentCameraSettings}
                 style={{
                   backgroundColor: '#28a745',
                   color: 'white',
@@ -1091,7 +1177,7 @@ const QRScanPage = () => {
                   fontWeight: '500'
                 }}
               >
-                🔧 기본 설정으로 재시도
+                🔧 다른 설정으로 재시도
               </button>
             </div>
           )}
