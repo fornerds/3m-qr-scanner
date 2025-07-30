@@ -439,17 +439,46 @@ const QRScanPage = () => {
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
         setScanStatus('카메라 초기화 실패');
-        // 권한이 거부된 경우 알림 표시
+        
+        // 권한이 거부된 경우 상세한 안내 표시
         if (renderError.name === 'NotAllowedError') {
-          alert('카메라 권한이 필요합니다. 브라우저 설정에서 카메라 권한을 허용해주세요.');
+          setScanStatus('카메라 권한이 필요합니다');
+          showCameraPermissionGuide();
+        } else if (renderError.name === 'NotFoundError') {
+          setScanStatus('카메라를 찾을 수 없습니다');
+          alert('카메라가 연결되어 있는지 확인해주세요.');
+        } else if (renderError.name === 'NotReadableError') {
+          setScanStatus('카메라가 다른 앱에서 사용 중입니다');
+          alert('다른 앱에서 카메라를 사용 중입니다. 다른 앱을 종료한 후 다시 시도해주세요.');
+        } else {
+          setScanStatus('카메라 접근 오류');
+          alert(`카메라 오류: ${renderError.message}`);
         }
         throw renderError;
       }
 
     } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
-      setScanStatus('카메라 접근 실패');
-      alert('카메라에 접근할 수 없습니다. 카메라 권한을 허용해주세요.');
+      
+      // 에러 타입별 상세 처리
+      if (error.name === 'NotAllowedError') {
+        setScanStatus('카메라 권한이 필요합니다');
+        showCameraPermissionGuide();
+      } else if (error.name === 'NotFoundError') {
+        setScanStatus('카메라를 찾을 수 없습니다');
+        alert('카메라가 연결되어 있는지 확인해주세요.');
+      } else if (error.name === 'NotReadableError') {
+        setScanStatus('카메라가 다른 앱에서 사용 중입니다');
+        alert('다른 앱에서 카메라를 사용 중입니다. 다른 앱을 종료한 후 다시 시도해주세요.');
+      } else if (error.name === 'OverconstrainedError') {
+        setScanStatus('카메라 설정이 지원되지 않습니다');
+        alert('요청한 카메라 설정이 지원되지 않습니다. 다른 설정으로 재시도합니다.');
+        // 더 낮은 설정으로 재시도
+        retryWithLowerSettings();
+      } else {
+        setScanStatus('카메라 접근 실패');
+        alert(`카메라 오류: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
+      }
     }
   };
 
@@ -509,6 +538,98 @@ const QRScanPage = () => {
       totalScans: 0
     });
     setScannedProducts(new Set()); // 스캔한 제품 목록도 초기화
+  };
+
+  // 카메라 권한 안내 표시
+  const showCameraPermissionGuide = () => {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isChrome = /Chrome/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    const isFirefox = /Firefox/.test(navigator.userAgent);
+
+    let message = '카메라 권한이 필요합니다.\n\n';
+    
+    if (isMobile) {
+      if (isChrome) {
+        message += '모바일 Chrome에서 권한 허용 방법:\n';
+        message += '1. 주소창 왼쪽의 자물쇠 아이콘을 탭하세요\n';
+        message += '2. "카메라" 항목을 "허용"으로 변경하세요\n';
+        message += '3. 페이지를 새로고침하세요';
+      } else if (isSafari) {
+        message += 'Safari에서 권한 허용 방법:\n';
+        message += '1. 주소창 왼쪽의 "AA" 아이콘을 탭하세요\n';
+        message += '2. "웹사이트 설정"을 선택하세요\n';
+        message += '3. "카메라"를 "허용"으로 변경하세요\n';
+        message += '4. 페이지를 새로고침하세요';
+      } else {
+        message += '모바일에서 권한 허용 방법:\n';
+        message += '1. 브라우저 주소창 근처의 설정 아이콘을 찾으세요\n';
+        message += '2. 카메라 권한을 "허용"으로 변경하세요\n';
+        message += '3. 페이지를 새로고침하세요';
+      }
+    } else {
+      if (isChrome) {
+        message += 'Chrome에서 권한 허용 방법:\n';
+        message += '1. 주소창 왼쪽의 자물쇠/카메라 아이콘을 클릭하세요\n';
+        message += '2. "카메라" 항목을 "허용"으로 변경하세요\n';
+        message += '3. 페이지를 새로고침하세요';
+      } else if (isFirefox) {
+        message += 'Firefox에서 권한 허용 방법:\n';
+        message += '1. 주소창 왼쪽의 방패/카메라 아이콘을 클릭하세요\n';
+        message += '2. "권한" 탭에서 카메라를 "허용"으로 변경하세요\n';
+        message += '3. 페이지를 새로고침하세요';
+      } else {
+        message += '브라우저에서 권한 허용 방법:\n';
+        message += '1. 주소창 근처의 카메라/자물쇠 아이콘을 클릭하세요\n';
+        message += '2. 카메라 권한을 "허용"으로 변경하세요\n';
+        message += '3. 페이지를 새로고침하세요';
+      }
+    }
+
+    message += '\n\n⚠️ 중요: HTTPS 연결이 필요합니다\n';
+    message += 'http:// 주소에서는 카메라를 사용할 수 없습니다.';
+
+    alert(message);
+  };
+
+  // 낮은 설정으로 카메라 재시도
+  const retryWithLowerSettings = async () => {
+    try {
+      setScanStatus('기본 설정으로 재시도 중...');
+      
+      // 기본 설정으로 재시도
+      const basicConfig = {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0,
+        videoConstraints: {
+          facingMode: "environment",
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 },
+          frameRate: { ideal: 30, min: 15 }
+        }
+      };
+
+      scannerRef.current = new Html5Qrcode("qr-reader");
+      
+      const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        onScanSuccess(decodedText, decodedResult);
+      };
+
+      await scannerRef.current.start(
+        { facingMode: "environment" },
+        basicConfig,
+        qrCodeSuccessCallback,
+        () => {} // 에러 무시
+      );
+
+      setIsScanning(true);
+      setScanStatus('바코드 스캔 중... (기본 설정)');
+      
+    } catch (retryError) {
+      console.error('기본 설정 재시도 실패:', retryError);
+      setScanStatus('카메라 시작 실패');
+    }
   };
 
   // QR 스캐너 스타일 오버라이드
@@ -848,22 +969,65 @@ const QRScanPage = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: '8px'
+            gap: '8px',
+            marginBottom: scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패') ? '12px' : '0'
           }}>
             <div style={{
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: isScanning ? '#28a745' : '#6c757d'
+              backgroundColor: isScanning ? '#28a745' : 
+                            (scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패')) ? '#dc3545' : '#6c757d'
             }}></div>
             <span style={{
               fontSize: '15px',
               fontWeight: '600',
-              color: isScanning ? '#28a745' : '#6c757d'
+              color: isScanning ? '#28a745' : 
+                    (scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패')) ? '#dc3545' : '#6c757d'
             }}>
-              {isScanning ? '스캔 중...' : '스캔 준비'}
+              {scanStatus || (isScanning ? '스캔 중...' : '스캔 준비')}
             </span>
           </div>
+          
+          {/* 카메라 권한 문제 시 재시도 버튼 표시 */}
+          {(scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패')) && (
+            <div style={{ 
+              display: 'flex', 
+              gap: '8px',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                🔄 새로고침
+              </button>
+              <button
+                onClick={retryWithLowerSettings}
+                style={{
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: '500'
+                }}
+              >
+                🔧 기본 설정으로 재시도
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 컨트롤 버튼 */}
