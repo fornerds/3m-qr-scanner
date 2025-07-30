@@ -336,12 +336,12 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (QR 스캔 최적화)
+      // 자동 카메라 시작 설정 (극한 최적화 실험)
       const config = {
-        fps: 30, // QR 스캔에 최적화된 FPS
+        fps: 24, // 영화급 FPS로 더 최적화
         qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // QR 스캔에 최적화된 스캔 박스 크기
-          let minEdgePercentage = 0.7; // 화면의 70% (방해 요소 최소화)
+          // 더 작은 스캔 박스로 극한 최적화
+          let minEdgePercentage = 0.65; // 화면의 65% (더 집중)
           let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
           let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
           return {
@@ -420,10 +420,10 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 30, // QR 스캔에 최적화된 FPS (config와 일치)
+          fps: 24, // 영화급 FPS로 더 최적화 (config와 일치)
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // QR 스캔에 최적화된 스캔 박스 크기
-            let minEdgePercentage = 0.7; // 화면의 70% (방해 요소 최소화)
+            // 더 작은 스캔 박스로 극한 최적화
+            let minEdgePercentage = 0.65; // 화면의 65% (더 집중)
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return {
@@ -434,9 +434,9 @@ const QRScanPage = () => {
           aspectRatio: 1.0,
           videoConstraints: {
             facingMode: "environment", // 후면 카메라 우선
-            width: { ideal: 1280, min: 640 }, // HD 화질 (QR 스캔 최적화)
-            height: { ideal: 720, min: 480 },
-            frameRate: { ideal: 30, min: 15 }, // 30fps (QR 스캔 최적화)
+            width: { ideal: 960, min: 480 }, // HD보다 낮춤 (극한 최적화)
+            height: { ideal: 540, min: 360 },
+            frameRate: { ideal: 24, min: 12 }, // 24fps (영화급 프레임률)
             focusMode: { ideal: "continuous" }, // 연속 초점 모드
             whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
             exposureMode: { ideal: "continuous" } // 연속 노출 모드
@@ -481,7 +481,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus('바코드 스캔 중... (QR 스캔 최적화)');
+        setScanStatus('바코드 스캔 중... (극한 최적화)');
 
         // 줌 초기화
         setCurrentZoom(1);
@@ -1250,7 +1250,7 @@ const QRScanPage = () => {
           justifyContent: 'center',
           gap: '8px'
         }}>
-          📱 QR 코드를 카메라에 맞추면 자동으로 인식됩니다 (최적화됨)
+          🚀 QR 코드를 카메라에 맞추면 자동으로 인식됩니다 (극한 최적화)
         </div>
       </div>
 
