@@ -1,4 +1,5 @@
 const { connectToDatabase } = require('./config/database');
+const { ObjectId } = require('mongodb');
 const multer = require('multer');
 const XLSX = require('xlsx');
 
@@ -214,17 +215,56 @@ module.exports = async function handler(req, res) {
       
       if (id) {
         // ID로 특정 제품 삭제
-        const result = await collection.deleteOne({ _id: id });
+        let product;
+        let result;
         
-        if (result.deletedCount > 0) {
-          res.status(200).json({
-            success: true,
-            message: '제품이 삭제되었습니다.'
-          });
-        } else {
-          res.status(404).json({
+        // 1. 먼저 제품 정보 조회 (SKU 얻기 위해)
+        try {
+          product = await collection.findOne({ _id: new ObjectId(id) });
+        } catch (objectIdError) {
+          // ObjectId 변환 실패 시 문자열로도 시도
+          product = await collection.findOne({ _id: id });
+        }
+        
+        if (!product) {
+          console.log('제품을 찾을 수 없음:', id);
+          return res.status(404).json({
             success: false,
             message: '제품을 찾을 수 없습니다.'
+          });
+        }
+        
+        // 2. 제품 삭제
+        try {
+          result = await collection.deleteOne({ _id: new ObjectId(id) });
+        } catch (objectIdError) {
+          result = await collection.deleteOne({ _id: id });
+        }
+        
+        // 3. 관련 스캔 기록 삭제
+        const scanRecordsCollection = db.collection('scan_records');
+        const scanDeleteResult = await scanRecordsCollection.deleteMany({ 
+          productCode: product.sku 
+        });
+        
+        // 4. 세션 데이터에서 해당 제품 제거
+        const sessionsCollection = db.collection('sessions');
+        const sessionUpdateResult = await sessionsCollection.updateMany(
+          { "scannedItems.productCode": product.sku },
+          { $pull: { scannedItems: { productCode: product.sku } } }
+        );
+        
+        if (result.deletedCount > 0) {
+          console.log(`제품 삭제 성공: ${id} (${product.name}), 스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionUpdateResult.modifiedCount}개 업데이트`);
+          res.status(200).json({
+            success: true,
+            message: `제품이 삭제되었습니다. (스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionUpdateResult.modifiedCount}개 정리 완료)`
+          });
+        } else {
+          console.log('제품 삭제 실패:', id);
+          res.status(500).json({
+            success: false,
+            message: '제품 삭제에 실패했습니다.'
           });
         }
       } else if (sku) {

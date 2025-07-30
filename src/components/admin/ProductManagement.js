@@ -59,7 +59,12 @@ const ProductManagement = () => {
   };
 
   const handleDelete = async (productId, productSku) => {
-    if (!window.confirm('정말로 이 제품을 삭제하시겠습니까?')) {
+    const product = products.find(p => (p._id || p.id) === productId);
+    const productName = product ? product.name : `SKU: ${productSku}`;
+    
+    const confirmMessage = `정말로 "${productName}"을(를) 삭제하시겠습니까?\n\n⚠️ 주의: 이 작업은 되돌릴 수 없습니다.`;
+    
+    if (!window.confirm(confirmMessage)) {
       return;
     }
 
@@ -69,10 +74,12 @@ const ProductManagement = () => {
       });
 
       if (response.ok) {
+        const data = await response.json();
         fetchProducts();
-        alert('제품이 삭제되었습니다.');
+        alert(data.message || '제품이 삭제되었습니다.');
       } else {
-        alert('삭제 중 오류가 발생했습니다.');
+        const errorData = await response.json();
+        alert(errorData.message || '삭제 중 오류가 발생했습니다.');
       }
     } catch (error) {
       console.error('제품 삭제 오류:', error);
