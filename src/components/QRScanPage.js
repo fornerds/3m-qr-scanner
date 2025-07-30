@@ -336,12 +336,12 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (안정성과 속도의 균형)
+      // 자동 카메라 시작 설정 (최고 성능으로 시작)
       const config = {
-        fps: 60, // 안정적인 고속 FPS
+        fps: 120, // 최고 FPS로 시작
         qrbox: function(viewfinderWidth, viewfinderHeight) {
           // 스캔 박스를 크게 하여 인식률 향상
-          let minEdgePercentage = 0.75; // 화면의 75%로 설정
+          let minEdgePercentage = 0.85; // 화면의 85%로 설정
           let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
           let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
           return {
@@ -420,10 +420,10 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 60, // 안정적인 고속 FPS (config와 일치)
+          fps: 120, // 최고 FPS로 시작 (config와 일치)
           qrbox: function(viewfinderWidth, viewfinderHeight) {
             // 스캔 박스를 크게 하여 인식률 향상
-            let minEdgePercentage = 0.75; // 화면의 75%로 설정
+            let minEdgePercentage = 0.85; // 화면의 85%로 설정
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return {
@@ -434,9 +434,9 @@ const QRScanPage = () => {
           aspectRatio: 1.0,
           videoConstraints: {
             facingMode: "environment", // 후면 카메라 우선
-            width: { ideal: 1920, min: 1280 }, // Full HD 화질 (안정성 우선)
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 60, min: 30 }, // 60fps (안정적인 고속)
+            width: { ideal: 3840, min: 1920 }, // 4K 화질로 시작 (최고 성능)
+            height: { ideal: 2160, min: 1080 },
+            frameRate: { ideal: 120, min: 60 }, // 120fps (최고 성능)
             focusMode: { ideal: "continuous" }, // 연속 초점 모드
             whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
             exposureMode: { ideal: "continuous" } // 연속 노출 모드
@@ -481,7 +481,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus('바코드 스캔 중...');
+        setScanStatus('바코드 스캔 중... (최고 성능)');
 
         // 줌 초기화
         setCurrentZoom(1);
@@ -520,10 +520,10 @@ const QRScanPage = () => {
           console.log('설정이 지원되지 않아 단계적 폴백을 시작합니다.');
           tryDifferentCameraSettings();
           return; // 폴백 시스템이 실행되므로 에러를 throw하지 않음
-        } else if (!renderError.name || renderError.message === 'undefined') {
-          setScanStatus('카메라 설정 문제가 발생했습니다');
-          console.log('undefined 오류 발생, 단계적 폴백을 시작합니다.');
-          tryDifferentCameraSettings();
+        } else if (!renderError.name || renderError.message === 'undefined' || String(renderError).includes('undefined')) {
+          setScanStatus('최고 성능이 지원되지 않음 - 최적 설정 찾는 중...');
+          console.log('최고 설정이 지원되지 않아 자동으로 최적 설정을 찾습니다.');
+          setTimeout(() => tryDifferentCameraSettings(), 300);
           return; // 폴백 시스템이 실행되므로 에러를 throw하지 않음
         } else {
           setScanStatus('카메라 접근 오류');
@@ -545,11 +545,11 @@ const QRScanPage = () => {
       } else if (error.name === 'NotReadableError') {
         setScanStatus('카메라가 다른 앱에서 사용 중입니다');
         alert('다른 앱에서 카메라를 사용 중입니다. 다른 앱을 종료한 후 다시 시도해주세요.');
-      } else if (error.name === 'OverconstrainedError' || !error.name || error.message === 'undefined') {
-        setScanStatus('카메라 설정 문제 - 자동으로 다른 설정 시도');
-        console.log('설정 문제로 인해 자동으로 단계적 폴백을 시작합니다.');
+      } else if (error.name === 'OverconstrainedError' || !error.name || error.message === 'undefined' || String(error).includes('undefined')) {
+        setScanStatus('최고 성능이 지원되지 않음 - 최적 설정 찾는 중...');
+        console.log('최고 설정이 지원되지 않아 자동으로 최적 설정을 찾습니다.');
         // 자동으로 단계적 설정으로 재시도
-        setTimeout(() => tryDifferentCameraSettings(), 500);
+        setTimeout(() => tryDifferentCameraSettings(), 300);
       } else {
         setScanStatus('카메라 접근 실패');
         alert(`카메라 오류: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
@@ -671,11 +671,30 @@ const QRScanPage = () => {
   const tryDifferentCameraSettings = async () => {
     const settingsToTry = [
       {
+        name: '극한 설정',
+        config: {
+          fps: 120,
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            let minEdgePercentage = 0.9; // 화면의 90%
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            return { width: qrboxSize, height: qrboxSize };
+          },
+          aspectRatio: 1.0,
+          videoConstraints: {
+            facingMode: "environment",
+            width: { ideal: 3840, min: 1920 }, // 4K
+            height: { ideal: 2160, min: 1080 },
+            frameRate: { ideal: 120, min: 60 }
+          }
+        }
+      },
+      {
         name: '고성능 설정',
         config: {
           fps: 60,
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            let minEdgePercentage = 0.75;
+            let minEdgePercentage = 0.8;
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return { width: qrboxSize, height: qrboxSize };
@@ -1250,7 +1269,7 @@ const QRScanPage = () => {
           justifyContent: 'center',
           gap: '8px'
         }}>
-          QR 코드를 카메라에 맞추면 자동으로 인식됩니다
+          ⚡ QR 코드를 카메라에 맞추면 초고속으로 인식됩니다
         </div>
       </div>
 
