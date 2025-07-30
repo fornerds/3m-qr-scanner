@@ -18,7 +18,11 @@ const QRScanPage = () => {
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
-  const SCAN_COOLDOWN = 100; // 100ms로 단축하여 즉시 재스캔
+  
+  // 제품 캐시 시스템 (최고 속도를 위한 로컬 캐싱)
+  const [productCache, setProductCache] = useState(new Map());
+  const [isPreloading, setIsPreloading] = useState(false);
+  const SCAN_COOLDOWN = 50; // 50ms로 극단축하여 최고 속도
   
   const scannerRef = useRef();
   const scannerDivRef = useRef();
@@ -112,9 +116,44 @@ const QRScanPage = () => {
     }
   };
 
+  // 제품 캐시 프리로딩 (앱 시작 시 자주 스캔되는 제품들 미리 로드)
+  const preloadPopularProducts = async () => {
+    if (isPreloading) return;
+    
+    setIsPreloading(true);
+    try {
+      // 인기 제품들을 백그라운드에서 미리 로드
+      const response = await fetch('/api/products?limit=50'); // 상위 50개 제품
+      const result = await response.json();
+      
+      if (result.success && result.products) {
+        const newCache = new Map(productCache);
+        result.products.forEach(product => {
+          newCache.set(product.sku, product);
+        });
+        setProductCache(newCache);
+        console.log(`${result.products.length}개 제품을 캐시에 프리로드했습니다.`);
+      }
+    } catch (error) {
+      console.log('제품 프리로딩 실패:', error);
+    } finally {
+      setIsPreloading(false);
+    }
+  };
 
+  // 캐시된 제품 검색 (초고속)
+  const searchProductFromCache = (productCode) => {
+    return productCache.get(productCode);
+  };
 
-  // QR 코드 처리
+  // 제품 캐시에 추가
+  const addToCache = (productCode, product) => {
+    const newCache = new Map(productCache);
+    newCache.set(productCode, product);
+    setProductCache(newCache);
+  };
+
+  // QR 코드 처리 (초고속 버전)
   const processQR = async (qrData) => {
     try {
       // QR 데이터에서 제품코드 추출 (순수 코드만 읽는다고 가정)
@@ -133,15 +172,32 @@ const QRScanPage = () => {
           timestamp: new Date()
         });
         
-        // 2초 후 결과 초기화
-        setTimeout(() => setScanResult(null), 2000);
+        // 1.5초 후 결과 초기화 (빠른 연속 스캔)
+        setTimeout(() => setScanResult(null), 1500);
         return;
       }
       
-      // MongoDB에서 제품 검색 (SKU 기준)
-      const response = await fetch(`/api/products?sku=${encodeURIComponent(productCode)}`);
+      // 1단계: 캐시에서 초고속 검색 먼저 시도
+      let product = searchProductFromCache(productCode);
+      let result = null;
       
-      const result = await response.json();
+      if (product) {
+        // 캐시 히트! 즉시 응답
+        console.log('캐시에서 제품 찾음:', productCode);
+        result = { success: true, product };
+        setScanStatus('캐시에서 찾음 ⚡');
+      } else {
+        // 캐시 미스, API 호출
+        setScanStatus('DB에서 검색 중...');
+        const response = await fetch(`/api/products?sku=${encodeURIComponent(productCode)}`);
+        result = await response.json();
+        
+        // API 결과를 캐시에 저장
+        if (result.success && result.product) {
+          addToCache(productCode, result.product);
+          product = result.product;
+        }
+      }
       
       let scanResult;
       
@@ -228,8 +284,11 @@ const QRScanPage = () => {
         navigator.vibrate(200);
       }
       
-      // 3초 후 결과 초기화 (더 긴 시간으로 사용자가 확인할 수 있도록)
-      setTimeout(() => setScanResult(null), 3000);
+      // 2초 후 결과 초기화 (빠른 연속 스캔을 위해 단축)
+      setTimeout(() => {
+        setScanResult(null);
+        setScanStatus('바코드 스캔 중...');
+      }, 2000);
       
       console.log(`QR 코드 처리됨: ${productCode} - ${scanResult.statusMessage}`);
     } catch (error) {
@@ -277,12 +336,12 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (최적화된 인식률)
+      // 자동 카메라 시작 설정 (최고 속도 최적화)
       const config = {
-        fps: 60, // 최고 FPS로 즉시 인식
+        fps: 120, // 극한 FPS로 초고속 인식
         qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // 화면 크기에 따라 동적으로 스캔 박스 크기 조정
-          let minEdgePercentage = 0.7; // 화면의 70%
+          // 스캔 박스를 더 크게 하여 인식률 향상
+          let minEdgePercentage = 0.85; // 화면의 85%로 확대
           let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
           let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
           return {
@@ -327,16 +386,23 @@ const QRScanPage = () => {
         // 스캔 허용
         setLastScannedCode(decodedText);
         setLastScanTime(currentTime);
-        setScanStatus(`제품 검색 중...`);
+        
+        // 즉시 피드백 제공
+        setScanStatus(`✓ 스캔됨! 검색 중... (${decodedText.substring(0, 10)}...)`);
+        
+        // 진동 피드백 (지원하는 기기에서)
+        if (navigator.vibrate) {
+          navigator.vibrate(100);
+        }
         
         // 제품 검색
         processQR(decodedText);
         
-        // 2초 후 중복 방지 해제 (빠른 재스캔을 위해 단축)
+        // 1초 후 중복 방지 해제 (최고 속도 재스캔)
         setTimeout(() => {
           setLastScannedCode('');
           setLastScanTime(0);
-        }, 2000);
+        }, 1000);
       };
 
       // 스캔 에러 콜백 (무시)
@@ -354,10 +420,10 @@ const QRScanPage = () => {
         };
         
         const cameraConfig = {
-          fps: 60, // 최고 FPS로 즉시 인식 (config와 일치)
+          fps: 120, // 극한 FPS로 초고속 인식 (config와 일치)
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // 화면 크기에 따라 동적으로 스캔 박스 크기 조정
-            let minEdgePercentage = 0.7; // 화면의 70%
+            // 스캔 박스를 더 크게 하여 인식률 향상
+            let minEdgePercentage = 0.85; // 화면의 85%로 확대
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
             return {
@@ -370,7 +436,7 @@ const QRScanPage = () => {
             facingMode: "environment", // 후면 카메라 우선
             width: { ideal: 3840, min: 1920 }, // 4K 화질 (최고 화질)
             height: { ideal: 2160, min: 1080 },
-            frameRate: { ideal: 60, min: 30 }, // 60fps (최고 프레임률)
+            frameRate: { ideal: 120, min: 60 }, // 120fps (극한 프레임률)
             focusMode: { ideal: "continuous" }, // 연속 초점 모드
             whiteBalanceMode: { ideal: "continuous" }, // 연속 화이트밸런스
             exposureMode: { ideal: "continuous" } // 연속 노출 모드
@@ -659,9 +725,10 @@ const QRScanPage = () => {
   }, []);
 
   useEffect(() => {
-    // 컴포넌트 마운트 후 약간의 지연을 두고 카메라 시작
+    // 컴포넌트 마운트 후 제품 프리로딩과 카메라 시작을 병렬로 실행
     const timer = setTimeout(() => {
       startCamera();
+      preloadPopularProducts(); // 백그라운드에서 제품 캐싱
     }, 100);
     
     return () => {

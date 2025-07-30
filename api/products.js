@@ -105,7 +105,7 @@ const processExcelFile = (buffer) => {
 module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     try {
-      const { sku, category, importance, search } = req.query;
+      const { sku, category, importance, search, limit } = req.query;
       
       const { db } = await connectToDatabase();
       const collection = db.collection('products');
@@ -128,7 +128,9 @@ module.exports = async function handler(req, res) {
         ];
       }
       
-      let products = await collection.find(query).toArray();
+      let products = await collection.find(query)
+        .limit(limit ? parseInt(limit) : 0) // 0은 제한 없음
+        .toArray();
       
       // 중요도 필터링 (클라이언트에서 계산)
       if (importance) {
