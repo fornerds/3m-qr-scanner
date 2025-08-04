@@ -19,6 +19,12 @@ const QRScanPage = () => {
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
+  // 검색 관련 state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  
   // 제품 캐시 시스템 (최고 속도를 위한 로컬 캐싱)
   const [productCache, setProductCache] = useState(new Map());
   const [isPreloading, setIsPreloading] = useState(false);
@@ -151,6 +157,165 @@ const QRScanPage = () => {
     const newCache = new Map(productCache);
     newCache.set(productCode, product);
     setProductCache(newCache);
+  };
+
+  // 제품 검색 함수
+  const searchProducts = async (searchQuery) => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const response = await fetch(`/api/products?search=${encodeURIComponent(searchQuery.trim())}&limit=20`);
+      const result = await response.json();
+      
+      if (result.success && result.products) {
+        setSearchResults(result.products);
+        setShowSearchResults(true);
+        
+        // 검색 결과를 캐시에도 추가
+        result.products.forEach(product => {
+          if (product.sku) {
+            addToCache(product.sku, product);
+          }
+        });
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(true);
+      }
+    } catch (error) {
+      console.error('제품 검색 오류:', error);
+      setSearchResults([]);
+      setShowSearchResults(true);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // 검색된 제품 선택 시 처리 (스캔과 동일한 로직)
+  const selectProduct = async (product) => {
+    try {
+      const productCode = product.sku;
+      
+      // 이미 스캔한 제품인지 확인
+      if (scannedProducts.has(productCode)) {
+        setScanResult({
+          productCode,
+          productName: product.name,
+          category: product.category,
+          price: `${product.price.toLocaleString()}원`,
+          status: 'already_scanned',
+          statusMessage: '이미 스캔됨',
+          statusColor: '#ffc107',
+          timestamp: new Date()
+        });
+        
+        // 검색 결과 숨기기
+        setShowSearchResults(false);
+        setSearchTerm('');
+        
+        // 1.5초 후 결과 초기화
+        setTimeout(() => setScanResult(null), 1500);
+        return;
+      }
+
+      // 스캔 기록 DB에 저장
+      try {
+        const saveResponse = await fetch('/api/scan-records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            storeId: storeId,
+            productCode,
+            productName: product.name,
+            sessionId
+          })
+        });
+        
+        const saveResult = await saveResponse.json();
+        
+        let scanResult;
+        
+        if (saveResult.isDuplicate) {
+          // 중복 처리
+          scanResult = {
+            productCode,
+            productName: product.name,
+            category: product.category,
+            price: `${product.price.toLocaleString()}원`,
+            status: 'already_scanned',
+            statusMessage: '이미 스캔됨',
+            statusColor: '#ffc107',
+            timestamp: new Date()
+          };
+        } else {
+          // 정상적으로 새로 선택된 경우
+          scanResult = {
+            productCode,
+            productName: product.name,
+            category: product.category,
+            price: `${product.price.toLocaleString()}원`,
+            status: 'found',
+            statusMessage: '검색으로 등록됨',
+            statusColor: '#28a745',
+            product: product,
+            timestamp: new Date()
+          };
+          
+          // 스캔한 제품 목록에 추가
+          setScannedProducts(prev => new Set([...prev, productCode]));
+          
+          // 통계 업데이트
+          setScanStats(prev => ({
+            totalScans: prev.totalScans + 1
+          }));
+        }
+        
+        setScanResult(scanResult);
+        
+        // 검색 결과 숨기기
+        setShowSearchResults(false);
+        setSearchTerm('');
+        
+        // 진동 피드백
+        if (navigator.vibrate && scanResult.status === 'found') {
+          navigator.vibrate(200);
+        }
+        
+        // 2초 후 결과 초기화
+        setTimeout(() => setScanResult(null), 2000);
+        
+      } catch (error) {
+        console.error('스캔 기록 저장 실패:', error);
+        
+        // 오류가 있어도 기본 결과는 표시
+        setScanResult({
+          productCode,
+          productName: product.name,
+          category: product.category,
+          price: `${product.price.toLocaleString()}원`,
+          status: 'found',
+          statusMessage: '검색으로 등록됨',
+          statusColor: '#28a745',
+          product: product,
+          timestamp: new Date()
+        });
+        
+        setShowSearchResults(false);
+        setSearchTerm('');
+        setTimeout(() => setScanResult(null), 2000);
+      }
+      
+    } catch (error) {
+      console.error('제품 선택 처리 오류:', error);
+      setShowSearchResults(false);
+      setSearchTerm('');
+    }
   };
 
   // QR 코드 처리 (초고속 버전)
@@ -1037,6 +1202,261 @@ const QRScanPage = () => {
           </div>
         )}
       </div>
+
+      {/* 제품 검색 섹션 */}
+      <div style={{
+        padding: '16px',
+        backgroundColor: '#f5f5f5',
+        borderBottom: '1px solid #e0e0e0'
+      }}>
+        <div style={{
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '16px',
+          boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '16px',
+            borderBottom: '1px solid #f8f9fa',
+            paddingBottom: '12px'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}>
+              <div style={{
+                width: '6px',
+                height: '20px',
+                backgroundColor: '#007bff',
+                borderRadius: '3px'
+              }}></div>
+              <span style={{
+                fontSize: '16px',
+                fontWeight: '600',
+                color: '#495057'
+              }}>
+                제품 검색
+              </span>
+            </div>
+          </div>
+          
+          {/* 검색 입력 영역 */}
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            marginBottom: '12px'
+          }}>
+            <input
+              type="text"
+              placeholder="제품명이나 브랜드를 입력하세요"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  searchProducts(searchTerm);
+                }
+              }}
+              style={{
+                flex: 1,
+                padding: '12px 16px',
+                border: '2px solid #e9ecef',
+                borderRadius: '8px',
+                fontSize: '16px',
+                outline: 'none',
+                transition: 'border-color 0.2s ease',
+                backgroundColor: 'white'
+              }}
+              onFocus={(e) => e.target.style.borderColor = '#007bff'}
+              onBlur={(e) => e.target.style.borderColor = '#e9ecef'}
+            />
+            <button
+              onClick={() => searchProducts(searchTerm)}
+              disabled={isSearching || !searchTerm.trim()}
+              style={{
+                padding: '12px 20px',
+                backgroundColor: isSearching || !searchTerm.trim() ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: isSearching || !searchTerm.trim() ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                minWidth: '80px',
+                justifyContent: 'center'
+              }}
+            >
+              {isSearching ? (
+                <>
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid transparent',
+                    borderTop: '2px solid white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }}></div>
+                  검색중
+                </>
+              ) : (
+                <>
+                  <i className="fas fa-search"></i>
+                  검색
+                </>
+              )}
+            </button>
+          </div>
+          
+          <div style={{
+            fontSize: '13px',
+            color: '#6c757d',
+            textAlign: 'center'
+          }}>
+            QR 인식이 안되는 제품을 검색으로 등록하세요
+          </div>
+        </div>
+
+        {/* 검색 결과 */}
+        {showSearchResults && (
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            marginTop: '12px',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
+            border: '1px solid #e9ecef',
+            maxHeight: '400px',
+            overflow: 'auto'
+          }}>
+            {searchResults.length > 0 ? (
+              <>
+                <div style={{
+                  padding: '16px',
+                  borderBottom: '1px solid #f8f9fa'
+                }}>
+                  <span style={{
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    color: '#495057'
+                  }}>
+                    검색 결과 ({searchResults.length}개)
+                  </span>
+                  <button
+                    onClick={() => {
+                      setShowSearchResults(false);
+                      setSearchTerm('');
+                      setSearchResults([]);
+                    }}
+                    style={{
+                      float: 'right',
+                      background: 'none',
+                      border: 'none',
+                      color: '#6c757d',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '0'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+                {searchResults.map((product, index) => (
+                  <div
+                    key={product.sku || index}
+                    onClick={() => selectProduct(product)}
+                    style={{
+                      padding: '16px',
+                      borderBottom: index < searchResults.length - 1 ? '1px solid #f8f9fa' : 'none',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.2s ease',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}
+                    onMouseEnter={(e) => e.target.style.backgroundColor = '#f8f9fa'}
+                    onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#333',
+                        marginBottom: '4px'
+                      }}>
+                        {product.name}
+                      </div>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#666',
+                        marginBottom: '2px'
+                      }}>
+                        {product.category} • {product.sku}
+                      </div>
+                      <div style={{
+                        fontSize: '15px',
+                        fontWeight: '600',
+                        color: '#dc3545'
+                      }}>
+                        {product.price ? `${product.price.toLocaleString()}원` : '가격 정보 없음'}
+                      </div>
+                    </div>
+                    <div style={{
+                      backgroundColor: scannedProducts.has(product.sku) ? '#ffc107' : '#28a745',
+                      color: 'white',
+                      fontSize: '12px',
+                      padding: '6px 12px',
+                      borderRadius: '20px',
+                      fontWeight: '600'
+                    }}>
+                      {scannedProducts.has(product.sku) ? '이미 등록됨' : '등록하기'}
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div style={{
+                padding: '40px 16px',
+                textAlign: 'center'
+              }}>
+                <div style={{
+                  fontSize: '48px',
+                  color: '#dee2e6',
+                  marginBottom: '16px'
+                }}>
+                  🔍
+                </div>
+                <div style={{
+                  fontSize: '16px',
+                  fontWeight: '600',
+                  color: '#6c757d',
+                  marginBottom: '8px'
+                }}>
+                  검색 결과가 없습니다
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  color: '#adb5bd'
+                }}>
+                  다른 검색어로 시도해보세요
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* CSS 애니메이션 추가 */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
 
       {/* 하단 컨트롤 */}
       <div style={{
