@@ -30,10 +30,147 @@ const QRScanPage = () => {
   const [isPreloading, setIsPreloading] = useState(false);
   const SCAN_COOLDOWN = 30; // 30ms로 극한 최적화
   
+  // 카메라 설정 옵션
+  const [currentSetting, setCurrentSetting] = useState('extreme'); // 기본값: 극한 최적화
+  const [showSettings, setShowSettings] = useState(false);
+  
+  // 카메라 설정 프리셋
+  const CAMERA_PRESETS = {
+    extreme: {
+      name: '극한 최적화',
+      description: '빠른 스캔 (VGA/15fps)',
+      fps: 15,
+      qrboxPercentage: 0.6,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 640, min: 320 },
+        height: { ideal: 480, min: 240 },
+        frameRate: { ideal: 15, min: 10 }
+      }
+    },
+    standard: {
+      name: '표준',
+      description: '균형잡힌 성능 (HD/30fps)',
+      fps: 30,
+      qrboxPercentage: 0.7,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
+        frameRate: { ideal: 30, min: 15 }
+      }
+    },
+    highPerformance: {
+      name: '고성능',
+      description: '높은 해상도 (Full HD/60fps)',
+      fps: 60,
+      qrboxPercentage: 0.75,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 1920, min: 1280 },
+        height: { ideal: 1080, min: 720 },
+        frameRate: { ideal: 60, min: 30 }
+      }
+    },
+    basic: {
+      name: '기본',
+      description: '호환성 우선 (기본/15fps)',
+      fps: 15,
+      qrboxPercentage: 0.5,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 15 }
+      }
+    }
+  };
+  
   const scannerRef = useRef();
   const scannerDivRef = useRef();
   const [pinchDistance, setPinchDistance] = useState(0);
   const [currentZoom, setCurrentZoom] = useState(1);
+
+  // 현재 설정에 따른 카메라 설정 생성
+  const getCurrentCameraConfig = () => {
+    const preset = CAMERA_PRESETS[currentSetting];
+    
+    const config = {
+      fps: preset.fps,
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+        let qrboxSize = Math.floor(minEdgeSize * preset.qrboxPercentage);
+        return {
+          width: qrboxSize,
+          height: qrboxSize
+        };
+      },
+      aspectRatio: 1.0,
+      rememberLastUsedCamera: true,
+      supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+      showTorchButtonIfSupported: true,
+      showZoomSliderIfSupported: false,
+      defaultZoomValueIfSupported: 1,
+      disableFlip: false,
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.DATA_MATRIX,
+        Html5QrcodeSupportedFormats.AZTEC,
+        Html5QrcodeSupportedFormats.PDF_417
+      ],
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+      }
+    };
+
+    const cameraConfig = {
+      ...config,
+      videoConstraints: {
+        ...preset.videoConstraints,
+        focusMode: { ideal: "continuous" },
+        whiteBalanceMode: { ideal: "continuous" },
+        exposureMode: { ideal: "continuous" }
+      }
+    };
+
+    return { config, cameraConfig };
+  };
+
+  // 설정 변경 시 카메라 재시작
+  const changeCameraSetting = async (newSetting) => {
+    console.log('카메라 설정 변경:', currentSetting, '->', newSetting);
+    
+    setScanStatus('설정 변경 중...');
+    setCurrentSetting(newSetting);
+    
+    // 카메라 정지 후 재시작
+    if (scannerRef.current && isScanning) {
+      try {
+        await scannerRef.current.stop();
+        console.log('카메라 정지 완료');
+        
+        // 잠깐 대기 후 재시작
+        setTimeout(() => {
+          startCamera();
+        }, 500);
+      } catch (error) {
+        console.error('카메라 정지 중 오류:', error);
+        // 강제로 재시작
+        setTimeout(() => {
+          startCamera();
+        }, 500);
+      }
+    } else {
+      // 카메라가 실행 중이 아니면 바로 시작
+      startCamera();
+    }
+    
+    setShowSettings(false);
+  };
 
   // 핀치 줌 관련 함수들
   const getDistance = (touch1, touch2) => {
@@ -354,7 +491,7 @@ const QRScanPage = () => {
       } else {
         // 캐시 미스, API 호출
         setScanStatus('DB에서 검색 중...');
-        const response = await fetch(`/api/products?sku=${encodeURIComponent(productCode)}`);
+      const response = await fetch(`/api/products?sku=${encodeURIComponent(productCode)}`);
         result = await response.json();
         
         // API 결과를 캐시에 저장
@@ -501,40 +638,8 @@ const QRScanPage = () => {
       // 잠깐 대기 (DOM 정리 시간)
       await new Promise(resolve => setTimeout(resolve, 200));
       
-      // 자동 카메라 시작 설정 (극한 최적화)
-      const config = {
-        fps: 15, // 극한 최적화 FPS
-        qrbox: function(viewfinderWidth, viewfinderHeight) {
-          // 극한 최적화 스캔 박스
-          let minEdgePercentage = 0.6; // 화면의 60%
-          let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-          let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-          return {
-            width: qrboxSize,
-            height: qrboxSize
-          };
-        },
-        aspectRatio: 1.0, // 정사각형 비율 강제
-        rememberLastUsedCamera: true, // 마지막 사용 카메라 기억
-        supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA], // 카메라만 사용
-        showTorchButtonIfSupported: true, // 플래시 버튼 표시 (어두운 환경에서 도움)
-        showZoomSliderIfSupported: false, // 줌 슬라이더 숨김
-        defaultZoomValueIfSupported: 1, // 기본 줌 값
-        disableFlip: false, // 수평 뒤집기 활성화 (인식률 향상)
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.QR_CODE,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.CODABAR,
-          Html5QrcodeSupportedFormats.DATA_MATRIX,
-          Html5QrcodeSupportedFormats.AZTEC,
-          Html5QrcodeSupportedFormats.PDF_417
-        ], // 모든 지원 포맷 활성화
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true // 네이티브 바코드 감지 사용
-        }
-      };
+      // 현재 설정에 따른 카메라 설정 가져오기
+      const { config, cameraConfig: dynamicCameraConfig } = getCurrentCameraConfig();
 
       // 스캔 성공 콜백
       const onScanSuccess = (decodedText, decodedResult) => {
@@ -584,29 +689,8 @@ const QRScanPage = () => {
           onScanSuccess(decodedText, decodedResult);
         };
         
-        const cameraConfig = {
-          fps: 15, // 극한 최적화 FPS
-          qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // 극한 최적화 스캔 박스
-            let minEdgePercentage = 0.6; // 화면의 60%
-            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
-            return {
-              width: qrboxSize,
-              height: qrboxSize
-            };
-          },
-          aspectRatio: 1.0,
-          videoConstraints: {
-            facingMode: "environment",
-            width: { ideal: 640, min: 320 }, // VGA 수준 극한 최적화
-            height: { ideal: 480, min: 240 },
-            frameRate: { ideal: 15, min: 10 }, // 15fps 극한 최적화
-            focusMode: { ideal: "continuous" },
-            whiteBalanceMode: { ideal: "continuous" },
-            exposureMode: { ideal: "continuous" }
-          }
-        };
+        // 동적 카메라 설정 사용
+        const cameraConfig = dynamicCameraConfig;
         
         // 후면 카메라 우선 시작 (카메라 목록에서 후면 카메라 찾기)
         let cameraId = { facingMode: "environment" };
@@ -646,7 +730,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus('바코드 스캔 중...');
+        setScanStatus(`바코드 스캔 중... (${CAMERA_PRESETS[currentSetting]?.name})`);
 
         // 줌 초기화
         setCurrentZoom(1);
@@ -697,7 +781,7 @@ const QRScanPage = () => {
         throw renderError;
       }
 
-        } catch (error) {
+    } catch (error) {
       console.error('바코드 스캐너 시작 실패:', error);
       
       // 에러 타입별 상세 처리
@@ -716,7 +800,7 @@ const QRScanPage = () => {
         // 자동으로 단계적 설정으로 재시도
         setTimeout(() => tryDifferentCameraSettings(), 300);
       } else {
-        setScanStatus('카메라 접근 실패');
+      setScanStatus('카메라 접근 실패');
         alert(`카메라 오류: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
       }
     }
@@ -1082,6 +1166,24 @@ const QRScanPage = () => {
         >
           ←
         </button>
+        
+        {/* 설정 버튼 */}
+        <button 
+          onClick={() => setShowSettings(!showSettings)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'white',
+            fontSize: '18px',
+            cursor: 'pointer',
+            padding: '4px',
+            position: 'absolute',
+            right: '16px'
+          }}
+        >
+          ⚙️
+        </button>
+        
         <h1 style={{ 
           margin: 0, 
           fontSize: '18px', 
@@ -1091,6 +1193,72 @@ const QRScanPage = () => {
           QR 스캔
         </h1>
       </div>
+
+      {/* 카메라 설정 메뉴 */}
+      {showSettings && (
+        <div style={{
+          backgroundColor: 'white',
+          borderBottom: '1px solid #e0e0e0',
+          padding: '16px',
+          position: 'relative',
+          zIndex: 1000
+        }}>
+          <h3 style={{
+            margin: '0 0 16px 0',
+            fontSize: '16px',
+            fontWeight: 'bold',
+            color: '#333'
+          }}>
+            카메라 설정
+          </h3>
+          
+          <div style={{
+            display: 'grid',
+            gap: '8px'
+          }}>
+            {Object.entries(CAMERA_PRESETS).map(([key, preset]) => (
+              <button
+                key={key}
+                onClick={() => changeCameraSetting(key)}
+                style={{
+                  backgroundColor: currentSetting === key ? '#007bff' : '#f8f9fa',
+                  color: currentSetting === key ? 'white' : '#333',
+                  border: currentSetting === key ? '2px solid #0056b3' : '1px solid #e0e0e0',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  fontSize: '14px'
+                }}
+              >
+                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                  {preset.name}
+                  {currentSetting === key && ' ✓'}
+                </div>
+                <div style={{ 
+                  fontSize: '12px', 
+                  opacity: currentSetting === key ? 0.9 : 0.7 
+                }}>
+                  {preset.description}
+                </div>
+              </button>
+            ))}
+          </div>
+          
+          <div style={{
+            marginTop: '12px',
+            padding: '8px 12px',
+            backgroundColor: '#f0f8ff',
+            borderRadius: '6px',
+            fontSize: '12px',
+            color: '#666',
+            lineHeight: '1.4'
+          }}>
+            💡 <strong>팁:</strong> 스캔이 잘 안되면 '기본' 설정을, 빠른 스캔을 원하면 '극한 최적화'를 선택하세요.
+          </div>
+        </div>
+      )}
 
       {/* HTML5-QRCode 스캐너 */}
       <div 
@@ -1559,6 +1727,15 @@ const QRScanPage = () => {
                     (scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패')) ? '#dc3545' : '#6c757d'
             }}>
               {scanStatus || (isScanning ? '스캔 중...' : '스캔 준비')}
+              {isScanning && (
+                <div style={{
+                  fontSize: '12px',
+                  opacity: 0.8,
+                  marginTop: '2px'
+                }}>
+                  {CAMERA_PRESETS[currentSetting]?.name}
+                </div>
+              )}
             </span>
           </div>
           
