@@ -9,6 +9,18 @@ const StoreManagement = () => {
     name: '',
     address: ''
   });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 화면 크기 감지
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   useEffect(() => {
     fetchStores();
@@ -112,20 +124,22 @@ const StoreManagement = () => {
   }
 
   return (
-    <div style={{ padding: '30px' }}>
+    <div style={{ padding: isMobile ? '16px' : '30px' }}>
       {/* 헤더 */}
       <div style={{
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         borderBottom: '1px solid #e0e0e0',
-        paddingBottom: '20px',
-        marginBottom: '30px'
+        paddingBottom: isMobile ? '16px' : '20px',
+        marginBottom: isMobile ? '20px' : '30px',
+        gap: isMobile ? '16px' : '0'
       }}>
         <div>
           <h1 style={{
             margin: 0,
-            fontSize: '28px',
+            fontSize: isMobile ? '24px' : '28px',
             color: '#333',
             fontWeight: 'bold'
           }}>
@@ -134,7 +148,7 @@ const StoreManagement = () => {
           <p style={{
             margin: '8px 0 0 0',
             color: '#666',
-            fontSize: '16px'
+            fontSize: isMobile ? '14px' : '16px'
           }}>
             매장 정보를 관리합니다
           </p>
@@ -146,15 +160,17 @@ const StoreManagement = () => {
             backgroundColor: '#dc3545',
             color: 'white',
             border: 'none',
-            padding: '12px 24px',
+            padding: isMobile ? '16px 24px' : '12px 24px',
             borderRadius: '6px',
-            fontSize: '14px',
+            fontSize: isMobile ? '16px' : '14px',
             fontWeight: '500',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            minHeight: isMobile ? '48px' : 'auto'
           }}
         >
           <i className="fas fa-plus"></i>
@@ -166,14 +182,14 @@ const StoreManagement = () => {
       {showAddForm && (
         <div style={{
           backgroundColor: '#f8f9fa',
-          padding: '24px',
+          padding: isMobile ? '20px' : '24px',
           borderRadius: '8px',
-          marginBottom: '30px',
+          marginBottom: isMobile ? '20px' : '30px',
           border: '1px solid #e0e0e0'
         }}>
           <h3 style={{
             margin: '0 0 20px 0',
-            fontSize: '18px',
+            fontSize: isMobile ? '16px' : '18px',
             color: '#333'
           }}>
             {editingStore ? '매장 수정' : '새 매장 추가'}
@@ -184,7 +200,7 @@ const StoreManagement = () => {
               <label style={{
                 display: 'block',
                 marginBottom: '8px',
-                fontSize: '14px',
+                fontSize: isMobile ? '15px' : '14px',
                 fontWeight: '500',
                 color: '#333'
               }}>
@@ -198,11 +214,12 @@ const StoreManagement = () => {
                 required
                 style={{
                   width: '100%',
-                  padding: '12px',
+                  padding: isMobile ? '16px' : '12px',
                   border: '1px solid #ddd',
                   borderRadius: '6px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
+                  fontSize: isMobile ? '16px' : '14px',
+                  boxSizing: 'border-box',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               />
             </div>
@@ -211,7 +228,7 @@ const StoreManagement = () => {
               <label style={{
                 display: 'block',
                 marginBottom: '8px',
-                fontSize: '14px',
+                fontSize: isMobile ? '15px' : '14px',
                 fontWeight: '500',
                 color: '#333'
               }}>
@@ -225,18 +242,20 @@ const StoreManagement = () => {
                 required
                 style={{
                   width: '100%',
-                  padding: '12px',
+                  padding: isMobile ? '16px' : '12px',
                   border: '1px solid #ddd',
                   borderRadius: '6px',
-                  fontSize: '14px',
-                  boxSizing: 'border-box'
+                  fontSize: isMobile ? '16px' : '14px',
+                  boxSizing: 'border-box',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               />
             </div>
             
             <div style={{
               display: 'flex',
-              gap: '12px'
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: isMobile ? '12px' : '12px'
             }}>
               <button
                 type="submit"
@@ -244,11 +263,13 @@ const StoreManagement = () => {
                   backgroundColor: '#007bff',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 24px',
+                  padding: isMobile ? '16px 24px' : '12px 24px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '16px' : '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: isMobile ? '1' : 'none',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               >
                 {editingStore ? '수정' : '추가'}
@@ -260,11 +281,13 @@ const StoreManagement = () => {
                   backgroundColor: '#6c757d',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 24px',
+                  padding: isMobile ? '16px 24px' : '12px 24px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '16px' : '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  flex: isMobile ? '1' : 'none',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               >
                 취소
@@ -277,103 +300,207 @@ const StoreManagement = () => {
       {/* 매장 목록 */}
       <div>
         <h2 style={{
-          fontSize: '20px',
+          fontSize: isMobile ? '18px' : '20px',
           color: '#333',
-          marginBottom: '20px'
+          marginBottom: isMobile ? '16px' : '20px'
         }}>
           매장 목록
         </h2>
         
         {stores.length > 0 ? (
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '8px',
-            overflow: 'hidden',
-            border: '1px solid #e0e0e0'
-          }}>
+          isMobile ? (
+            // 모바일: 카드 형태
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr auto',
-              padding: '16px 20px',
-              backgroundColor: '#f8f9fa',
-              borderBottom: '1px solid #e0e0e0',
-              fontWeight: '500',
-              fontSize: '14px',
-              color: '#333'
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
             }}>
-              <div>매장명</div>
-              <div>주소</div>
-              <div>관리</div>
+              {stores.map((store) => (
+                <div key={store.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '600', 
+                        color: '#333',
+                        marginBottom: '4px',
+                        wordBreak: 'break-word'
+                      }}>
+                        {store.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#666',
+                        lineHeight: '1.4',
+                        wordBreak: 'break-word'
+                      }}>
+                        {store.address}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginTop: '12px'
+                  }}>
+                    <button
+                      onClick={() => handleEdit(store)}
+                      style={{
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        flex: 1,
+                        minHeight: '44px'
+                      }}
+                    >
+                      <i className="fas fa-edit"></i>
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDelete(store.id)}
+                      style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        flex: 1,
+                        minHeight: '44px'
+                      }}
+                    >
+                      <i className="fas fa-trash"></i>
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            
-            {stores.map((store) => (
-              <div key={store.id} style={{
+          ) : (
+            // 데스크톱: 테이블 형태
+            <div style={{
+              backgroundColor: 'white',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid #e0e0e0'
+            }}>
+              <div style={{
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr auto',
                 padding: '16px 20px',
+                backgroundColor: '#f8f9fa',
                 borderBottom: '1px solid #e0e0e0',
-                alignItems: 'center'
+                fontWeight: '500',
+                fontSize: '14px',
+                color: '#333'
               }}>
-                <div style={{ fontSize: '16px', fontWeight: '500', color: '#333' }}>
-                  {store.name}
-                </div>
-                <div style={{ fontSize: '14px', color: '#666' }}>
-                  {store.address}
-                </div>
-                <div style={{
-                  display: 'flex',
-                  gap: '8px'
-                }}>
-                  <button
-                    onClick={() => handleEdit(store)}
-                    style={{
-                      backgroundColor: '#007bff',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <i className="fas fa-edit"></i>
-                    수정
-                  </button>
-                  <button
-                    onClick={() => handleDelete(store.id)}
-                    style={{
-                      backgroundColor: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <i className="fas fa-trash"></i>
-                    삭제
-                  </button>
-                </div>
+                <div>매장명</div>
+                <div>주소</div>
+                <div>관리</div>
               </div>
-            ))}
-          </div>
+              
+              {stores.map((store) => (
+                <div key={store.id} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr auto',
+                  padding: '16px 20px',
+                  borderBottom: '1px solid #e0e0e0',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '16px', fontWeight: '500', color: '#333' }}>
+                    {store.name}
+                  </div>
+                  <div style={{ fontSize: '14px', color: '#666' }}>
+                    {store.address}
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    gap: '8px'
+                  }}>
+                    <button
+                      onClick={() => handleEdit(store)}
+                      style={{
+                        backgroundColor: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <i className="fas fa-edit"></i>
+                      수정
+                    </button>
+                    <button
+                      onClick={() => handleDelete(store.id)}
+                      style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 12px',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <i className="fas fa-trash"></i>
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
         ) : (
           <div style={{
-            padding: '40px',
+            padding: isMobile ? '32px 20px' : '40px',
             textAlign: 'center',
             color: '#666',
             backgroundColor: '#f8f9fa',
             borderRadius: '8px',
             border: '1px solid #e0e0e0'
           }}>
-            등록된 매장이 없습니다.
+            <div style={{ 
+              fontSize: isMobile ? '32px' : '36px',
+              marginBottom: '12px'
+            }}>
+              🏪
+            </div>
+            <div style={{ fontSize: isMobile ? '14px' : '16px' }}>
+              등록된 매장이 없습니다.
+            </div>
           </div>
         )}
       </div>

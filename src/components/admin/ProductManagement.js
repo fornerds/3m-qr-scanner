@@ -13,6 +13,18 @@ const ProductManagement = () => {
     salesRep: '',
     salesAvg: 0
   });
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 화면 크기 감지
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   useEffect(() => {
     fetchProducts();
@@ -163,20 +175,22 @@ const ProductManagement = () => {
   }
 
   return (
-    <div style={{ padding: '30px' }}>
+    <div style={{ padding: isMobile ? '16px' : '30px' }}>
       {/* 헤더 */}
       <div style={{
         display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: isMobile ? 'stretch' : 'center',
         borderBottom: '1px solid #e0e0e0',
-        paddingBottom: '20px',
-        marginBottom: '30px'
+        paddingBottom: isMobile ? '16px' : '20px',
+        marginBottom: isMobile ? '20px' : '30px',
+        gap: isMobile ? '16px' : '0'
       }}>
         <div>
           <h1 style={{
             margin: 0,
-            fontSize: '28px',
+            fontSize: isMobile ? '24px' : '28px',
             color: '#333',
             fontWeight: 'bold'
           }}>
@@ -185,7 +199,7 @@ const ProductManagement = () => {
           <p style={{
             margin: '8px 0 0 0',
             color: '#666',
-            fontSize: '16px'
+            fontSize: isMobile ? '14px' : '16px'
           }}>
             제품 정보를 관리합니다
           </p>
@@ -193,6 +207,7 @@ const ProductManagement = () => {
         
         <div style={{
           display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
           gap: '12px'
         }}>
           <button
@@ -201,15 +216,17 @@ const ProductManagement = () => {
               backgroundColor: '#dc3545',
               color: 'white',
               border: 'none',
-              padding: '12px 24px',
+              padding: isMobile ? '16px 24px' : '12px 24px',
               borderRadius: '6px',
-              fontSize: '14px',
+              fontSize: isMobile ? '16px' : '14px',
               fontWeight: '500',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              minHeight: isMobile ? '48px' : 'auto'
             }}
           >
             <i className="fas fa-broom"></i>
@@ -220,15 +237,17 @@ const ProductManagement = () => {
             backgroundColor: '#007bff',
             color: 'white',
             border: 'none',
-            padding: '12px 24px',
+            padding: isMobile ? '16px 24px' : '12px 24px',
             borderRadius: '6px',
-            fontSize: '14px',
+            fontSize: isMobile ? '16px' : '14px',
             fontWeight: '500',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '8px',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            minHeight: isMobile ? '48px' : 'auto'
           }}>
             <i className="fas fa-upload"></i>
             제품리스트 파일 업로드
@@ -246,15 +265,17 @@ const ProductManagement = () => {
               backgroundColor: '#28a745',
               color: 'white',
               border: 'none',
-              padding: '12px 24px',
+              padding: isMobile ? '16px 24px' : '12px 24px',
               borderRadius: '6px',
-              fontSize: '14px',
+              fontSize: isMobile ? '16px' : '14px',
               fontWeight: '500',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
+              justifyContent: 'center',
               gap: '8px',
-              transition: 'background-color 0.2s'
+              transition: 'background-color 0.2s',
+              minHeight: isMobile ? '48px' : 'auto'
             }}
           >
             <i className="fas fa-plus"></i>
@@ -267,14 +288,14 @@ const ProductManagement = () => {
       {showAddForm && (
         <div style={{
           backgroundColor: '#f8f9fa',
-          padding: '24px',
+          padding: isMobile ? '20px' : '24px',
           borderRadius: '8px',
-          marginBottom: '30px',
+          marginBottom: isMobile ? '20px' : '30px',
           border: '1px solid #e0e0e0'
         }}>
           <h3 style={{
             margin: '0 0 20px 0',
-            fontSize: '18px',
+            fontSize: isMobile ? '16px' : '18px',
             color: '#333'
           }}>
             새 제품 추가
@@ -283,7 +304,7 @@ const ProductManagement = () => {
           <form onSubmit={handleSubmit}>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
               gap: '16px',
               marginBottom: '20px'
             }}>
@@ -291,7 +312,7 @@ const ProductManagement = () => {
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '15px' : '14px',
                   fontWeight: '500',
                   color: '#333'
                 }}>
@@ -305,11 +326,12 @@ const ProductManagement = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: isMobile ? '16px' : '12px',
                     border: '1px solid #ddd',
                     borderRadius: '6px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
+                    fontSize: isMobile ? '16px' : '14px',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                 />
               </div>
@@ -318,7 +340,7 @@ const ProductManagement = () => {
                 <label style={{
                   display: 'block',
                   marginBottom: '8px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '15px' : '14px',
                   fontWeight: '500',
                   color: '#333'
                 }}>
@@ -332,11 +354,12 @@ const ProductManagement = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: isMobile ? '16px' : '12px',
                     border: '1px solid #ddd',
                     borderRadius: '6px',
-                    fontSize: '14px',
-                    boxSizing: 'border-box'
+                    fontSize: isMobile ? '16px' : '14px',
+                    boxSizing: 'border-box',
+                    minHeight: isMobile ? '48px' : 'auto'
                   }}
                 />
               </div>
@@ -474,6 +497,7 @@ const ProductManagement = () => {
             
             <div style={{
               display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: '12px'
             }}>
               <button
@@ -482,11 +506,12 @@ const ProductManagement = () => {
                   backgroundColor: '#007bff',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 24px',
+                  padding: isMobile ? '16px 24px' : '12px 24px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '16px' : '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               >
                 추가
@@ -498,11 +523,12 @@ const ProductManagement = () => {
                   backgroundColor: '#6c757d',
                   color: 'white',
                   border: 'none',
-                  padding: '12px 24px',
+                  padding: isMobile ? '16px 24px' : '12px 24px',
                   borderRadius: '6px',
-                  fontSize: '14px',
+                  fontSize: isMobile ? '16px' : '14px',
                   fontWeight: '500',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  minHeight: isMobile ? '48px' : 'auto'
                 }}
               >
                 취소
@@ -515,18 +541,103 @@ const ProductManagement = () => {
       {/* 제품 목록 */}
       <div>
         <h2 style={{
-          fontSize: '20px',
+          fontSize: isMobile ? '18px' : '20px',
           color: '#333',
-          marginBottom: '20px'
+          marginBottom: isMobile ? '16px' : '20px'
         }}>
           제품 관리
         </h2>
         
         {products.length > 0 ? (
+          isMobile ? (
+            // 모바일: 간단한 리스트 형태
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              {products.map((product) => (
+                <div key={product._id || product.id} style={{
+                  backgroundColor: 'white',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  border: '1px solid #e0e0e0',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    marginBottom: '12px'
+                  }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontSize: '16px', 
+                        fontWeight: '600', 
+                        color: '#333',
+                        marginBottom: '4px',
+                        wordBreak: 'break-word'
+                      }}>
+                        {product.name}
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#666',
+                        marginBottom: '4px'
+                      }}>
+                        SKU: {product.sku}
+                      </div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#666',
+                        marginBottom: '4px'
+                      }}>
+                        카테고리: {product.category}
+                      </div>
+                      <div style={{ 
+                        fontSize: '15px', 
+                        fontWeight: '600',
+                        color: '#dc3545'
+                      }}>
+                        {product.price?.toLocaleString() || 0}원
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    marginTop: '12px'
+                  }}>
+                    <button
+                      onClick={() => handleDelete(product._id || product.id, product.sku)}
+                      style={{
+                        backgroundColor: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        minHeight: '44px'
+                      }}
+                    >
+                      <i className="fas fa-trash"></i>
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // 데스크톱: 테이블 형태
           <div style={{
             backgroundColor: 'white',
             borderRadius: '8px',
-            overflow: 'hidden',
+              overflow: 'auto',
             border: '1px solid #e0e0e0'
           }}>
             <div style={{
@@ -537,7 +648,8 @@ const ProductManagement = () => {
               borderBottom: '1px solid #e0e0e0',
               fontWeight: '500',
               fontSize: '14px',
-              color: '#333'
+                color: '#333',
+                minWidth: '800px'
             }}>
               <div>제품명</div>
               <div>SKU</div>
@@ -554,7 +666,8 @@ const ProductManagement = () => {
                 gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr auto',
                 padding: '16px 20px',
                 borderBottom: '1px solid #e0e0e0',
-                alignItems: 'center'
+                  alignItems: 'center',
+                  minWidth: '800px'
               }}>
                 <div style={{ fontSize: '16px', fontWeight: '500', color: '#333' }}>
                   {product.name}
@@ -597,16 +710,25 @@ const ProductManagement = () => {
               </div>
             ))}
           </div>
+          )
         ) : (
           <div style={{
-            padding: '40px',
+            padding: isMobile ? '32px 20px' : '40px',
             textAlign: 'center',
             color: '#666',
             backgroundColor: '#f8f9fa',
             borderRadius: '8px',
             border: '1px solid #e0e0e0'
           }}>
+            <div style={{ 
+              fontSize: isMobile ? '32px' : '36px',
+              marginBottom: '12px'
+            }}>
+              📦
+            </div>
+            <div style={{ fontSize: isMobile ? '14px' : '16px' }}>
             등록된 제품이 없습니다.
+            </div>
           </div>
         )}
       </div>
