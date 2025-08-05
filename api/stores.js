@@ -127,9 +127,19 @@ module.exports = async function handler(req, res) {
       const { db } = await connectToDatabase();
       const collection = db.collection('stores');
       
-      // 새 ID 생성 (기존 매장 수 + 1)
-      const storeCount = await collection.countDocuments();
-      const newStoreId = String(storeCount + 1);
+      // 새 ID 생성 (기존 최대 ID + 1)
+      const stores = await collection.find({}, { projection: { _id: 1 } }).toArray();
+      let maxId = 0;
+      
+      // 기존 ID들 중 최대값 찾기
+      stores.forEach(store => {
+        const id = parseInt(store._id);
+        if (!isNaN(id) && id > maxId) {
+          maxId = id;
+        }
+      });
+      
+      const newStoreId = String(maxId + 1);
       
       const storeWithId = {
         _id: newStoreId,
@@ -138,20 +148,41 @@ module.exports = async function handler(req, res) {
         updatedAt: new Date()
       };
       
+      // 중복 ID 확인 후 삽입
+      const existingStore = await collection.findOne({ _id: newStoreId });
+      if (existingStore) {
+        // 중복이 발견되면 다시 더 큰 ID로 시도
+        const allStores = await collection.find({}).toArray();
+        const allIds = allStores.map(s => parseInt(s._id)).filter(id => !isNaN(id));
+        const safeId = String(Math.max(...allIds, 0) + 1);
+        storeWithId._id = safeId;
+        console.log(`ID ${newStoreId} 중복 발견, ${safeId}로 변경`);
+      }
+      
       const result = await collection.insertOne(storeWithId);
       console.log('새 매장 추가:', storeWithId);
       
       res.status(201).json({ 
         success: true, 
-        storeId: newStoreId,
+        storeId: storeWithId._id,
         message: '매장이 성공적으로 추가되었습니다.'
       });
     } catch (error) {
       console.error('매장 추가 오류:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: '매장 추가에 실패했습니다.' 
-      });
+      
+      // MongoDB 중복 키 오류 특별 처리
+      if (error.code === 11000) {
+        console.error('중복 키 오류 발생:', error.keyValue);
+        res.status(409).json({ 
+          success: false, 
+          message: '이미 존재하는 매장 ID입니다. 다시 시도해주세요.' 
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: '매장 추가에 실패했습니다.' 
+        });
+      }
     }
   } else if (req.method === 'PUT') {
     try {
