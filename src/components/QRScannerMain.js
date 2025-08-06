@@ -103,9 +103,7 @@ const QRScannerMain = () => {
         </h1>
         <div style={{
           position: 'absolute',
-          right: '16px',
-          display: 'flex',
-          gap: '12px'
+          right: '16px'
         }}>
           <Link
             to="/admin"
@@ -117,17 +115,6 @@ const QRScannerMain = () => {
             }}
           >
             <i className="fas fa-tools"></i>
-          </Link>
-          <Link
-            to="/manager"
-            style={{
-              color: 'white',
-              fontSize: '16px',
-              textDecoration: 'none',
-              padding: '4px'
-            }}
-          >
-            <i className="fas fa-cog"></i>
           </Link>
         </div>
       </div>

@@ -1420,7 +1420,7 @@ const QRScanPage = () => {
           }}>
             <input
               type="text"
-              placeholder="제품명이나 브랜드를 입력하세요"
+              placeholder="제품명을 입력하세요"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => {
