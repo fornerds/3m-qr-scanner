@@ -730,7 +730,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus(`바코드 스캔 중... (${CAMERA_PRESETS[currentSetting]?.name})`);
+        setScanStatus(`바코드 스캔 중...`);
 
         // 줌 초기화
         setCurrentZoom(1);
@@ -1018,7 +1018,7 @@ const QRScanPage = () => {
         );
 
         setIsScanning(true);
-        setScanStatus(`바코드 스캔 중... (${setting.name})`);
+        setScanStatus(`바코드 스캔 중...`);
         console.log(`카메라 시작 성공: ${setting.name}`);
         return; // 성공하면 반복 중단
         
@@ -1174,14 +1174,14 @@ const QRScanPage = () => {
             background: 'none',
             border: 'none',
             color: 'white',
-            fontSize: '18px',
+            fontSize: '16px',
             cursor: 'pointer',
             padding: '4px',
             position: 'absolute',
             right: '16px'
           }}
         >
-          ⚙️
+          <i className="fas fa-cog"></i>
         </button>
         
         <h1 style={{ 
@@ -1457,7 +1457,9 @@ const QRScanPage = () => {
                 alignItems: 'center',
                 gap: '8px',
                 minWidth: '80px',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                whiteSpace: 'nowrap',
+                flexShrink: 0
               }}
             >
               {isSearching ? (

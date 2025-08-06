@@ -6,39 +6,9 @@ const getStoresData = async () => {
     const { db } = await connectToDatabase();
     const collection = db.collection('stores');
     
-    // 매장이 없으면 기본 매장 생성
-    const storesCount = await collection.countDocuments();
-    if (storesCount === 0) {
-      const defaultStores = [
-  {
-          _id: '1',
-    name: '3M 강남점',
-    address: '서울 강남구 강남대로 123',
-          lastVisit: new Date('2024-01-15T14:30:00.000Z'),
-          createdAt: new Date(),
-          updatedAt: new Date()
-  },
-  {
-          _id: '2',
-    name: '3M 홍대점',
-    address: '서울 마포구 홍익로 456',
-          lastVisit: new Date('2024-01-14T16:20:00.000Z'),
-          createdAt: new Date(),
-          updatedAt: new Date()
-  },
-  {
-          _id: '3',
-    name: '3M 명동점',
-    address: '서울 중구 명동길 789',
-          lastVisit: new Date('2024-01-13T11:15:00.000Z'),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-      await collection.insertMany(defaultStores);
-    }
+        // 기본 매장 생성 로직 제거됨 - 실제 매장 데이터만 사용
     
-    const stores = await collection.find({}).toArray();
+    const stores = await collection.find({}).sort({ createdAt: -1 }).toArray();
     return stores.map(store => ({
       id: store._id,
       name: store.name,
@@ -123,9 +93,32 @@ module.exports = async function handler(req, res) {
     try {
       const newStore = req.body;
       
-      // 새 매장 추가
+      // 입력 데이터 검증
+      if (!newStore.name || !newStore.address) {
+        return res.status(400).json({ 
+          success: false, 
+          message: '매장명과 주소는 필수 입력 항목입니다.' 
+        });
+      }
+      
       const { db } = await connectToDatabase();
       const collection = db.collection('stores');
+      
+      // 중복 검사 - 매장명 또는 주소가 동일한 경우
+      const duplicateStore = await collection.findOne({
+        $or: [
+          { name: newStore.name.trim() },
+          { address: newStore.address.trim() }
+        ]
+      });
+      
+      if (duplicateStore) {
+        const duplicateField = duplicateStore.name === newStore.name.trim() ? '매장명' : '주소';
+        return res.status(409).json({ 
+          success: false, 
+          message: `동일한 ${duplicateField}의 매장이 이미 존재합니다: ${duplicateStore.name}` 
+        });
+      }
       
       // 새 ID 생성 (기존 최대 ID + 1)
       const stores = await collection.find({}, { projection: { _id: 1 } }).toArray();
@@ -143,12 +136,16 @@ module.exports = async function handler(req, res) {
       
       const storeWithId = {
         _id: newStoreId,
-        ...newStore,
+        name: newStore.name.trim(),
+        address: newStore.address.trim(),
+        phone: newStore.phone ? newStore.phone.trim() : '',
+        district: newStore.district ? newStore.district.trim() : '',
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
+        lastVisit: null
       };
       
-      // 중복 ID 확인 후 삽입
+      // 중복 ID 확인 후 삽입 (추가 안전장치)
       const existingStore = await collection.findOne({ _id: newStoreId });
       if (existingStore) {
         // 중복이 발견되면 다시 더 큰 ID로 시도
@@ -165,6 +162,7 @@ module.exports = async function handler(req, res) {
       res.status(201).json({ 
         success: true, 
         storeId: storeWithId._id,
+        store: storeWithId,
         message: '매장이 성공적으로 추가되었습니다.'
       });
     } catch (error) {
@@ -175,7 +173,7 @@ module.exports = async function handler(req, res) {
         console.error('중복 키 오류 발생:', error.keyValue);
         res.status(409).json({ 
           success: false, 
-          message: '이미 존재하는 매장 ID입니다. 다시 시도해주세요.' 
+          message: '이미 존재하는 매장 정보입니다. 다시 시도해주세요.' 
         });
       } else {
         res.status(500).json({ 

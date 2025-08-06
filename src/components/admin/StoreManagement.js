@@ -7,7 +7,9 @@ const StoreManagement = () => {
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    address: ''
+    address: '',
+    phone: '',
+    district: ''
   });
   const [isMobile, setIsMobile] = useState(false);
 
@@ -42,6 +44,12 @@ const StoreManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // 입력 데이터 검증
+    if (!formData.name.trim() || !formData.address.trim()) {
+      alert('매장명과 주소는 필수 입력 항목입니다.');
+      return;
+    }
+    
     try {
       const url = editingStore 
         ? `/api/stores?storeId=${editingStore.id}` 
@@ -57,18 +65,21 @@ const StoreManagement = () => {
         body: JSON.stringify(formData),
       });
 
+      const result = await response.json();
+
       if (response.ok) {
         setShowAddForm(false);
         setEditingStore(null);
-        setFormData({ name: '', address: '' });
-        fetchStores();
-        alert(editingStore ? '매장이 수정되었습니다.' : '매장이 추가되었습니다.');
+        setFormData({ name: '', address: '', phone: '', district: '' });
+        fetchStores(); // 목록 새로고침 (최신 매장이 상단에 표시됨)
+        alert(result.message || (editingStore ? '매장이 수정되었습니다.' : '매장이 추가되었습니다.'));
       } else {
-        alert('오류가 발생했습니다.');
+        // 상세한 오류 메시지 표시
+        alert(result.message || '오류가 발생했습니다.');
       }
     } catch (error) {
       console.error('매장 저장 오류:', error);
-      alert('오류가 발생했습니다.');
+      alert('서버와의 통신 중 오류가 발생했습니다.');
     }
   };
 
@@ -76,7 +87,9 @@ const StoreManagement = () => {
     setEditingStore(store);
     setFormData({
       name: store.name,
-      address: store.address
+      address: store.address,
+      phone: store.phone || '',
+      district: store.district || ''
     });
     setShowAddForm(true);
   };
@@ -112,7 +125,7 @@ const StoreManagement = () => {
   const handleCancel = () => {
     setShowAddForm(false);
     setEditingStore(null);
-    setFormData({ name: '', address: '' });
+    setFormData({ name: '', address: '', phone: '', district: '' });
   };
 
   if (loading) {
@@ -224,7 +237,7 @@ const StoreManagement = () => {
               />
             </div>
             
-            <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px' }}>
               <label style={{
                 display: 'block',
                 marginBottom: '8px',
@@ -240,6 +253,60 @@ const StoreManagement = () => {
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 placeholder="주소를 입력하세요"
                 required
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '16px' : '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: isMobile ? '16px' : '14px',
+                  boxSizing: 'border-box',
+                  minHeight: isMobile ? '48px' : 'auto'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: isMobile ? '15px' : '14px',
+                fontWeight: '500',
+                color: '#333'
+              }}>
+                전화번호
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="전화번호를 입력하세요 (선택)"
+                style={{
+                  width: '100%',
+                  padding: isMobile ? '16px' : '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '6px',
+                  fontSize: isMobile ? '16px' : '14px',
+                  boxSizing: 'border-box',
+                  minHeight: isMobile ? '48px' : 'auto'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontSize: isMobile ? '15px' : '14px',
+                fontWeight: '500',
+                color: '#333'
+              }}>
+                구 정보
+              </label>
+              <input
+                type="text"
+                value={formData.district}
+                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                placeholder="구 정보를 입력하세요 (예: 강남구)"
                 style={{
                   width: '100%',
                   padding: isMobile ? '16px' : '12px',
