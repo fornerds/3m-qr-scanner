@@ -7,9 +7,7 @@ const StoreManagement = () => {
   const [editingStore, setEditingStore] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    address: '',
-    phone: '',
-    district: ''
+    address: ''
   });
   const [isMobile, setIsMobile] = useState(false);
 
@@ -70,7 +68,7 @@ const StoreManagement = () => {
       if (response.ok) {
         setShowAddForm(false);
         setEditingStore(null);
-        setFormData({ name: '', address: '', phone: '', district: '' });
+        setFormData({ name: '', address: '' });
         fetchStores(); // 목록 새로고침 (최신 매장이 상단에 표시됨)
         alert(result.message || (editingStore ? '매장이 수정되었습니다.' : '매장이 추가되었습니다.'));
       } else {
@@ -87,9 +85,7 @@ const StoreManagement = () => {
     setEditingStore(store);
     setFormData({
       name: store.name,
-      address: store.address,
-      phone: store.phone || '',
-      district: store.district || ''
+      address: store.address
     });
     setShowAddForm(true);
   };
@@ -125,7 +121,7 @@ const StoreManagement = () => {
   const handleCancel = () => {
     setShowAddForm(false);
     setEditingStore(null);
-    setFormData({ name: '', address: '', phone: '', district: '' });
+    setFormData({ name: '', address: '' });
   };
 
   if (loading) {
@@ -264,60 +260,7 @@ const StoreManagement = () => {
                 }}
               />
             </div>
-            
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: isMobile ? '15px' : '14px',
-                fontWeight: '500',
-                color: '#333'
-              }}>
-                전화번호
-              </label>
-              <input
-                type="text"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="전화번호를 입력하세요 (선택)"
-                style={{
-                  width: '100%',
-                  padding: isMobile ? '16px' : '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  fontSize: isMobile ? '16px' : '14px',
-                  boxSizing: 'border-box',
-                  minHeight: isMobile ? '48px' : 'auto'
-                }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{
-                display: 'block',
-                marginBottom: '8px',
-                fontSize: isMobile ? '15px' : '14px',
-                fontWeight: '500',
-                color: '#333'
-              }}>
-                구 정보
-              </label>
-              <input
-                type="text"
-                value={formData.district}
-                onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                placeholder="구 정보를 입력하세요 (예: 강남구)"
-                style={{
-                  width: '100%',
-                  padding: isMobile ? '16px' : '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '6px',
-                  fontSize: isMobile ? '16px' : '14px',
-                  boxSizing: 'border-box',
-                  minHeight: isMobile ? '48px' : 'auto'
-                }}
-              />
-            </div>
+
             
             <div style={{
               display: 'flex',
