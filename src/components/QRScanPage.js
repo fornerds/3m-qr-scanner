@@ -31,7 +31,7 @@ const QRScanPage = () => {
   const SCAN_COOLDOWN = 30; // 30ms로 극한 최적화
   
   // 카메라 설정 옵션
-  const [currentSetting, setCurrentSetting] = useState('extreme'); // 기본값: 극한 최적화
+  const [currentSetting, setCurrentSetting] = useState('highPerformance'); // 기본값: 고성능으로 변경
   const [showSettings, setShowSettings] = useState(false);
   
   // AI 분석 관련 상태
@@ -53,7 +53,10 @@ const QRScanPage = () => {
         facingMode: "environment",
         width: { ideal: 640, min: 320 },
         height: { ideal: 480, min: 240 },
-        frameRate: { ideal: 15, min: 10 }
+        frameRate: { ideal: 15, min: 10 },
+        focusMode: "continuous",
+        whiteBalanceMode: "continuous",
+        exposureMode: "continuous"
       }
     },
     standard: {
@@ -65,7 +68,10 @@ const QRScanPage = () => {
         facingMode: "environment",
         width: { ideal: 1280, min: 640 },
         height: { ideal: 720, min: 480 },
-        frameRate: { ideal: 30, min: 15 }
+        frameRate: { ideal: 30, min: 15 },
+        focusMode: "continuous",
+        whiteBalanceMode: "continuous",
+        exposureMode: "continuous"
       }
     },
     highPerformance: {
@@ -77,7 +83,45 @@ const QRScanPage = () => {
         facingMode: "environment",
         width: { ideal: 1920, min: 1280 },
         height: { ideal: 1080, min: 720 },
-        frameRate: { ideal: 60, min: 30 }
+        frameRate: { ideal: 60, min: 30 },
+        focusMode: "continuous",
+        whiteBalanceMode: "continuous",
+        exposureMode: "continuous"
+      }
+    },
+    ultra: {
+      name: '울트라 4K',
+      description: '최고 화질 (4K/30fps)',
+      fps: 30,
+      qrboxPercentage: 0.8,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { exact: 3840 },  // 정확한 4K 해상도 요구
+        height: { exact: 2160 },
+        frameRate: { ideal: 30, min: 20 },
+        focusMode: "continuous",
+        whiteBalanceMode: "continuous",
+        exposureMode: "continuous",
+        // 추가 고품질 설정
+        resizeMode: "none",  // 리사이징 방지
+        aspectRatio: { exact: 16/9 }  // 정확한 비율
+      }
+    },
+    maxPerformance: {
+      name: '최대 성능',
+      description: '디바이스 최대 해상도',
+      fps: 60,
+      qrboxPercentage: 0.85,
+      videoConstraints: {
+        facingMode: "environment",
+        width: { ideal: 7680, min: 1920 },  // 8K까지 시도
+        height: { ideal: 4320, min: 1080 },
+        frameRate: { ideal: 60, min: 30 },
+        focusMode: "continuous",
+        whiteBalanceMode: "continuous",
+        exposureMode: "continuous",
+        resizeMode: "none",
+        aspectRatio: { ideal: 16/9 }
       }
     },
     basic: {
@@ -132,6 +176,16 @@ const QRScanPage = () => {
       ],
       experimentalFeatures: {
         useBarCodeDetectorIfSupported: true
+      },
+      // 카메라 성능 최적화 옵션
+      videoConstraints: {
+        ...preset.videoConstraints,
+        advanced: [
+          { focusMode: 'continuous' },
+          { exposureMode: 'continuous' },
+          { whiteBalanceMode: 'continuous' },
+          { torch: false }
+        ]
       }
     };
 
@@ -1043,7 +1097,7 @@ const QRScanPage = () => {
     }
   };
 
-  // AI 매대 분석 - 사진 촬영
+  // AI 매대 분석 - 사진 촬영 (최고 화질)
   const capturePhotoForAI = async () => {
     if (!isScanning) {
       alert('카메라를 먼저 시작해주세요.');
@@ -1052,7 +1106,10 @@ const QRScanPage = () => {
 
     try {
       setIsAnalyzing(true);
-      setScanStatus('매대 촬영 중...');
+      setScanStatus('고화질 매대 촬영 중...');
+      
+      // 잠시 대기하여 카메라 포커스 조정
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const videoElement = document.querySelector('#qr-reader video');
       if (!videoElement) {
@@ -1062,12 +1119,22 @@ const QRScanPage = () => {
       const canvas = document.createElement('canvas');
       const context = canvas.getContext('2d');
 
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
+      // 고해상도 캡처를 위해 최대 해상도 사용
+      const maxWidth = Math.max(videoElement.videoWidth, 1920);  // 최소 Full HD
+      const maxHeight = Math.max(videoElement.videoHeight, 1080);
+      
+      canvas.width = maxWidth;
+      canvas.height = maxHeight;
 
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+      // 고품질 렌더링 설정
+      context.imageSmoothingEnabled = true;
+      context.imageSmoothingQuality = 'high';
+      
+      // 비디오를 캔버스 전체에 맞춰 그리기
+      context.drawImage(videoElement, 0, 0, maxWidth, maxHeight);
 
-      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+      // 최고 품질로 JPEG 생성 (0.95 = 95% 품질)
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
       setCapturedImage(imageDataUrl);
 
       if (navigator.vibrate) {

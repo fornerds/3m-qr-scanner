@@ -6,5 +6,12 @@
   "display": "standalone",
   "theme_color": "#dc3545",
   "background_color": "#ffffff",
-  "description": "3M 다이소 QR 스캐너 모바일 웹 애플리케이션"
+  "description": "3M 다이소 QR 스캐너 모바일 웹 애플리케이션",
+  "permissions": ["camera"],
+  "capabilities": [
+    "camera",
+    "microphone"
+  ],
+  "display_override": ["standalone", "fullscreen"],
+  "orientation": "portrait-primary"
 } 
