@@ -1504,6 +1504,52 @@ const QRScanPage = () => {
         )}
       </div>
 
+      {/* AI 매대 촬영 버튼 - 카메라 바로 아래 */}
+      <div style={{
+        padding: '16px',
+        backgroundColor: 'white',
+        borderBottom: '1px solid #e0e0e0'
+      }}>
+        <button
+          onClick={capturePhotoForAI}
+          disabled={!isScanning || isAnalyzing}
+          style={{
+            width: '100%',
+            padding: '16px',
+            backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
+            color: 'white',
+            border: 'none',
+            borderRadius: '12px',
+            fontSize: '18px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '12px',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 3px 12px rgba(0, 123, 255, 0.25)',
+            cursor: (!isScanning || isAnalyzing) ? 'not-allowed' : 'pointer',
+            opacity: (!isScanning || isAnalyzing) ? 0.6 : 1
+          }}
+        >
+          <i className={`fas ${isAnalyzing ? 'fa-spinner fa-spin' : 'fa-camera'}`} style={{
+            fontSize: '18px'
+          }}></i>
+          {isAnalyzing ? 'AI 분석 중...' : '매대 촬영 (AI 분석)'}
+        </button>
+        
+        {(!isScanning && !isAnalyzing) && (
+          <div style={{
+            textAlign: 'center',
+            fontSize: '14px',
+            color: '#6c757d',
+            marginTop: '8px'
+          }}>
+            카메라를 먼저 시작해주세요
+          </div>
+        )}
+      </div>
+
       {/* 제품 검색 섹션 */}
       <div style={{
         padding: '16px',
@@ -1953,40 +1999,6 @@ const QRScanPage = () => {
             {isScanning ? '스캔 중단' : '스캔 시작'}
           </button>
           
-            <button
-              onClick={capturePhotoForAI}
-              disabled={!isScanning || isAnalyzing}
-              style={{
-                flex: 1,
-                padding: '14px',
-                backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: '600',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                cursor: (!isScanning || isAnalyzing) ? 'not-allowed' : 'pointer',
-                opacity: (!isScanning || isAnalyzing) ? 0.6 : 1
-              }}
-            >
-              <i className={`fas ${isAnalyzing ? 'fa-spinner fa-spin' : 'fa-camera'}`} style={{
-                fontSize: '14px'
-              }}></i>
-              {isAnalyzing ? 'AI 분석 중...' : '매대 촬영'}
-            </button>
-          </div>
-
-          {/* 두 번째 줄: 돌아가기 버튼 */}
-          <div style={{
-            display: 'flex',
-            gap: '12px'
-          }}>
           <Link
             to="/"
             style={{
