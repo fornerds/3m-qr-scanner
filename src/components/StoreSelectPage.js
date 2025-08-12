@@ -158,7 +158,7 @@ const StoreSelectPage = () => {
                 {filteredStores.map((store) => (
                   <Link
                     key={store.id}
-                    to={`/scan?storeId=${store.id}`}
+                    to={`/qr-scan?storeId=${store.id}`}
                     style={{
                       display: 'block',
                       textDecoration: 'none',

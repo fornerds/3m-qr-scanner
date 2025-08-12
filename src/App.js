@@ -25,6 +25,7 @@ function App() {
           <Route path="/inventory-status" element={<InventoryStatusPage />} />
           <Route path="/store-select" element={<StoreSelectPage />} />
           <Route path="/qr-scan" element={<QRScanPage />} />
+          <Route path="/scan" element={<QRScanPage />} />
           <Route path="/ai-capture" element={<AICaptureePage />} />
           <Route path="/manager" element={<ManagerPage />} />
           <Route path="/admin" element={<AdminPage />} />
