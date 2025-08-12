@@ -17,17 +17,57 @@ const AICaptureePage = () => {
   const scannerRef = useRef();
   const scannerDivRef = useRef();
 
+  // 카메라 권한 확인
+  const checkCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment" } 
+      });
+      stream.getTracks().forEach(track => track.stop());
+      return true;
+    } catch (error) {
+      console.error('카메라 권한 확인 실패:', error);
+      return false;
+    }
+  };
+
   // 카메라 시작
   const startCamera = async () => {
     try {
+      setCameraStatus('카메라 권한 확인 중...');
+      
+      // 카메라 권한 먼저 확인
+      const hasPermission = await checkCameraPermission();
+      if (!hasPermission) {
+        setCameraStatus('카메라 권한이 필요합니다');
+        return;
+      }
+      
       setCameraStatus('카메라 시작 중...');
       
+      // 기존 스캐너가 있으면 정리
+      if (scannerRef.current) {
+        try {
+          await scannerRef.current.stop();
+          scannerRef.current.clear();
+        } catch (e) {
+          console.log('기존 스캐너 정리 중 오류:', e);
+        }
+      }
+
       const html5QrCode = new Html5Qrcode("ai-camera-reader");
       scannerRef.current = html5QrCode;
 
       const config = {
         fps: 30,
-        qrbox: { width: 300, height: 300 },
+        qrbox: function(viewfinderWidth, viewfinderHeight) {
+          let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+          let qrboxSize = Math.floor(minEdgeSize * 0.7);
+          return {
+            width: qrboxSize,
+            height: qrboxSize
+          };
+        },
         aspectRatio: 1.0,
         rememberLastUsedCamera: true,
         showTorchButtonIfSupported: true,
@@ -36,29 +76,56 @@ const AICaptureePage = () => {
         disableFlip: false
       };
 
-      const cameraConfig = {
-        ...config,
-        videoConstraints: {
-          facingMode: "environment",
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 30, min: 15 }
-        }
+      // 카메라 제약 조건
+      const cameraConstraints = {
+        facingMode: "environment",
+        width: { ideal: 1280, min: 640 },
+        height: { ideal: 720, min: 480 },
+        frameRate: { ideal: 30, min: 15 }
       };
 
+      console.log('카메라 시작 시도...');
+      
       await html5QrCode.start(
-        { facingMode: "environment" },
-        cameraConfig,
+        cameraConstraints,
+        config,
         () => {}, // onScanSuccess - 빈 함수 (QR 스캔 안함)
         () => {}  // onScanFailure - 빈 함수
       );
 
+      console.log('카메라 시작 성공');
       setIsScanning(true);
       setCameraStatus('매대를 화면 중앙에 맞춰 촬영하세요');
 
     } catch (error) {
       console.error('카메라 시작 오류:', error);
-      setCameraStatus('카메라 접근 실패');
+      
+      // 구체적인 오류 메시지 표시
+      let errorMessage = '카메라 접근 실패';
+      if (error.name === 'NotAllowedError') {
+        errorMessage = '카메라 권한이 필요합니다';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = '카메라를 찾을 수 없습니다';
+      } else if (error.name === 'NotReadableError') {
+        errorMessage = '카메라가 다른 앱에서 사용 중입니다';
+      } else if (error.name === 'OverconstrainedError') {
+        errorMessage = '카메라 설정을 지원하지 않습니다';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setCameraStatus(errorMessage);
+      setIsScanning(false);
+      
+      // 스캐너 정리
+      if (scannerRef.current) {
+        try {
+          scannerRef.current.clear();
+          scannerRef.current = null;
+        } catch (e) {
+          console.log('스캐너 정리 오류:', e);
+        }
+      }
     }
   };
 
@@ -293,22 +360,65 @@ const AICaptureePage = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: '8px'
+          gap: '8px',
+          marginBottom: (cameraStatus.includes('실패') || cameraStatus.includes('권한') || cameraStatus.includes('없습니다')) ? '12px' : '0'
         }}>
           <div style={{
             width: '8px',
             height: '8px',
             borderRadius: '50%',
-            backgroundColor: isAnalyzing ? '#ffc107' : isScanning ? '#28a745' : '#6c757d'
+            backgroundColor: isAnalyzing ? '#ffc107' : isScanning ? '#28a745' : 
+                           (cameraStatus.includes('실패') || cameraStatus.includes('권한') || cameraStatus.includes('없습니다')) ? '#dc3545' : '#6c757d'
           }}></div>
           <span style={{
             fontSize: '15px',
             fontWeight: '600',
-            color: isAnalyzing ? '#ffc107' : isScanning ? '#28a745' : '#6c757d'
+            color: isAnalyzing ? '#ffc107' : isScanning ? '#28a745' : 
+                  (cameraStatus.includes('실패') || cameraStatus.includes('권한') || cameraStatus.includes('없습니다')) ? '#dc3545' : '#6c757d'
           }}>
             {cameraStatus}
           </span>
         </div>
+        
+        {/* 오류 시 재시도 버튼 */}
+        {(cameraStatus.includes('실패') || cameraStatus.includes('권한') || cameraStatus.includes('없습니다')) && (
+          <div style={{
+            display: 'flex',
+            gap: '8px',
+            justifyContent: 'center'
+          }}>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                backgroundColor: '#dc3545',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              새로고침
+            </button>
+            <button
+              onClick={startCamera}
+              style={{
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: '500'
+              }}
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 컨트롤 버튼 */}
