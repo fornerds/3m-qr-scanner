@@ -17,32 +17,11 @@ const AICaptureePage = () => {
   const scannerRef = useRef();
   const scannerDivRef = useRef();
 
-  // 카메라 권한 확인
-  const checkCameraPermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
-      });
-      stream.getTracks().forEach(track => track.stop());
-      return true;
-    } catch (error) {
-      console.error('카메라 권한 확인 실패:', error);
-      return false;
-    }
-  };
+
 
   // 카메라 시작
   const startCamera = async () => {
     try {
-      setCameraStatus('카메라 권한 확인 중...');
-      
-      // 카메라 권한 먼저 확인
-      const hasPermission = await checkCameraPermission();
-      if (!hasPermission) {
-        setCameraStatus('카메라 권한이 필요합니다');
-        return;
-      }
-      
       setCameraStatus('카메라 시작 중...');
       
       // 기존 스캐너가 있으면 정리
@@ -276,8 +255,10 @@ const AICaptureePage = () => {
     }
   };
 
-  // 컴포넌트 언마운트 시 카메라 정리
+  // 컴포넌트 마운트 시 자동으로 카메라 시작
   useEffect(() => {
+    startCamera();
+    
     return () => {
       if (scannerRef.current) {
         stopCamera();

@@ -1824,14 +1824,20 @@ const QRScanPage = () => {
             {isScanning ? '스캔 중단' : '스캔 시작'}
           </button>
           
-            <Link
-              to={`/ai-capture?storeId=${storeId}`}
+            <button
+              onClick={async () => {
+                // AI 촬영 화면으로 이동하기 전에 현재 카메라 정리
+                if (isScanning) {
+                  await stopCamera();
+                }
+                navigate(`/ai-capture?storeId=${storeId}`);
+              }}
               style={{
                 flex: 1,
                 padding: '14px',
                 backgroundColor: '#007bff',
                 color: 'white',
-                textDecoration: 'none',
+                border: 'none',
                 borderRadius: '12px',
                 fontSize: '16px',
                 fontWeight: '600',
@@ -1840,14 +1846,15 @@ const QRScanPage = () => {
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                cursor: 'pointer'
               }}
             >
               <i className="fas fa-magic" style={{
                 fontSize: '14px'
               }}></i>
               AI 매대 분석
-            </Link>
+            </button>
           </div>
 
           {/* 두 번째 줄: 돌아가기 버튼 */}
