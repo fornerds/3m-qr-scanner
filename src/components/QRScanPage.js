@@ -34,11 +34,7 @@ const QRScanPage = () => {
   const [currentSetting, setCurrentSetting] = useState('extreme'); // 기본값: 극한 최적화
   const [showSettings, setShowSettings] = useState(false);
   
-  // AI 매대 분석 관련 state
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [aiResults, setAiResults] = useState(null);
-  const [showAiResults, setShowAiResults] = useState(false);
-  const [capturedImage, setCapturedImage] = useState(null);
+
   
   // 카메라 설정 프리셋
   const CAMERA_PRESETS = {
@@ -146,139 +142,7 @@ const QRScanPage = () => {
     return { config, cameraConfig };
   };
 
-  // AI 매대 분석을 위한 사진 촬영 기능
-  const capturePhotoForAI = async () => {
-    if (!isScanning) {
-      alert('카메라를 먼저 시작해주세요.');
-      return;
-    }
 
-    try {
-      setIsAnalyzing(true);
-      
-      // 현재 비디오 스트림에서 이미지 캡처
-      const videoElement = document.querySelector('#reader video');
-      if (!videoElement) {
-        throw new Error('비디오 요소를 찾을 수 없습니다.');
-      }
-
-      // Canvas를 생성하여 현재 프레임 캡처
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
-      
-      canvas.width = videoElement.videoWidth;
-      canvas.height = videoElement.videoHeight;
-      
-      context.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-      
-      // 이미지를 Base64로 변환
-      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-      setCapturedImage(imageDataUrl);
-      
-      // 진동 피드백 (사진 촬영 완료)
-      if (navigator.vibrate) {
-        navigator.vibrate(100);
-      }
-      
-      // AI 분석 요청
-      await analyzeShelfWithAI(imageDataUrl);
-      
-    } catch (error) {
-      console.error('사진 촬영 오류:', error);
-      alert('사진 촬영 중 오류가 발생했습니다: ' + error.message);
-      setIsAnalyzing(false);
-    }
-  };
-
-  // AI를 사용한 매대 분석 기능
-  const analyzeShelfWithAI = async (imageDataUrl) => {
-    try {
-      // 3M 제품 리스트 가져오기
-      const productsResponse = await fetch('/api/products');
-      const productsData = await productsResponse.json();
-      
-      if (!productsData.success) {
-        throw new Error('제품 리스트를 가져올 수 없습니다.');
-      }
-
-      // AI 분석 API 호출
-      const analysisResponse = await fetch('/api/ai-analyze-shelf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          image: imageDataUrl,
-          products: productsData.products,
-          storeId: storeId
-        })
-      });
-
-      const analysisResult = await analysisResponse.json();
-      
-      if (analysisResult.success) {
-        setAiResults(analysisResult.detectedProducts);
-        setShowAiResults(true);
-      } else {
-        throw new Error(analysisResult.message || 'AI 분석에 실패했습니다.');
-      }
-      
-    } catch (error) {
-      console.error('AI 분석 오류:', error);
-      alert('AI 분석 중 오류가 발생했습니다: ' + error.message);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  // AI 분석 결과에서 제품을 재고로 등록
-  const confirmAIProduct = async (product) => {
-    try {
-      // 스캔 기록 DB에 저장
-      const saveResponse = await fetch('/api/scan-records', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storeId: storeId,
-          productCode: product.sku,
-          productName: product.name,
-          sessionId,
-          source: 'ai_analysis' // AI 분석으로 등록됨을 표시
-        })
-      });
-      
-      const saveResult = await saveResponse.json();
-      
-      if (saveResult.success) {
-        // 스캔한 제품 목록에 추가
-        setScannedProducts(prev => new Set([...prev, product.sku]));
-        
-        // 통계 업데이트
-        setScanStats(prev => ({
-          totalScans: prev.totalScans + 1
-        }));
-        
-        alert(`${product.name}이(가) 재고로 등록되었습니다.`);
-        
-        // AI 결과에서 해당 제품을 등록됨으로 표시
-        setAiResults(prev => prev.map(p => 
-          p.sku === product.sku ? { ...p, registered: true } : p
-        ));
-      } else {
-        if (saveResult.isDuplicate) {
-          alert('이미 등록된 제품입니다.');
-        } else {
-          throw new Error(saveResult.message || '등록 실패');
-        }
-      }
-      
-    } catch (error) {
-      console.error('제품 등록 오류:', error);
-      alert('제품 등록 중 오류가 발생했습니다: ' + error.message);
-    }
-  };
 
   // 설정 변경 시 카메라 재시작
   const changeCameraSetting = async (newSetting) => {
@@ -1960,33 +1824,30 @@ const QRScanPage = () => {
             {isScanning ? '스캔 중단' : '스캔 시작'}
           </button>
           
-            <button
-              onClick={capturePhotoForAI}
-              disabled={!isScanning || isAnalyzing}
+            <Link
+              to={`/ai-capture?storeId=${storeId}`}
               style={{
                 flex: 1,
                 padding: '14px',
-                backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
+                backgroundColor: '#007bff',
                 color: 'white',
-                border: 'none',
+                textDecoration: 'none',
                 borderRadius: '12px',
                 fontSize: '16px',
                 fontWeight: '600',
-                cursor: (!isScanning || isAnalyzing) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.2s ease',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                opacity: (!isScanning || isAnalyzing) ? 0.6 : 1
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
               }}
             >
-              <i className={`fas ${isAnalyzing ? 'fa-spinner fa-spin' : 'fa-magic'}`} style={{
+              <i className="fas fa-magic" style={{
                 fontSize: '14px'
               }}></i>
-              {isAnalyzing ? 'AI 분석 중...' : 'AI 매대 분석'}
-            </button>
+              AI 매대 분석
+            </Link>
           </div>
 
           {/* 두 번째 줄: 돌아가기 버튼 */}
@@ -2063,214 +1924,7 @@ const QRScanPage = () => {
         </Link>
       </div>
 
-      {/* AI 분석 결과 모달 */}
-      {showAiResults && aiResults && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '20px'
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            maxWidth: '500px',
-            width: '100%',
-            maxHeight: '80vh',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)'
-          }}>
-            {/* 모달 헤더 */}
-            <div style={{
-              padding: '20px',
-              borderBottom: '1px solid #e0e0e0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <h3 style={{
-                margin: 0,
-                fontSize: '18px',
-                fontWeight: '600',
-                color: '#333'
-              }}>
-                AI 매대 분석 결과
-              </h3>
-              <button
-                onClick={() => setShowAiResults(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  cursor: 'pointer',
-                  color: '#666',
-                  padding: '4px'
-                }}
-              >
-                ×
-              </button>
-            </div>
 
-            {/* 촬영된 이미지 미리보기 */}
-            {capturedImage && (
-              <div style={{
-                padding: '20px',
-                borderBottom: '1px solid #e0e0e0',
-                textAlign: 'center'
-              }}>
-                <div style={{
-                  fontSize: '14px',
-                  color: '#666',
-                  marginBottom: '8px'
-                }}>
-                  촬영된 매대 이미지
-                </div>
-                <img
-                  src={capturedImage}
-                  alt="촬영된 매대"
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '150px',
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0'
-                  }}
-                />
-              </div>
-            )}
-
-            {/* AI 분석 결과 리스트 */}
-            <div style={{
-              flex: 1,
-              overflow: 'auto',
-              padding: '20px'
-            }}>
-              {aiResults.length === 0 ? (
-                <div style={{
-                  textAlign: 'center',
-                  color: '#666',
-                  fontSize: '16px',
-                  padding: '40px 20px'
-                }}>
-                  매대에서 3M 제품을 찾지 못했습니다.
-                </div>
-              ) : (
-                <>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#666',
-                    marginBottom: '16px'
-                  }}>
-                    {aiResults.length}개의 3M 제품이 감지되었습니다. 확인 후 재고로 등록하세요.
-                  </div>
-                  
-                  {aiResults.map((product, index) => (
-                    <div key={index} style={{
-                      border: '1px solid #e0e0e0',
-                      borderRadius: '8px',
-                      padding: '16px',
-                      marginBottom: '12px',
-                      backgroundColor: product.registered ? '#f8f9fa' : 'white'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'flex-start',
-                        marginBottom: '8px'
-                      }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            fontWeight: '600',
-                            fontSize: '16px',
-                            color: '#333',
-                            marginBottom: '4px'
-                          }}>
-                            {product.name}
-                          </div>
-                          <div style={{
-                            fontSize: '14px',
-                            color: '#666',
-                            marginBottom: '4px'
-                          }}>
-                            SKU: {product.sku}
-                          </div>
-                          <div style={{
-                            fontSize: '14px',
-                            color: '#666'
-                          }}>
-                            카테고리: {product.category}
-                          </div>
-                          {product.confidence && (
-                            <div style={{
-                              fontSize: '12px',
-                              color: '#999',
-                              marginTop: '4px'
-                            }}>
-                              신뢰도: {Math.round(product.confidence * 100)}%
-                            </div>
-                          )}
-                        </div>
-                        
-                        <button
-                          onClick={() => confirmAIProduct(product)}
-                          disabled={product.registered}
-                          style={{
-                            backgroundColor: product.registered ? '#6c757d' : '#28a745',
-                            color: 'white',
-                            border: 'none',
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            cursor: product.registered ? 'not-allowed' : 'pointer',
-                            opacity: product.registered ? 0.6 : 1,
-                            minWidth: '80px'
-                          }}
-                        >
-                          {product.registered ? '등록됨' : '재고 등록'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-
-            {/* 모달 푸터 */}
-            <div style={{
-              padding: '20px',
-              borderTop: '1px solid #e0e0e0',
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '12px'
-            }}>
-              <button
-                onClick={() => setShowAiResults(false)}
-                style={{
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer'
-                }}
-              >
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import StoreDetailPage from './components/StoreDetailPage';
 import InventoryReportPage from './components/InventoryReportPage';
 import InventoryStatusPage from './components/InventoryStatusPage';
 import QRScanPage from './components/QRScanPage';
+import AICaptureePage from './components/AICaptureePage';
 import StoreSelectPage from './components/StoreSelectPage';
 import ManagerPage from './components/ManagerPage';
 import AdminPage from './components/AdminPage';
@@ -23,7 +24,8 @@ function App() {
           <Route path="/inventory-report" element={<InventoryReportPage />} />
           <Route path="/inventory-status" element={<InventoryStatusPage />} />
           <Route path="/store-select" element={<StoreSelectPage />} />
-          <Route path="/scan" element={<QRScanPage />} />
+          <Route path="/qr-scan" element={<QRScanPage />} />
+          <Route path="/ai-capture" element={<AICaptureePage />} />
           <Route path="/manager" element={<ManagerPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
