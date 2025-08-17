@@ -288,31 +288,10 @@ const StoreDetailPage = () => {
         padding: '20px 16px',
         position: 'relative'
       }}>
-        {/* 보고서 생성 버튼 */}
-        <Link
-          to={`/inventory-report?storeId=${storeId}`}
-          style={{
-            position: 'absolute',
-            top: '20px',
-            right: '16px',
-            backgroundColor: '#dc3545',
-            color: 'white',
-            textDecoration: 'none',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            fontSize: '14px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px'
-          }}
-        >
-          <i className="fas fa-file-alt" style={{ fontSize: '14px' }}></i>
-          보고서 생성
-        </Link>
+
 
         {/* 매장 정보 */}
-        <div style={{ paddingRight: '120px' }}>
+        <div>
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -352,7 +331,7 @@ const StoreDetailPage = () => {
             gap: '4px'
           }}>
             <i className="fas fa-clock" style={{ fontSize: '10px' }}></i>
-            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '24시간'}
+            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '방문 기록 없음'}
           </div>
         </div>
       </div>
@@ -381,7 +360,7 @@ const StoreDetailPage = () => {
             fontSize: '14px',
             color: '#666'
           }}>
-            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '24시간'}
+            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '방문 기록 없음'}
           </span>
         </div>
         
@@ -397,7 +376,7 @@ const StoreDetailPage = () => {
               color: '#666',
               marginBottom: '4px'
             }}>
-              스캔 완료: {inventory?.scannedItems || 156}개
+              스캔 완료: {inventory?.scannedItems || 0}개
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -406,7 +385,7 @@ const StoreDetailPage = () => {
               color: '#666',
               marginBottom: '4px'
             }}>
-              총 재고: {inventory?.totalItems || 1247}개
+              총 재고: {inventory?.totalItems || 0}개
             </div>
           </div>
         </div>
@@ -425,7 +404,7 @@ const StoreDetailPage = () => {
             overflow: 'hidden'
           }}>
             <div style={{
-              width: `${inventory?.progress || 13}%`,
+              width: `${inventory?.progress || 0}%`,
               height: '100%',
               backgroundColor: '#dc3545',
               borderRadius: '4px'
@@ -437,9 +416,32 @@ const StoreDetailPage = () => {
             color: '#dc3545',
             minWidth: '40px'
           }}>
-            {inventory?.progress || 13}%
+            {inventory?.progress || 0}%
           </span>
         </div>
+
+        {/* 보고서 생성 버튼 */}
+        <Link
+          to={`/inventory-report?storeId=${storeId}`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            padding: '16px',
+            backgroundColor: '#dc3545',
+            color: 'white',
+            textDecoration: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '600',
+            marginTop: '16px',
+            gap: '8px'
+          }}
+        >
+          <i className="fas fa-file-alt" style={{ fontSize: '16px' }}></i>
+          보고서 생성
+        </Link>
       </div>
 
       {/* 전체 품목 체크리스트 */}
@@ -466,7 +468,7 @@ const StoreDetailPage = () => {
             fontSize: '14px',
             color: '#666'
           }}>
-            {inventory?.scannedItems || 55}/{inventory?.totalItems || 150}개 완료
+            {inventory?.scannedItems || 0}/{inventory?.totalItems || 0}개 완료
           </span>
         </div>
 
