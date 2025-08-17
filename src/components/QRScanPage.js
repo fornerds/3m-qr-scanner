@@ -12,10 +12,13 @@ const QRScanPage = () => {
   const [sessionId, setSessionId] = useState(null);
   const [lastScannedCode, setLastScannedCode] = useState('');
   const [lastScanTime, setLastScanTime] = useState(0);
-  const [scanStats, setScanStats] = useState({
-    totalScans: 0
-  });
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
+  
+  // 전체 제품 리스트 관련 state
+  const [allProducts, setAllProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [showProductList, setShowProductList] = useState(false);
   
   const [scanStatus, setScanStatus] = useState('스캔 준비 중...');
   
@@ -360,6 +363,99 @@ const QRScanPage = () => {
     setProductCache(newCache);
   };
 
+  // 전체 제품 리스트 불러오기
+  const loadAllProducts = async () => {
+    if (isLoadingProducts || allProducts.length > 0) return;
+    
+    setIsLoadingProducts(true);
+    try {
+      const response = await fetch('/api/products?limit=1000'); // 모든 제품 가져오기
+      const result = await response.json();
+      
+      if (result.success && result.products) {
+        setAllProducts(result.products);
+        console.log(`${result.products.length}개 제품을 불러왔습니다.`);
+      } else {
+        throw new Error('제품 리스트를 가져올 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('제품 리스트 로딩 오류:', error);
+      alert('제품 리스트를 불러오는 중 오류가 발생했습니다: ' + error.message);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  // 제품 체크박스 토글
+  const toggleProductSelection = (productSku) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productSku)) {
+      newSelected.delete(productSku);
+    } else {
+      newSelected.add(productSku);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  // 선택된 제품들 일괄 등록
+  const registerSelectedProducts = async () => {
+    if (selectedProducts.size === 0) {
+      alert('등록할 제품을 선택해주세요.');
+      return;
+    }
+
+    const selectedProductList = allProducts.filter(product => selectedProducts.has(product.sku));
+    let successCount = 0;
+    let duplicateCount = 0;
+    let errorCount = 0;
+
+    for (const product of selectedProductList) {
+      try {
+        const saveResponse = await fetch('/api/scan-records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            storeId: storeId,
+            productCode: product.sku,
+            productName: product.name,
+            sessionId: sessionId || 'manual-session-' + Date.now(),
+            source: 'manual_selection'
+          })
+        });
+
+        const saveResult = await saveResponse.json();
+
+        if (saveResult.success) {
+          if (saveResult.isDuplicate) {
+            duplicateCount++;
+          } else {
+            successCount++;
+            // 스캔한 제품 목록에 추가
+            setScannedProducts(prev => new Set([...prev, product.sku]));
+          }
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        console.error(`제품 등록 오류 (${product.name}):`, error);
+        errorCount++;
+      }
+    }
+
+    // 결과 메시지 표시
+    let message = '';
+    if (successCount > 0) message += `${successCount}개 제품이 등록되었습니다.\n`;
+    if (duplicateCount > 0) message += `${duplicateCount}개 제품은 이미 등록되어 있습니다.\n`;
+    if (errorCount > 0) message += `${errorCount}개 제품 등록에 실패했습니다.\n`;
+
+    alert(message.trim());
+
+    // 선택 초기화
+    setSelectedProducts(new Set());
+  };
+
   // 제품 검색 함수
   const searchProducts = async (searchQuery) => {
     if (!searchQuery.trim()) {
@@ -470,11 +566,6 @@ const QRScanPage = () => {
           
           // 스캔한 제품 목록에 추가
           setScannedProducts(prev => new Set([...prev, productCode]));
-          
-          // 통계 업데이트
-          setScanStats(prev => ({
-            totalScans: prev.totalScans + 1
-          }));
         }
         
         setScanResult(scanResult);
@@ -618,11 +709,6 @@ const QRScanPage = () => {
             // 정상적으로 새로 스캔된 경우에만 처리
             // 스캔한 제품 목록에 추가 (3M 제품만)
             setScannedProducts(prev => new Set([...prev, productCode]));
-            
-            // 통계 업데이트 (3M 제품만 카운트)
-            setScanStats(prev => ({
-              totalScans: prev.totalScans + 1
-            }));
           }
         } catch (error) {
           console.error('스캔 기록 저장 실패:', error);
@@ -921,11 +1007,9 @@ const QRScanPage = () => {
     }
   };
 
-  const resetStats = () => {
-    setScanStats({
-      totalScans: 0
-    });
-    setScannedProducts(new Set()); // 스캔한 제품 목록도 초기화
+  const resetScannedProducts = () => {
+    setScannedProducts(new Set()); // 스캔한 제품 목록 초기화
+    setSelectedProducts(new Set()); // 선택한 제품 목록도 초기화
   };
 
   // 카메라 권한 안내 표시
@@ -1880,7 +1964,7 @@ const QRScanPage = () => {
         paddingBottom: '80px', // 하단 네비게이션바와 간격 줄임
         backgroundColor: '#f5f5f5'
       }}>
-        {/* 스캔 통계 */}
+        {/* 전체 품목 체크리스트 */}
         <div style={{
           backgroundColor: 'white',
           borderRadius: '12px',
@@ -1892,6 +1976,9 @@ const QRScanPage = () => {
           <div style={{
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px',
+            paddingBottom: '12px',
             borderBottom: '1px solid #f8f9fa'
           }}>
             <div style={{
@@ -1902,7 +1989,7 @@ const QRScanPage = () => {
               <div style={{
                 width: '6px',
                 height: '20px',
-                backgroundColor: '#dc3545',
+                backgroundColor: '#28a745',
                 borderRadius: '3px'
               }}></div>
               <span style={{
@@ -1910,39 +1997,233 @@ const QRScanPage = () => {
                 fontWeight: '600',
                 color: '#495057'
               }}>
-                스캔 통계
+                전체 품목 체크리스트
               </span>
+              {selectedProducts.size > 0 && (
+                <span style={{
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  fontSize: '12px',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontWeight: '500'
+                }}>
+                  {selectedProducts.size}/{allProducts.length}개 선택
+                </span>
+              )}
             </div>
+            
+            <button
+              onClick={() => {
+                if (!showProductList) {
+                  loadAllProducts();
+                }
+                setShowProductList(!showProductList);
+              }}
+              style={{
+                backgroundColor: showProductList ? '#6c757d' : '#007bff',
+                color: 'white',
+                border: 'none',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+            >
+              <i className={`fas ${showProductList ? 'fa-chevron-up' : 'fa-chevron-down'}`}></i>
+              {showProductList ? '접기' : '펼치기'}
+            </button>
           </div>
           
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
+          {!showProductList && (
             <div style={{
-              textAlign: 'center'
+              textAlign: 'center',
+              color: '#6c757d',
+              fontSize: '14px',
+              padding: '20px 0'
             }}>
               <div style={{
-                fontSize: '40px',
-                fontWeight: '700',
-                color: '#dc3545',
-                lineHeight: '1',
-                marginBottom: '6px',
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif'
+                fontSize: '32px',
+                marginBottom: '8px'
               }}>
-                {scanStats.totalScans}
+                ✅
               </div>
-              <div style={{
-                fontSize: '14px',
-                color: '#6c757d',
-                fontWeight: '500',
-                letterSpacing: '0.5px'
-              }}>
-                스캔한 제품 수
+              <div style={{ marginBottom: '4px', fontWeight: '500' }}>
+                {scannedProducts.size + selectedProducts.size}/{allProducts.length || 150}개 완료
+              </div>
+              <div style={{ fontSize: '12px' }}>
+                펼치기 버튼을 눌러 전체 품목을 확인하세요
               </div>
             </div>
-          </div>
+          )}
+
+          {showProductList && (
+            <div>
+              {isLoadingProducts ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: '#666'
+                }}>
+                  <div style={{
+                    width: '24px',
+                    height: '24px',
+                    border: '3px solid #f3f3f3',
+                    borderTop: '3px solid #007bff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                    margin: '0 auto 16px'
+                  }}></div>
+                  제품 목록을 불러오는 중...
+                </div>
+              ) : allProducts.length > 0 ? (
+                <>
+                  {/* 일괄 등록 버튼 */}
+                  {selectedProducts.size > 0 && (
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: '#495057'
+                      }}>
+                        {selectedProducts.size}개 제품 선택됨
+                      </span>
+                      <button
+                        onClick={registerSelectedProducts}
+                        style={{
+                          backgroundColor: '#28a745',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        <i className="fas fa-check"></i>
+                        선택 제품 등록
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 제품 리스트 */}
+                  <div style={{
+                    maxHeight: '400px',
+                    overflow: 'auto',
+                    border: '1px solid #e9ecef',
+                    borderRadius: '8px'
+                  }}>
+                    {allProducts.map((product, index) => {
+                      const isScanned = scannedProducts.has(product.sku);
+                      const isSelected = selectedProducts.has(product.sku);
+                      const isCompleted = isScanned || isSelected;
+                      
+                      return (
+                        <div
+                          key={product.sku || index}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: index < allProducts.length - 1 ? '1px solid #f8f9fa' : 'none',
+                            backgroundColor: isCompleted ? '#f8f9fa' : 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            cursor: isScanned ? 'default' : 'pointer',
+                            opacity: isScanned ? 0.6 : 1
+                          }}
+                          onClick={() => !isScanned && toggleProductSelection(product.sku)}
+                        >
+                          {/* 체크박스 */}
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '4px',
+                            border: isCompleted ? 'none' : '2px solid #dee2e6',
+                            backgroundColor: isScanned ? '#28a745' : isSelected ? '#007bff' : 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {isCompleted && (
+                              <i className="fas fa-check" style={{
+                                color: 'white',
+                                fontSize: '12px'
+                              }}></i>
+                            )}
+                          </div>
+
+                          {/* 제품 번호 */}
+                          <div style={{
+                            width: '50px',
+                            fontSize: '12px',
+                            color: '#6c757d',
+                            fontWeight: '500',
+                            textAlign: 'center',
+                            flexShrink: 0
+                          }}>
+                            {product.sku}
+                          </div>
+
+                          {/* 제품 정보 */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              color: isCompleted ? '#6c757d' : '#333',
+                              marginBottom: '2px',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}>
+                              {product.name}
+                            </div>
+                          </div>
+
+                          {/* 상태 표시 */}
+                          <div style={{
+                            fontSize: '11px',
+                            padding: '3px 8px',
+                            borderRadius: '12px',
+                            fontWeight: '500',
+                            backgroundColor: isScanned ? '#28a745' : isSelected ? '#007bff' : '#e9ecef',
+                            color: isCompleted ? 'white' : '#6c757d',
+                            flexShrink: 0
+                          }}>
+                            {isScanned ? '✓' : isSelected ? '✓' : '○'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '40px 20px',
+                  color: '#666'
+                }}>
+                  제품 목록을 불러올 수 없습니다.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* 상태 표시 */}
