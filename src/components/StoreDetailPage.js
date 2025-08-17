@@ -472,10 +472,14 @@ const StoreDetailPage = () => {
           </span>
         </div>
 
-        {/* 전체 제품 목록 (처음 5개만 표시) */}
-        <div style={{ padding: '0' }}>
+        {/* 전체 제품 목록 (스크롤 가능) */}
+        <div style={{ 
+          padding: '0',
+          maxHeight: '400px',
+          overflow: 'auto'
+        }}>
           {allProducts.length > 0 ? (
-            allProducts.slice(0, 5).map((product, index) => {
+            allProducts.map((product, index) => {
               const isScanned = inventory?.scannedProductCodes?.includes(product.sku) || false;
               
               return (
@@ -483,7 +487,7 @@ const StoreDetailPage = () => {
                   key={product.sku || index}
                   style={{
                     padding: '12px 16px',
-                    borderBottom: index < 4 ? '1px solid #f0f0f0' : 'none',
+                    borderBottom: index < allProducts.length - 1 ? '1px solid #f0f0f0' : 'none',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
