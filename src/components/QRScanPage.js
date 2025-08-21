@@ -43,6 +43,9 @@ const QRScanPage = () => {
   const [aiResults, setAiResults] = useState(null);
   const [showAiResults, setShowAiResults] = useState(false);
   
+  // 앨범 사진 선택 관련
+  const fileInputRef = useRef(null);
+  
 
   
   // 카메라 설정 프리셋
@@ -1236,6 +1239,56 @@ const QRScanPage = () => {
     }
   };
 
+  // 앨범에서 사진 선택
+  const selectPhotoFromAlbum = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // 파일 선택 처리
+  const handleFileSelect = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 이미지 파일인지 확인
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 선택할 수 있습니다.');
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      setScanStatus('앨범 이미지 분석 중...');
+
+      // 파일을 base64로 변환
+      const imageDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      setCapturedImage(imageDataUrl);
+
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+
+      setScanStatus('AI 분석 중...');
+      await analyzeShelfWithAI(imageDataUrl);
+
+    } catch (error) {
+      console.error('앨범 사진 처리 오류:', error);
+      alert('앨범 사진 처리 중 오류가 발생했습니다: ' + error.message);
+      setIsAnalyzing(false);
+      setScanStatus(isScanning ? '바코드 스캔 중' : '스캔 중단됨');
+    }
+
+    // input 값 초기화 (같은 파일 다시 선택 가능하도록)
+    event.target.value = '';
+  };
+
   // AI 매대 분석 실행
   const analyzeShelfWithAI = async (imageDataUrl) => {
     try {
@@ -1655,50 +1708,98 @@ const QRScanPage = () => {
         )}
       </div>
 
-      {/* AI 매대 촬영 버튼 - 카메라 바로 아래 */}
+      {/* AI 매대 촬영 및 앨범 선택 버튼 - 카메라 바로 아래 */}
       <div style={{
         padding: '16px',
         backgroundColor: 'white',
         borderBottom: '1px solid #e0e0e0'
       }}>
-        <button
-          onClick={capturePhotoForAI}
-          disabled={!isScanning || isAnalyzing}
-          style={{
-            width: '100%',
-            padding: '16px',
-            backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '12px',
-            fontSize: '18px',
-            fontWeight: '600',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 3px 12px rgba(0, 123, 255, 0.25)',
-            cursor: (!isScanning || isAnalyzing) ? 'not-allowed' : 'pointer',
-            opacity: (!isScanning || isAnalyzing) ? 0.6 : 1
-          }}
-        >
-          <i className={`fas ${isAnalyzing ? 'fa-spinner fa-spin' : 'fa-camera'}`} style={{
-            fontSize: '18px'
-          }}></i>
-          {isAnalyzing ? 'AI 분석 중...' : '매대 촬영 (AI 분석)'}
-        </button>
+        {/* 숨겨진 파일 입력 요소 */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
         
-        {(!isScanning && !isAnalyzing) && (
-          <div style={{
-            textAlign: 'center',
-            fontSize: '14px',
-            color: '#6c757d',
-            marginTop: '8px'
-          }}>
-            카메라를 먼저 시작해주세요
-          </div>
-        )}
+        {/* 버튼들 */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '8px'
+        }}>
+          {/* 카메라 촬영 버튼 */}
+          <button
+            onClick={capturePhotoForAI}
+            disabled={!isScanning || isAnalyzing}
+            style={{
+              flex: 1,
+              padding: '16px',
+              backgroundColor: isAnalyzing ? '#6c757d' : '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 3px 12px rgba(0, 123, 255, 0.25)',
+              cursor: (!isScanning || isAnalyzing) ? 'not-allowed' : 'pointer',
+              opacity: (!isScanning || isAnalyzing) ? 0.6 : 1
+            }}
+          >
+            <i className={`fas ${isAnalyzing ? 'fa-spinner fa-spin' : 'fa-camera'}`} style={{
+              fontSize: '16px'
+            }}></i>
+            {isAnalyzing ? '분석 중...' : '촬영'}
+          </button>
+          
+          {/* 앨범 선택 버튼 */}
+          <button
+            onClick={selectPhotoFromAlbum}
+            disabled={isAnalyzing}
+            style={{
+              flex: 1,
+              padding: '16px',
+              backgroundColor: isAnalyzing ? '#6c757d' : '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              fontSize: '16px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 3px 12px rgba(40, 167, 69, 0.25)',
+              cursor: isAnalyzing ? 'not-allowed' : 'pointer',
+              opacity: isAnalyzing ? 0.6 : 1
+            }}
+          >
+            <i className="fas fa-images" style={{
+              fontSize: '16px'
+            }}></i>
+            앨범
+          </button>
+        </div>
+        
+        {/* 안내 텍스트 */}
+        <div style={{
+          textAlign: 'center',
+          fontSize: '14px',
+          color: '#6c757d'
+        }}>
+          {(!isScanning && !isAnalyzing) ? (
+            '카메라를 시작하거나 앨범에서 사진을 선택하세요'
+          ) : (
+            '매대 사진을 촬영하거나 앨범에서 선택해 AI 분석을 받으세요'
+          )}
+        </div>
       </div>
 
       {/* 제품 검색 섹션 */}
