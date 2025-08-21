@@ -1257,36 +1257,190 @@ const QRScanPage = () => {
       return;
     }
 
+    // 파일 크기 제한 (25MB - 원본 이미지 지원을 위해 증가)
+    const maxFileSize = 25 * 1024 * 1024;
+    if (file.size > maxFileSize) {
+      alert('파일 크기는 25MB 이하로 선택해주세요.\n\n현재 파일: ' + Math.round(file.size / 1024 / 1024) + 'MB');
+      return;
+    }
+
     try {
       setIsAnalyzing(true);
-      setScanStatus('앨범 이미지 분석 중...');
+      setScanStatus('원본 이미지 로딩 중...');
 
-      // 파일을 base64로 변환
-      const imageDataUrl = await new Promise((resolve, reject) => {
+      console.log('📸 원본 이미지 로딩:', {
+        파일명: file.name,
+        타입: file.type,
+        크기: `${Math.round(file.size / 1024)}KB`,
+        처리방식: '원본 그대로 (무손실)'
+      });
+
+      // 원본 이미지 그대로 로드
+      const originalImageDataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (e) => {
+          console.log('✅ 원본 이미지 로딩 완료:', {
+            원본크기: `${Math.round(file.size / 1024)}KB`,
+            base64크기: `${Math.round(e.target.result.length / 1024)}KB`,
+            포맷: file.type,
+            해상도: '원본 유지'
+          });
+          resolve(e.target.result);
+        };
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
-
-      setCapturedImage(imageDataUrl);
+      
+      setCapturedImage(originalImageDataUrl);
 
       if (navigator.vibrate) {
         navigator.vibrate(100);
       }
 
-      setScanStatus('AI 분석 중...');
-      await analyzeShelfWithAI(imageDataUrl);
+      setScanStatus('AI 분석 중... (원본 화질)');
+      await analyzeShelfWithAI(originalImageDataUrl);
 
     } catch (error) {
-      console.error('앨범 사진 처리 오류:', error);
-      alert('앨범 사진 처리 중 오류가 발생했습니다: ' + error.message);
+      console.error('원본 이미지 처리 오류:', error);
+      
+      // 원본 이미지로 실패했을 때만 처리된 이미지로 재시도
+      if (error.message.includes('pattern') || error.message.includes('base64') || error.message.includes('형식') || error.message.includes('JSON')) {
+        console.log('🔄 원본 이미지 실패, 호환성 처리 모드로 재시도...');
+        setScanStatus('호환성 모드로 재처리 중...');
+        
+        try {
+          // 호환성을 위한 이미지 처리 (Canvas 사용)
+          const processedImageDataUrl = await processImageFile(file);
+          setCapturedImage(processedImageDataUrl);
+          setScanStatus('AI 분석 중... (호환성 모드)');
+          await analyzeShelfWithAI(processedImageDataUrl);
+          return; // 성공하면 여기서 종료
+        } catch (secondError) {
+          console.error('호환성 모드도 실패:', secondError);
+          alert('이미지 처리에 실패했습니다. 다른 이미지를 시도해보세요.\n\n세부 오류:\n- 원본: ' + error.message + '\n- 호환성: ' + secondError.message);
+        }
+      } else {
+        alert('앨범 사진 처리 중 오류가 발생했습니다: ' + error.message);
+      }
+      
       setIsAnalyzing(false);
       setScanStatus(isScanning ? '바코드 스캔 중' : '스캔 중단됨');
     }
 
     // input 값 초기화 (같은 파일 다시 선택 가능하도록)
     event.target.value = '';
+  };
+
+  // 이미지 파일을 표준 포맷으로 처리하는 함수 (해상도 보존 버전)
+  const processImageFile = async (file) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          
+          // 스마트한 해상도 처리
+          const maxPixels = 8000000; // 8MP 정도까지 허용 (성능과 품질의 균형)
+          const currentPixels = width * height;
+          
+          console.log('원본 이미지 분석:', {
+            해상도: `${width}x${height}`,
+            총픽셀: currentPixels.toLocaleString(),
+            파일크기: `${Math.round(file.size / 1024)}KB`,
+            메가픽셀: `${(currentPixels / 1000000).toFixed(1)}MP`
+          });
+
+          // 너무 큰 이미지만 리사이즈 (8MP 초과 시)
+          if (currentPixels > maxPixels) {
+            const ratio = Math.sqrt(maxPixels / currentPixels);
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
+            
+            console.log('해상도 최적화:', {
+              기존: `${img.width}x${img.height}`,
+              최적화후: `${width}x${height}`,
+              축소비율: `${(ratio * 100).toFixed(1)}%`,
+              이유: '성능 최적화 (8MP 초과)'
+            });
+          } else {
+            console.log('원본 해상도 유지:', `${width}x${height} (8MP 이하)`);
+          }
+
+          // 최소 해상도 보장 (너무 작으면 AI 분석이 어려움)
+          const minWidth = 800;
+          const minHeight = 600;
+          
+          if (width < minWidth || height < minHeight) {
+            const upscaleRatio = Math.max(minWidth / width, minHeight / height);
+            width = Math.floor(width * upscaleRatio);
+            height = Math.floor(height * upscaleRatio);
+            
+            console.log('최소 해상도 보장:', {
+              기존: `${img.width}x${img.height}`,
+              업스케일후: `${width}x${height}`,
+              이유: 'AI 분석 품질 향상'
+            });
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          // 최고 품질 렌더링 설정
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          // 흰색 배경으로 초기화 (투명도 제거, HEIC 호환성)
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, width, height);
+
+          // 이미지 그리기
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 품질에 따른 JPEG 변환
+          let quality = 0.95; // 기본 최고 품질
+          
+          // 파일 크기에 따른 품질 조정
+          const expectedSize = width * height * 3; // RGB 기준 예상 크기
+          if (expectedSize > 10000000) { // 10MB 초과 시
+            quality = 0.85;
+            console.log('품질 최적화:', '대용량 이미지로 인해 품질 85%로 조정');
+          }
+
+          const standardizedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          console.log('✅ 이미지 처리 완료:', {
+            원본: `${img.width}x${img.height} (${(img.width * img.height / 1000000).toFixed(1)}MP)`,
+            처리후: `${width}x${height} (${(width * height / 1000000).toFixed(1)}MP)`,
+            파일크기: `${Math.round(file.size / 1024)}KB → ${Math.round(standardizedDataUrl.length / 1024)}KB`,
+            품질: `${(quality * 100)}%`,
+            포맷: 'JPEG',
+            해상도보존: currentPixels <= maxPixels ? '✅ 유지' : '⚠️ 최적화'
+          });
+
+          resolve(standardizedDataUrl);
+        } catch (error) {
+          console.error('Canvas 처리 오류:', error);
+          reject(new Error('이미지 처리 중 오류가 발생했습니다.'));
+        }
+      };
+
+      img.onerror = () => {
+        reject(new Error('이미지를 불러올 수 없습니다.'));
+      };
+
+      // 파일을 이미지로 로드
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        img.src = e.target.result;
+      };
+      reader.onerror = () => {
+        reject(new Error('파일을 읽을 수 없습니다.'));
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   // AI 매대 분석 실행
@@ -1797,7 +1951,13 @@ const QRScanPage = () => {
           {(!isScanning && !isAnalyzing) ? (
             '카메라를 시작하거나 앨범에서 사진을 선택하세요'
           ) : (
-            '매대 사진을 촬영하거나 앨범에서 선택해 AI 분석을 받으세요'
+            <>
+              매대 사진을 촬영하거나 앨범에서 선택해 AI 분석을 받으세요
+              <br />
+              <span style={{ fontSize: '12px', color: '#999' }}>
+                📸 앨범 이미지는 원본 해상도로 분석합니다
+              </span>
+            </>
           )}
         </div>
       </div>
