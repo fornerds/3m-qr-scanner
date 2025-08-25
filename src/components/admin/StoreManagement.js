@@ -509,7 +509,7 @@ const StoreManagement = () => {
               fontSize: isMobile ? '32px' : '36px',
               marginBottom: '12px'
             }}>
-              🏪
+              매장
             </div>
             <div style={{ fontSize: isMobile ? '14px' : '16px' }}>
               등록된 매장이 없습니다.

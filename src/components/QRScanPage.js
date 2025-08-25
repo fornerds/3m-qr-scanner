@@ -645,7 +645,7 @@ const QRScanPage = () => {
         // 캐시 히트! 즉시 응답
         console.log('캐시에서 제품 찾음:', productCode);
         result = { success: true, product };
-        setScanStatus('캐시에서 찾음 ⚡');
+        setScanStatus('캐시에서 찾음');
       } else {
         // 캐시 미스, API 호출
         setScanStatus('DB에서 검색 중...');
@@ -1335,7 +1335,7 @@ const QRScanPage = () => {
       setIsAnalyzing(true);
       setScanStatus('원본 이미지 로딩 중...');
 
-      console.log('📸 원본 이미지 로딩:', {
+      console.log('원본 이미지 로딩:', {
         파일명: file.name,
         타입: file.type,
         크기: `${Math.round(file.size / 1024)}KB`,
@@ -1346,7 +1346,7 @@ const QRScanPage = () => {
       const originalImageDataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-          console.log('✅ 원본 이미지 로딩 완료:', {
+          console.log('원본 이미지 로딩 완료:', {
             원본크기: `${Math.round(file.size / 1024)}KB`,
             base64크기: `${Math.round(e.target.result.length / 1024)}KB`,
             포맷: file.type,
@@ -1372,7 +1372,7 @@ const QRScanPage = () => {
       
       // 원본 이미지로 실패했을 때만 처리된 이미지로 재시도
       if (error.message.includes('pattern') || error.message.includes('base64') || error.message.includes('형식') || error.message.includes('JSON')) {
-        console.log('🔄 원본 이미지 실패, 호환성 처리 모드로 재시도...');
+        console.log('원본 이미지 실패, 호환성 처리 모드로 재시도...');
         setScanStatus('호환성 모드로 재처리 중...');
         
         try {
@@ -1484,7 +1484,7 @@ const QRScanPage = () => {
             파일크기: `${Math.round(file.size / 1024)}KB → ${Math.round(standardizedDataUrl.length / 1024)}KB`,
             품질: `${(quality * 100)}%`,
             포맷: 'JPEG',
-            해상도보존: currentPixels <= maxPixels ? '✅ 유지' : '⚠️ 최적화'
+            해상도보존: currentPixels <= maxPixels ? '유지' : '최적화'
           });
 
           resolve(standardizedDataUrl);
@@ -1906,7 +1906,7 @@ const QRScanPage = () => {
             color: '#666',
             lineHeight: '1.4'
           }}>
-            💡 <strong>팁:</strong> 스캔이 잘 안되면 '기본' 설정을, 빠른 스캔을 원하면 '극한 최적화'를 선택하세요.
+            <strong>팁:</strong> 스캔이 잘 안되면 '기본' 설정을, 빠른 스캔을 원하면 '극한 최적화'를 선택하세요.
           </div>
         </div>
       )}
@@ -2115,7 +2115,7 @@ const QRScanPage = () => {
               매대 사진을 촬영하거나 앨범에서 선택해 AI 분석을 받으세요
               <br />
               <span style={{ fontSize: '12px', color: '#999' }}>
-                📸 앨범 이미지는 원본 해상도로 분석합니다
+                앨범 이미지는 원본 해상도로 분석합니다
               </span>
             </>
           )}
@@ -2349,7 +2349,7 @@ const QRScanPage = () => {
                   color: '#dee2e6',
                   marginBottom: '16px'
                 }}>
-                  🔍
+                  검색
                 </div>
                 <div style={{
                   fontSize: '16px',
@@ -2471,7 +2471,7 @@ const QRScanPage = () => {
                 fontSize: '32px',
                 marginBottom: '8px'
               }}>
-                ✅
+                완료
               </div>
               <div style={{ marginBottom: '4px', fontWeight: '500' }}>
                 {scannedProducts.size + selectedProducts.size}/{allProducts.length || 150}개 완료
@@ -2723,7 +2723,7 @@ const QRScanPage = () => {
                   fontWeight: '500'
                 }}
               >
-                🔄 새로고침
+                새로고침
               </button>
               <button
                 onClick={tryDifferentCameraSettings}
@@ -2950,7 +2950,7 @@ const QRScanPage = () => {
                     fontSize: '48px',
                     marginBottom: '16px'
                   }}>
-                    🔍
+                    검색
                   </div>
                   <div style={{
                     fontSize: '18px',

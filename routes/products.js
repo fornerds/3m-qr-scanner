@@ -27,7 +27,7 @@ const upload = multer({
   }
 });
 
-// 📦 전체 제품 목록 조회 (페이징, 필터링, 정렬 최적화)
+// 전체 제품 목록 조회 (페이징, 필터링, 정렬 최적화)
 router.get('/', async (req, res) => {
   const startTime = Date.now();
   
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
       importance = '' // 중요도 필터
     } = req.query;
     
-    console.log('📦 제품 목록 조회:', { page, limit, search, category });
+    console.log('제품 목록 조회:', { page, limit, search, category });
 
     const { db } = await connectToDatabase();
 
@@ -118,7 +118,7 @@ router.get('/', async (req, res) => {
     const totalCount = countResult[0]?.total || 0;
     const responseTime = Date.now() - startTime;
 
-    console.log(`✅ 제품 조회 완료 (${responseTime}ms): ${products.length}개 / 전체 ${totalCount}개`);
+    console.log(`제품 조회 완료 (${responseTime}ms): ${products.length}개 / 전체 ${totalCount}개`);
 
     res.json({
       success: true,
@@ -140,7 +140,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 제품 조회 오류 (${responseTime}ms):`, error);
+    console.error(`제품 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -151,13 +151,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 🔍 SKU로 제품 조회 (캐싱 적용)
+// SKU로 제품 조회 (캐싱 적용)
 router.get('/sku/:sku', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { sku } = req.params;
-    console.log(`🔍 SKU 제품 조회: ${sku}`);
+    console.log(`SKU 제품 조회: ${sku}`);
 
     const { db } = await connectToDatabase();
     
@@ -181,7 +181,7 @@ router.get('/sku/:sku', async (req, res) => {
     const importance = product.salesAvg <= 80 ? 'high' : 
                       product.salesAvg <= 130 ? 'medium' : 'low';
 
-    console.log(`✅ SKU 제품 조회 완료 (${responseTime}ms)`);
+    console.log(`SKU 제품 조회 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -198,7 +198,7 @@ router.get('/sku/:sku', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ SKU 제품 조회 오류 (${responseTime}ms):`, error);
+    console.error(`SKU 제품 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -269,7 +269,7 @@ router.get('/categories/list', async (req, res) => {
     ]).toArray();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 카테고리 조회 완료 (${responseTime}ms): ${categories.length}개`);
+    console.log(`카테고리 조회 완료 (${responseTime}ms): ${categories.length}개`);
     
     res.json({
       success: true,
@@ -281,7 +281,7 @@ router.get('/categories/list', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 카테고리 조회 오류 (${responseTime}ms):`, error);
+    console.error(`카테고리 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -320,7 +320,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
       });
     }
 
-    console.log(`📊 처리된 제품 개수: ${products.length}`);
+    console.log(`처리된 제품 개수: ${products.length}`);
 
     // 🚀 Bulk 연산으로 성능 최적화
     const bulkOps = products.map(product => ({
@@ -344,7 +344,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     });
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 제품 업로드 완료 (${responseTime}ms)`);
+    console.log(`제품 업로드 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -360,7 +360,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 제품 업로드 오류 (${responseTime}ms):`, error);
+    console.error(`제품 업로드 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -396,7 +396,7 @@ async function processExcelFileOptimized(buffer) {
     }
 
     const dataRows = jsonData.slice(1);
-    console.log(`📊 원본 데이터 행 수: ${dataRows.length}`);
+    console.log(`원본 데이터 행 수: ${dataRows.length}`);
     
     // 🚀 병렬 처리로 데이터 변환 최적화
     const products = [];
@@ -439,7 +439,7 @@ async function processExcelFileOptimized(buffer) {
       products.push(...batchProducts);
     }
     
-    console.log(`✅ 유효한 제품 데이터: ${products.length}개`);
+    console.log(`유효한 제품 데이터: ${products.length}개`);
     return products;
     
   } catch (error) {

@@ -295,7 +295,7 @@ const Dashboard = () => {
               fontSize: isMobile ? '32px' : '36px',
               marginBottom: '12px'
             }}>
-              📊
+              통계
             </div>
             <div style={{ fontSize: isMobile ? '14px' : '16px' }}>
               아직 스캔 기록이 없습니다.

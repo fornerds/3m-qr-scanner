@@ -724,7 +724,7 @@ const ProductManagement = () => {
               fontSize: isMobile ? '32px' : '36px',
               marginBottom: '12px'
             }}>
-              📦
+              제품
             </div>
             <div style={{ fontSize: isMobile ? '14px' : '16px' }}>
             등록된 제품이 없습니다.

@@ -173,7 +173,7 @@ router.get('/', async (req, res) => {
       Math.round((stats.scannedItems / stats.totalItems) * 100) : 0;
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 재고 리포트 생성 완료 (${responseTime}ms)`);
+    console.log(`재고 리포트 생성 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -195,7 +195,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 재고 리포트 생성 오류 (${responseTime}ms):`, error);
+    console.error(`재고 리포트 생성 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,

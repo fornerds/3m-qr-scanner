@@ -34,19 +34,19 @@ function setToCache(key, data) {
   }
 }
 
-// ⚡ 초고속 매장 목록 조회 (MongoDB Aggregation 사용)
+// 초고속 매장 목록 조회 (MongoDB Aggregation 사용)
 router.get('/', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    console.log('🏪 매장 목록 조회 요청');
+    console.log('매장 목록 조회 요청');
     
     // 캐시 확인
     const cacheKey = getCacheKey('stores_with_stats');
     const cachedResult = getFromCache(cacheKey);
     
     if (cachedResult) {
-      console.log(`⚡ 캐시에서 반환 (${Date.now() - startTime}ms)`);
+      console.log(`캐시에서 반환 (${Date.now() - startTime}ms)`);
       return res.json({
         success: true,
         data: cachedResult,
@@ -130,7 +130,7 @@ router.get('/', async (req, res) => {
     setToCache(cacheKey, storesWithStats);
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 매장 목록 조회 완료 (${responseTime}ms, ${storesWithStats.length}개)`);
+    console.log(` 매장 목록 조회 완료 (${responseTime}ms, ${storesWithStats.length}개)`);
 
     res.json({
       success: true,
@@ -143,7 +143,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장 목록 조회 오류 (${responseTime}ms):`, error);
+    console.error(` 매장 목록 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({ 
       success: false, 
@@ -167,7 +167,7 @@ router.get('/:id', async (req, res) => {
     const cachedResult = getFromCache(cacheKey);
     
     if (cachedResult) {
-      console.log(`⚡ 캐시에서 반환 (${Date.now() - startTime}ms)`);
+      console.log(`캐시에서 반환 (${Date.now() - startTime}ms)`);
       return res.json({
         success: true,
         data: cachedResult,
@@ -283,7 +283,7 @@ router.get('/:id', async (req, res) => {
     setToCache(cacheKey, storeDetail);
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 매장 상세 조회 완료 (${responseTime}ms)`);
+    console.log(` 매장 상세 조회 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -294,7 +294,7 @@ router.get('/:id', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장 상세 조회 오류 (${responseTime}ms):`, error);
+    console.error(` 매장 상세 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -305,7 +305,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// ⚡ 새 매장 추가 (최적화된 중복 체크)
+//  새 매장 추가 (최적화된 중복 체크)
 router.post('/', async (req, res) => {
   const startTime = Date.now();
   
@@ -411,7 +411,7 @@ router.post('/', async (req, res) => {
     cache.clear();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 새 매장 추가 완료 (${responseTime}ms): ${newStore.name} (ID: ${newStoreId})`);
+    console.log(` 새 매장 추가 완료 (${responseTime}ms): ${newStore.name} (ID: ${newStoreId})`);
 
     res.status(201).json({ 
       success: true, 
@@ -428,7 +428,7 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장 추가 오류 (${responseTime}ms):`, error);
+    console.error(` 매장 추가 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({ 
       success: false, 
@@ -439,7 +439,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ⚡ 매장 정보 수정 (최적화된 업데이트)
+//  매장 정보 수정 (최적화된 업데이트)
 router.put('/:id', async (req, res) => {
   const startTime = Date.now();
   
@@ -507,7 +507,7 @@ router.put('/:id', async (req, res) => {
     cache.clear();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 매장 수정 완료 (${responseTime}ms): ${updateData.name}`);
+    console.log(` 매장 수정 완료 (${responseTime}ms): ${updateData.name}`);
 
     res.json({ 
       success: true, 
@@ -523,7 +523,7 @@ router.put('/:id', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장 수정 오류 (${responseTime}ms):`, error);
+    console.error(` 매장 수정 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({ 
       success: false, 
@@ -579,7 +579,7 @@ router.delete('/:id', async (req, res) => {
           { session }
         );
 
-        console.log(`✅ 관련 데이터 삭제 완료: 스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionDeleteResult.deletedCount}개`);
+        console.log(` 관련 데이터 삭제 완료: 스캔 기록 ${scanDeleteResult.deletedCount}개, 세션 ${sessionDeleteResult.deletedCount}개`);
         
         return { scanDeleteResult, sessionDeleteResult };
       });
@@ -591,7 +591,7 @@ router.delete('/:id', async (req, res) => {
     cache.clear();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 매장 삭제 완료 (${responseTime}ms): ${existingStore.name}`);
+    console.log(` 매장 삭제 완료 (${responseTime}ms): ${existingStore.name}`);
 
     res.json({ 
       success: true, 
@@ -605,7 +605,7 @@ router.delete('/:id', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장 삭제 오류 (${responseTime}ms):`, error);
+    console.error(` 매장 삭제 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({ 
       success: false, 
