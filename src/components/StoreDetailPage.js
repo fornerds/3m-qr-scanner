@@ -93,6 +93,7 @@ const StoreDetailPage = () => {
         // API 응답 구조에 맞게 inventory 설정
         setInventory({
           ...inventoryData.summary, // summary의 모든 필드를 최상위로
+          progress: Math.round(inventoryData.summary?.scanProgress || 0), // scanProgress를 progress로 매핑
           data: inventoryData.data,
           notDisplayedProducts: inventoryData.data || []
         });
@@ -378,12 +379,6 @@ const StoreDetailPage = () => {
             fontWeight: '600'
           }}>
             스캔 진행률
-          </span>
-          <span style={{
-            fontSize: '14px',
-            color: '#666'
-          }}>
-            마지막 방문: {store?.lastScanTime ? getRelativeTime(store.lastScanTime) : '방문 기록 없음'}
           </span>
         </div>
         
