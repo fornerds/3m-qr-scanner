@@ -2471,10 +2471,10 @@ const QRScanPage = () => {
                 fontSize: '32px',
                 marginBottom: '8px'
               }}>
-                완료
+                {scannedProducts.size + selectedProducts.size}개
               </div>
               <div style={{ marginBottom: '4px', fontWeight: '500' }}>
-                {scannedProducts.size + selectedProducts.size}/{allProducts.length || 150}개 완료
+                전체 {allProducts.length || 150}개 중 완료
               </div>
               <div style={{ fontSize: '12px' }}>
                 펼치기 버튼을 눌러 전체 품목을 확인하세요
