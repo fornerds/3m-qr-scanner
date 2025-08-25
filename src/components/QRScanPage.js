@@ -2442,10 +2442,8 @@ const QRScanPage = () => {
             return (
               <div style={{
                 padding: '20px 16px',
-                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
                 borderRadius: '12px',
-                margin: '0 8px',
-                border: `2px solid ${progressColor}20`
+                margin: '0 8px'
               }}>
                 {/* 진행률 헤더 */}
                 <div style={{
@@ -2514,18 +2512,10 @@ const QRScanPage = () => {
                 {/* 상태 메시지 */}
                 <div style={{
                   textAlign: 'center',
-                  fontSize: '13px',
-                  color: '#6c757d',
-                  lineHeight: '1.4'
+                  fontSize: '12px',
+                  color: '#6c757d'
                 }}>
-                  {percentage >= 90 ? '거의 완료되었습니다!' : 
-                   percentage >= 50 ? '절반 이상 완료되었습니다' :
-                   percentage >= 20 ? '꾸준히 진행 중입니다' :
-                   '시작이 반입니다! 화이팅!'}
-                  <br />
-                  <span style={{ fontSize: '12px', opacity: '0.8' }}>
-                    펼치기 버튼으로 전체 목록을 확인하세요
-                  </span>
+                  펼치기 버튼으로 전체 목록을 확인하세요
                 </div>
               </div>
             );
