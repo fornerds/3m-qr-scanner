@@ -85,12 +85,44 @@ const InventoryReportPage = () => {
         if (storeResponse.ok) {
           const storesData = await storeResponse.json();
           const stores = storesData.data || storesData.stores || [];
-          const currentStore = stores.find(store => store._id === storeId);
-          setStoreInfo(currentStore || {
-            name: '매장 정보 없음',
-            address: '주소 정보 없음'
-          });
+          
+          console.log('매장 데이터 조회:', { storeId, storesLength: stores.length });
+          console.log('첫 번째 매장 샘플:', stores[0]);
+          
+          // 여러 방식으로 매장 찾기 시도
+          let currentStore = stores.find(store => store._id === storeId) ||
+                           stores.find(store => store._id === parseInt(storeId)) ||
+                           stores.find(store => store.id === storeId) ||
+                           stores.find(store => store.id === parseInt(storeId)) ||
+                           stores.find(store => String(store._id) === storeId) ||
+                           stores.find(store => String(store.id) === storeId);
+          
+          console.log('찾은 매장:', currentStore);
+          
+          if (currentStore) {
+            setStoreInfo(currentStore);
+          } else {
+            // 매장을 찾지 못한 경우, 사용 가능한 매장 ID 범위 로그
+            const storeIds = stores.map(s => s._id || s.id).slice(0, 10);
+            console.warn(`매장 ID ${storeId}를 찾을 수 없음. 사용 가능한 ID (처음 10개):`, storeIds);
+            
+            // 기본값으로 첫 번째 매장 사용하거나 정보 없음 표시
+            if (stores.length > 0) {
+              const fallbackStore = stores.find(s => s._id === '1' || s.id === '1') || stores[0];
+              console.log(`기본 매장으로 변경:`, fallbackStore);
+              setStoreInfo({
+                name: `${fallbackStore.name || '매장'} (ID: ${storeId} → ${fallbackStore._id || fallbackStore.id})`,
+                address: fallbackStore.address || '주소 정보 없음'
+              });
+            } else {
+              setStoreInfo({
+                name: `매장 ID: ${storeId} (데이터 없음)`,
+                address: '주소 정보 없음'
+              });
+            }
+          }
         } else {
+          console.error('매장 데이터 조회 실패:', storeResponse.status, storeResponse.statusText);
           setStoreInfo({
             name: '매장 정보 없음',
             address: '주소 정보 없음'
