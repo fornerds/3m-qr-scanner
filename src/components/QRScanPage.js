@@ -1486,6 +1486,27 @@ const QRScanPage = () => {
     }
   };
 
+  // 기존 스캔 기록 불러오기
+  const loadExistingScanRecords = async () => {
+    try {
+      const response = await fetch(`/api/scan-records?storeId=${storeId}&limit=1000`);
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        // 스캔된 제품 코드들을 Set에 저장
+        const existingScannedProducts = new Set(
+          data.data.map(record => record.productCode)
+        );
+        setScannedProducts(existingScannedProducts);
+        
+        console.log(`기존 스캔 기록 ${data.data.length}개를 불러왔습니다.`);
+      }
+    } catch (error) {
+      console.error('기존 스캔 기록 로딩 오류:', error);
+      // 오류가 발생해도 계속 진행
+    }
+  };
+
   // AI 분석 결과 제품 확인 및 재고 등록
   const confirmAIProduct = async (product) => {
     try {
@@ -1507,12 +1528,28 @@ const QRScanPage = () => {
 
       if (saveResult.success) {
         alert(`${product.name}이(가) 재고로 등록되었습니다.`);
+        
+        // AI 분석 결과에서 등록 상태 업데이트
         setAiResults(prev => prev.map(p =>
           p.sku === product.sku ? { ...p, registered: true } : p
         ));
+        
+        // 스캔된 제품 리스트에 추가 (중요!)
+        setScannedProducts(prev => new Set([...prev, product.sku]));
+        
+        // 스캔 결과에도 추가하여 하단 리스트에 표시
+        setScanResult({
+          productCode: product.sku,
+          productName: product.name,
+          timestamp: new Date(),
+          source: 'AI 분석'
+        });
+        
       } else {
         if (saveResult.isDuplicate) {
           alert('이미 등록된 제품입니다.');
+          // 중복이어도 리스트에는 추가 (이미 스캔된 상태로 표시)
+          setScannedProducts(prev => new Set([...prev, product.sku]));
         } else {
           throw new Error(saveResult.message || '등록 실패');
         }
@@ -1555,6 +1592,7 @@ const QRScanPage = () => {
     const timer = setTimeout(() => {
       startCamera();
       preloadPopularProducts(); // 백그라운드에서 제품 캐싱
+      loadExistingScanRecords(); // 기존 스캔 기록 불러오기
     }, 100);
     
     return () => {
