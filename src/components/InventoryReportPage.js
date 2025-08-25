@@ -7,73 +7,103 @@ const InventoryReportPage = () => {
   const storeId = searchParams.get('storeId') || '1';
   
   const [reportData, setReportData] = useState(null);
+  const [storeInfo, setStoreInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 미진열 제품만 필터링 (클라이언트에서 처리) - useMemo로 최적화
+  // 미진열 제품만 필터링 (새로운 API 구조에 맞게 수정)
   const notDisplayedProducts = useMemo(() => {
-    if (!reportData || !reportData.products) return [];
+    if (!reportData || !reportData.data) return [];
     
-    const scannedProductCodes = new Set(reportData.scannedProductCodes || []);
-    
-    return reportData.products
-      .filter(product => !scannedProductCodes.has(product.productCode))
-      .map(product => ({
-        ...product,
-        status: 'not_displayed'
-      }));
+    // 새 API 구조: data 배열에서 missing 항목 찾기
+    const missingData = reportData.data.find(item => item._id === 'missing');
+    return missingData ? missingData.items.map(item => ({
+      productCode: item.sku,
+      productName: item.name,
+      priority: item.importance || 'low',
+      status: 'not_displayed',
+      estimatedStock: item.estimatedStock || 0,
+      price: item.price || 0,
+      category: item.category || ''
+    })) : [];
   }, [reportData]);
 
-  // 제품 순위 계산 (판매량 기준)
+  // 제품 순위 계산 (재고량 기준으로 변경)
   const getProductRank = (productCode) => {
-    if (!reportData || !reportData.products) return 1;
+    if (!reportData || !reportData.data) return 1;
     
-    const product = reportData.products.find(p => p.productCode === productCode);
-    if (!product) return 1;
+    // 모든 아이템을 재고량 기준으로 정렬
+    const allItems = [];
+    reportData.data.forEach(group => {
+      if (group.items) {
+        allItems.push(...group.items);
+      }
+    });
     
-    // 판매량으로 정렬하여 순위 계산
-    const sortedProducts = [...reportData.products].sort((a, b) => (b.salesAvg || 0) - (a.salesAvg || 0));
-    const rank = sortedProducts.findIndex(p => p.productCode === productCode) + 1;
+    const sortedProducts = [...allItems].sort((a, b) => (b.estimatedStock || 0) - (a.estimatedStock || 0));
+    const rank = sortedProducts.findIndex(p => p.sku === productCode) + 1;
     
-    return rank;
+    return rank || 1;
   };
 
-  // API에서 보고서 데이터 가져오기
+  // API에서 보고서 데이터와 매장 정보 가져오기
   useEffect(() => {
-    const fetchReportData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/inventory-report?storeId=${storeId}`);
-        if (!response.ok) {
+        
+        // 병렬로 보고서 데이터와 매장 정보 가져오기
+        const [reportResponse, storeResponse] = await Promise.all([
+          fetch(`/api/inventory-report?storeId=${storeId}`),
+          fetch(`/api/stores`)
+        ]);
+        
+        if (!reportResponse.ok) {
           throw new Error('보고서 데이터를 가져올 수 없습니다.');
         }
-        const data = await response.json();
-        setReportData(data);
-      } catch (err) {
-        console.error('보고서 데이터 조회 오류:', err);
-        setError(err.message);
         
-        // 오류 시 기본값 설정 (더 이상 하드코딩 데이터 사용 안함)
-        setReportData({
-          storeInfo: {
-            id: storeId,
+        const reportData = await reportResponse.json();
+        setReportData(reportData);
+        
+        if (storeResponse.ok) {
+          const storesData = await storeResponse.json();
+          const stores = storesData.data || storesData.stores || [];
+          const currentStore = stores.find(store => store._id === storeId);
+          setStoreInfo(currentStore || {
             name: '매장 정보 없음',
             address: '주소 정보 없음'
-          },
-          products: [],
+          });
+        } else {
+          setStoreInfo({
+            name: '매장 정보 없음',
+            address: '주소 정보 없음'
+          });
+        }
+      } catch (err) {
+        console.error('데이터 조회 오류:', err);
+        setError(err.message);
+        
+        // 오류 시 기본값 설정
+        setReportData({
+          data: [],
           summary: {
-            totalProducts: 0,
-            notDisplayedCount: 0,
-            displayedCount: 0,
-            generatedAt: new Date().toISOString()
+            totalItems: 0,
+            scannedItems: 0,
+            missingItems: 0,
+            completionRate: 0,
+            reportGeneratedAt: new Date().toISOString()
           }
+        });
+        setStoreInfo({
+          name: '매장 정보 없음',
+          address: '주소 정보 없음'
         });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchReportData();
+    fetchData();
   }, [storeId]);
 
   const getPriorityColor = (priority) => {
@@ -128,7 +158,7 @@ const InventoryReportPage = () => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${reportData.storeInfo.name} - 재고 현황 보고서</title>
+          <title>${storeInfo?.name || '매장'} - 재고 현황 보고서</title>
           <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
           <style>
             body { 
@@ -172,7 +202,7 @@ const InventoryReportPage = () => {
         </head>
         <body>
           <h1 style="text-align: center; color: #dc3545; margin-bottom: 30px;">
-            ${reportData.storeInfo.name} 재고 현황 보고서
+            ${storeInfo?.name || '매장'} 재고 현황 보고서
           </h1>
           <div style="text-align: center; margin-bottom: 30px; color: #666;">
             생성일시: ${new Date().toLocaleString('ko-KR')}
@@ -189,7 +219,7 @@ const InventoryReportPage = () => {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${reportData.storeInfo.name}_재고보고서_${new Date().toISOString().split('T')[0]}.html`;
+      link.download = `${storeInfo?.name || '매장'}_재고보고서_${new Date().toISOString().split('T')[0]}.html`;
       
       // 다운로드 실행
       document.body.appendChild(link);
@@ -359,7 +389,7 @@ const InventoryReportPage = () => {
       </div>
 
       <div style={{ backgroundColor: '#f5f5f5', minHeight: 'calc(100vh - 60px)', paddingBottom: '100px' }}>
-        {/* 매장 정보 */}
+                  {/* 매장 정보 */}
         <div style={{
           backgroundColor: 'white',
           padding: '16px 20px',
@@ -371,14 +401,14 @@ const InventoryReportPage = () => {
             fontWeight: 'bold',
             color: '#333'
           }}>
-            {reportData?.storeInfo?.name || '매장명'}
+            {storeInfo?.name || '매장명'}
           </h2>
           <p style={{
             margin: 0,
             fontSize: '14px',
             color: '#666'
           }}>
-            {reportData?.storeInfo?.address || '주소 정보 없음'}
+            {storeInfo?.address || '주소 정보 없음'}
           </p>
         </div>
 
@@ -400,15 +430,15 @@ const InventoryReportPage = () => {
               fontWeight: 'bold',
               color: '#333'
             }}>
-              전체 상품 ({reportData?.products?.length || 0})
+              전체 상품 ({reportData?.summary?.totalItems || 0})
             </h3>
             <div style={{
               fontSize: '12px',
               color: '#666',
               marginTop: '4px'
             }}>
-              미진열: {notDisplayedProducts.length}개 | 
-              진열완료: {(reportData?.scannedProductCodes?.length || 0)}개
+              미진열: {reportData?.summary?.missingItems || 0}개 | 
+              진열완료: {reportData?.summary?.scannedItems || 0}개
             </div>
           </div>
 
@@ -442,7 +472,7 @@ const InventoryReportPage = () => {
                   gridTemplateColumns: '1fr 2fr 0.8fr 0.8fr 0.8fr',
                   gap: '8px',
                   padding: '12px 16px',
-                  borderBottom: index < reportData.products.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  borderBottom: index < notDisplayedProducts.length - 1 ? '1px solid #f0f0f0' : 'none',
                   fontSize: '11px',
                   alignItems: 'center'
                 }}
@@ -499,8 +529,8 @@ const InventoryReportPage = () => {
           color: '#999'
         }}>
           <p style={{ margin: '0 0 4px 0' }}>
-            보고서 생성일: {reportData?.summary?.generatedAt ? 
-              new Date(reportData.summary.generatedAt).toLocaleString('ko-KR', {
+            보고서 생성일: {reportData?.summary?.reportGeneratedAt ? 
+              new Date(reportData.summary.reportGeneratedAt).toLocaleString('ko-KR', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -511,7 +541,7 @@ const InventoryReportPage = () => {
             }
           </p>
           <p style={{ margin: 0 }}>
-            총 항목 수: {reportData?.summary?.totalProducts || 0}개
+            총 항목 수: {reportData?.summary?.totalItems || 0}개
           </p>
         </div>
       </div>
