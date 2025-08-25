@@ -63,6 +63,7 @@ const StoreDetailPage = () => {
     const fetchStoreData = async () => {
       try {
         setLoading(true);
+        console.log(`매장 상세 데이터 로딩 시작 - storeId: ${storeId}`);
         
         // 매장 정보 가져오기
         const storeResponse = await fetch(`/api/stores`);
@@ -70,19 +71,24 @@ const StoreDetailPage = () => {
           throw new Error('매장 정보를 가져올 수 없습니다.');
         }
         const storesResult = await storeResponse.json();
+        console.log('매장 목록 API 응답:', storesResult);
         
         // 새 API 응답 형태 처리: {success: true, data: [...]}
         const storesData = storesResult.success ? storesResult.data : storesResult;
         const storesArray = Array.isArray(storesData) ? storesData : [];
         const currentStore = storesArray.find(s => s.id === storeId) || storesArray[0];
+        console.log(`매장 ${storeId} 정보:`, currentStore);
         setStore(currentStore);
 
         // 재고 현황 가져오기
+        console.log(`재고 현황 API 호출: /api/inventory?storeId=${storeId}`);
         const inventoryResponse = await fetch(`/api/inventory?storeId=${storeId}`);
         if (!inventoryResponse.ok) {
+          console.error('재고 API 응답 오류:', inventoryResponse.status, inventoryResponse.statusText);
           throw new Error('재고 현황을 가져올 수 없습니다.');
         }
         const inventoryData = await inventoryResponse.json();
+        console.log('재고 현황 API 응답:', inventoryData);
         setInventory(inventoryData);
 
         // 전체 제품 리스트 가져오기
