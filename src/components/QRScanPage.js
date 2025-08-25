@@ -1565,6 +1565,68 @@ const QRScanPage = () => {
     }
   };
 
+  // AI 분석 결과 전체 제품 등록
+  const confirmAllAIProducts = async () => {
+    try {
+      const unregisteredProducts = aiResults.filter(product => !product.registered);
+      
+      if (unregisteredProducts.length === 0) {
+        alert('등록할 수 있는 제품이 없습니다.');
+        return;
+      }
+
+      const confirmCount = unregisteredProducts.length;
+      if (!confirm(`${confirmCount}개의 제품을 모두 재고로 등록하시겠습니까?`)) {
+        return;
+      }
+
+      // 병렬로 모든 제품 등록
+      const registrationPromises = unregisteredProducts.map(product => 
+        fetch('/api/scan-records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            storeId: storeId,
+            productCode: product.sku,
+            productName: product.name,
+            source: 'ai_analysis'
+          })
+        })
+      );
+
+      await Promise.all(registrationPromises);
+
+      // 상태 업데이트
+      unregisteredProducts.forEach(product => {
+        setScannedProducts(prev => {
+          const newSet = new Set(prev);
+          const skuString = String(product.sku);
+          newSet.add(skuString);
+          return newSet;
+        });
+        setSelectedProducts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(String(product.sku));
+          return newSet;
+        });
+      });
+
+      // AI 결과에서 등록 상태 업데이트
+      setAiResults(prev => prev.map(p => ({
+        ...p,
+        registered: unregisteredProducts.some(up => up.sku === p.sku) || p.registered
+      })));
+
+      alert(`${confirmCount}개의 제품이 모두 재고로 등록되었습니다!`);
+
+    } catch (error) {
+      console.error('전체 제품 등록 오류:', error);
+      alert('일부 제품 등록에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+
   // AI 분석 결과 제품 확인 및 재고 등록
   const confirmAIProduct = async (product) => {
     try {
@@ -3017,6 +3079,38 @@ const QRScanPage = () => {
                     marginBottom: '16px'
                   }}>
                     {aiResults.length}개의 3M 제품이 감지되었습니다. 확인 후 재고로 등록하세요.
+                  </div>
+
+                  {/* 전체 등록 버튼 */}
+                  <div style={{
+                    marginBottom: '20px',
+                    textAlign: 'center'
+                  }}>
+                    <button
+                      onClick={confirmAllAIProducts}
+                      disabled={aiResults.every(product => product.registered)}
+                      style={{
+                        backgroundColor: aiResults.every(product => product.registered) ? '#6c757d' : '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        padding: '12px 24px',
+                        borderRadius: '8px',
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        cursor: aiResults.every(product => product.registered) ? 'not-allowed' : 'pointer',
+                        opacity: aiResults.every(product => product.registered) ? 0.6 : 1,
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 2px 4px rgba(0, 123, 255, 0.2)'
+                      }}
+                    >
+                      {(() => {
+                        const unregisteredCount = aiResults.filter(p => !p.registered).length;
+                        if (unregisteredCount === 0) {
+                          return '모든 제품이 등록됨';
+                        }
+                        return `전체 등록 (${unregisteredCount}개)`;
+                      })()}
+                    </button>
                   </div>
 
                   {aiResults.map((product, index) => (
