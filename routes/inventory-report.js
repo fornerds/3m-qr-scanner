@@ -77,7 +77,8 @@ router.get('/', async (req, res) => {
       },
       {
         $project: {
-          scanInfo: 0
+          scanInfo: 0,
+          salesAvg: 1 // salesAvg 필드 포함
         }
       }
     ];
@@ -98,7 +99,8 @@ router.get('/', async (req, res) => {
               importance: '$importance',
               estimatedStock: { $round: ['$estimatedStock', 0] },
               price: '$price',
-              lastScanned: '$lastScanned'
+              lastScanned: '$lastScanned',
+              salesAvg: '$salesAvg' // salesAvg 포함
             }
           },
           count: { $sum: 1 },
@@ -128,6 +130,71 @@ router.get('/', async (req, res) => {
     }
 
     const reportData = await db.collection('products').aggregate(finalPipeline).toArray();
+
+    // 순위 및 우선순위 계산 후 추가 (JavaScript에서 처리)
+    if (format === 'summary' && reportData.length > 0) {
+      // 모든 제품을 평탄화하고 salesAvg로 정렬
+      let allProducts = [];
+      
+      reportData.forEach(group => {
+        if (group.items && Array.isArray(group.items)) {
+          group.items.forEach(item => {
+            allProducts.push({
+              ...item,
+              salesAvg: item.salesAvg || 0,
+              status: group._id
+            });
+          });
+        }
+      });
+      
+      // salesAvg 기준 내림차순 정렬하여 순위 계산
+      allProducts.sort((a, b) => (b.salesAvg || 0) - (a.salesAvg || 0));
+      
+      // 순위와 우선순위 추가
+      allProducts = allProducts.map((item, index) => {
+        const rank = index + 1;
+        const priority = rank <= 20 ? 'high' : rank <= 60 ? 'medium' : 'low';
+        
+        return {
+          ...item,
+          rank,
+          priority
+        };
+      });
+      
+      // 다시 status별로 그룹화
+      const groupedByStatus = {};
+      allProducts.forEach(item => {
+        const status = item.status;
+        if (!groupedByStatus[status]) {
+          groupedByStatus[status] = {
+            _id: status,
+            items: [],
+            count: 0,
+            totalValue: 0,
+            highPriorityCount: 0,
+            mediumPriorityCount: 0,
+            lowPriorityCount: 0
+          };
+        }
+        
+        // salesAvg와 status 제거 후 items에 추가
+        const { salesAvg, status: itemStatus, ...cleanItem } = item;
+        groupedByStatus[status].items.push(cleanItem);
+        groupedByStatus[status].count++;
+        groupedByStatus[status].totalValue += (cleanItem.estimatedStock || 0) * (cleanItem.price || 0);
+        
+        // 우선순위별 카운트
+        if (cleanItem.priority === 'high') groupedByStatus[status].highPriorityCount++;
+        else if (cleanItem.priority === 'medium') groupedByStatus[status].mediumPriorityCount++;
+        else groupedByStatus[status].lowPriorityCount++;
+      });
+      
+      // 최종 reportData 업데이트
+      reportData.length = 0;
+      reportData.push(...Object.values(groupedByStatus));
+    }
 
     // 추가 통계 계산
     const overallStats = await db.collection('products').aggregate([
