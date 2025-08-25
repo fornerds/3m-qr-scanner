@@ -8,7 +8,7 @@ router.post('/', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { storeId, productCode, productName, sessionId, source = 'manual' } = req.body;
+    const { storeId, productCode, productName, source = 'manual' } = req.body;
     
     // storeId 타입 통일 (문자열로 변환)
     const normalizedStoreId = String(storeId);
@@ -37,7 +37,7 @@ router.post('/', async (req, res) => {
       storeId: normalizedStoreId,
       productCode: normalizedProductCode,
       productName: productName.trim(),
-      sessionId: sessionId || 'unknown',
+
       source,
       timestamp: new Date(),
       createdAt: new Date()
@@ -47,8 +47,7 @@ router.post('/', async (req, res) => {
     // 중복 체크를 위한 고유 키
     const duplicateFilter = {
       storeId: normalizedStoreId,
-      productCode: normalizedProductCode,
-      sessionId: sessionId || 'unknown'
+      productCode: normalizedProductCode
     };
 
     const result = await db.collection('scan_records').updateOne(
@@ -105,7 +104,6 @@ router.get('/', async (req, res) => {
   try {
     const { 
       storeId, 
-      sessionId, 
       productCode,
       source,
       limit = 50, 
@@ -124,7 +122,7 @@ router.get('/', async (req, res) => {
     const matchStage = {};
     
     if (storeId) matchStage.storeId = String(storeId);
-    if (sessionId) matchStage.sessionId = sessionId;
+
     if (productCode) matchStage.productCode = String(productCode);
     if (source) matchStage.source = source;
     
@@ -191,7 +189,7 @@ router.get('/', async (req, res) => {
       },
       filters: {
         storeId,
-        sessionId,
+
         productCode,
         source,
         dateRange: startDate || endDate ? { startDate, endDate } : null

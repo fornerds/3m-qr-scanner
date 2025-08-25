@@ -9,7 +9,7 @@ const QRScanPage = () => {
   
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
-  const [sessionId, setSessionId] = useState(null);
+
   const [lastScannedCode, setLastScannedCode] = useState('');
   const [lastScanTime, setLastScanTime] = useState(0);
   const [scannedProducts, setScannedProducts] = useState(new Set()); // 이미 스캔한 제품들
@@ -302,32 +302,7 @@ const QRScanPage = () => {
     }
   };
 
-  // 세션 시작
-  const startSession = async () => {
-    try {
-      const response = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storeId: storeId,
-          userId: `user_${Date.now()}`, // 동적 사용자 ID 생성
-          startTime: new Date(),
-          status: 'active',
-          scannedItems: []
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setSessionId(data.sessionId);
-        console.log('세션 시작됨:', data.sessionId);
-      }
-    } catch (error) {
-      console.error('세션 시작 오류:', error);
-    }
-  };
+
 
   // 제품 캐시 프리로딩 (앱 시작 시 자주 스캔되는 제품들 미리 로드)
   const preloadPopularProducts = async () => {
@@ -423,7 +398,7 @@ const QRScanPage = () => {
             storeId: storeId,
             productCode: product.sku,
             productName: product.name,
-            sessionId: sessionId || 'manual-session-' + Date.now(),
+
             source: 'manual_selection'
           })
         });
@@ -533,7 +508,7 @@ const QRScanPage = () => {
             storeId: storeId,
             productCode,
             productName: product.name,
-            sessionId
+
           })
         });
         
@@ -687,7 +662,7 @@ const QRScanPage = () => {
               storeId: storeId, // URL에서 가져온 매장 ID
               productCode,
               productName: product.name,
-              sessionId
+  
             })
           });
           
@@ -920,9 +895,7 @@ const QRScanPage = () => {
         // 줌 초기화
         setCurrentZoom(1);
 
-        // 세션 시작
-        await startSession();
-        
+
         // 카메라가 로드된 후 터치 이벤트 추가
         setTimeout(() => {
           const video = document.querySelector('#qr-reader video');
@@ -1604,7 +1577,7 @@ const QRScanPage = () => {
           storeId: storeId,
           productCode: product.sku,
           productName: product.name,
-          sessionId: sessionId || 'ai-session-' + Date.now(),
+
           source: 'ai_analysis'
         })
       });

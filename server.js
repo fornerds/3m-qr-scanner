@@ -26,7 +26,7 @@ app.use('/api/stores', require('./routes/stores'));
 app.use('/api/inventory', require('./routes/inventory'));
 app.use('/api/qr-scan', require('./routes/qr-scan'));
 app.use('/api/scan-records', require('./routes/scan-records'));
-app.use('/api/sessions', require('./routes/sessions'));
+
 app.use('/api/inventory-report', require('./routes/inventory-report'));
 app.use('/api/ai-analyze-shelf', require('./routes/ai-analyze-shelf'));
 

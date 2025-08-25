@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { connectToDatabase } = require('../config/database');
 
-// 📱 QR 스캐너 세션 시작
+// QR 스캐너 세션 시작
 router.post('/start-camera', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { storeId, sessionId } = req.body;
-    console.log(`📱 카메라 세션 시작: 매장 ${storeId}, 세션 ${sessionId}`);
+    const { storeId } = req.body;
+    console.log(`카메라 세션 시작: 매장 ${storeId}`);
 
     if (!storeId) {
       return res.status(400).json({
@@ -27,7 +27,6 @@ router.post('/start-camera', async (req, res) => {
     });
 
     const cameraSession = {
-      sessionId: sessionId || 'session-' + Date.now(),
       storeId: String(storeId),
       status: 'active',
       startTime: new Date(),
@@ -38,7 +37,7 @@ router.post('/start-camera', async (req, res) => {
       // 기존 세션 업데이트
       await db.collection('camera_sessions').updateOne(
         { _id: existingSession._id },
-        { $set: { lastActivity: new Date(), sessionId: cameraSession.sessionId } }
+        { $set: { lastActivity: new Date() } }
       );
     } else {
       // 새 세션 생성
@@ -46,18 +45,17 @@ router.post('/start-camera', async (req, res) => {
     }
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 카메라 세션 시작 완료 (${responseTime}ms)`);
+    console.log(`카메라 세션 시작 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
       message: '카메라 세션이 시작되었습니다.',
-      sessionId: cameraSession.sessionId,
       responseTime
     });
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 카메라 세션 시작 오류 (${responseTime}ms):`, error);
+    console.error(`카메라 세션 시작 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -68,13 +66,13 @@ router.post('/start-camera', async (req, res) => {
   }
 });
 
-// 🔍 QR 코드 감지 처리
+// QR 코드 감지 처리
 router.post('/qr-detected', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { qrData, storeId, sessionId } = req.body;
-    console.log(`🔍 QR 코드 감지: ${qrData}, 매장: ${storeId}`);
+    const { qrData, storeId } = req.body;
+    console.log(`QR 코드 감지: ${qrData}, 매장: ${storeId}`);
 
     if (!qrData || !storeId) {
       return res.status(400).json({
@@ -107,15 +105,13 @@ router.post('/qr-detected', async (req, res) => {
                       product.salesAvg <= 130 ? 'medium' : 'low';
 
     // 세션 활동 업데이트 (비동기)
-    if (sessionId) {
-      db.collection('camera_sessions').updateOne(
-        { sessionId, storeId: String(storeId) },
-        { $set: { lastActivity: new Date() } }
-      ).catch(err => console.warn('세션 업데이트 실패:', err));
-    }
+    db.collection('camera_sessions').updateOne(
+      { storeId: String(storeId), status: 'active' },
+      { $set: { lastActivity: new Date() } }
+    ).catch(err => console.warn('세션 업데이트 실패:', err));
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ QR 코드 처리 완료 (${responseTime}ms): ${product.name}`);
+    console.log(`QR 코드 처리 완료 (${responseTime}ms): ${product.name}`);
 
     res.json({
       success: true,
@@ -130,7 +126,7 @@ router.post('/qr-detected', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ QR 코드 처리 오류 (${responseTime}ms):`, error);
+    console.error(`QR 코드 처리 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -141,20 +137,17 @@ router.post('/qr-detected', async (req, res) => {
   }
 });
 
-// 🛑 카메라 세션 종료
+// 카메라 세션 종료
 router.post('/stop-camera', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { storeId, sessionId } = req.body;
-    console.log(`🛑 카메라 세션 종료: 매장 ${storeId}, 세션 ${sessionId}`);
+    const { storeId } = req.body;
+    console.log(`카메라 세션 종료: 매장 ${storeId}`);
 
     const { db } = await connectToDatabase();
 
-    const filter = { storeId: String(storeId) };
-    if (sessionId) {
-      filter.sessionId = sessionId;
-    }
+    const filter = { storeId: String(storeId), status: 'active' };
 
     await db.collection('camera_sessions').updateMany(
       filter,
@@ -168,7 +161,7 @@ router.post('/stop-camera', async (req, res) => {
     );
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 카메라 세션 종료 완료 (${responseTime}ms)`);
+    console.log(`카메라 세션 종료 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -178,7 +171,7 @@ router.post('/stop-camera', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 카메라 세션 종료 오류 (${responseTime}ms):`, error);
+    console.error(`카메라 세션 종료 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -210,7 +203,7 @@ router.get('/', async (req, res) => {
       .toArray();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 활성 세션 조회 완료 (${responseTime}ms): ${sessions.length}개`);
+    console.log(`활성 세션 조회 완료 (${responseTime}ms): ${sessions.length}개`);
 
     res.json({
       success: true,
@@ -221,7 +214,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 활성 세션 조회 오류 (${responseTime}ms):`, error);
+    console.error(`활성 세션 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
