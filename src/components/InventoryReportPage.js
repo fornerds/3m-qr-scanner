@@ -11,21 +11,38 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 판매순위에 따른 우선순위 계산 함수
+  const calculatePriority = (rank) => {
+    if (rank <= 20) return 'high';
+    if (rank <= 60) return 'medium';
+    return 'low';
+  };
+
   // 미진열 제품만 필터링 (새로운 API 구조에 맞게 수정)
   const notDisplayedProducts = useMemo(() => {
     if (!reportData || !reportData.data) return [];
     
     // 새 API 구조: data 배열에서 missing 항목 찾기
     const missingData = reportData.data.find(item => item._id === 'missing');
-    return missingData ? missingData.items.map(item => ({
-      productCode: item.sku,
-      productName: item.name,
-      priority: item.importance || 'low',
-      status: 'not_displayed',
-      estimatedStock: item.estimatedStock || 0,
-      price: item.price || 0,
-      category: item.category || ''
-    })) : [];
+    
+    if (!missingData) return [];
+
+    // 각 제품의 순위를 계산하고 우선순위를 동적으로 설정
+    return missingData.items.map(item => {
+      const rank = getProductRank(item.sku);
+      const dynamicPriority = calculatePriority(rank);
+      
+      return {
+        productCode: item.sku,
+        productName: item.name,
+        priority: dynamicPriority, // 순위 기반 우선순위
+        status: 'not_displayed',
+        estimatedStock: item.estimatedStock || 0,
+        price: item.price || 0,
+        category: item.category || '',
+        rank: rank
+      };
+    });
   }, [reportData]);
 
   // 제품 순위 계산 (재고량 기준으로 변경)
@@ -463,7 +480,6 @@ const InventoryReportPage = () => {
 
           {/* 테이블 데이터 */}
                       {notDisplayedProducts.map((item, index) => {
-            const rank = getProductRank(item.productCode);
             return (
               <div 
                 key={index}
@@ -492,7 +508,7 @@ const InventoryReportPage = () => {
                     fontSize: '10px',
                     fontWeight: '500'
                   }}>
-                    {rank}위
+                    {item.rank}위
                   </span>
                 </div>
                 <div style={{ textAlign: 'center' }}>
