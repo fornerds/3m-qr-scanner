@@ -47,8 +47,12 @@ const InventoryStatusPage = () => {
         if (!storeResponse.ok) {
           throw new Error('매장 정보를 가져올 수 없습니다.');
         }
-        const stores = await storeResponse.json();
-        const currentStore = stores.find(s => s.id === storeId) || stores[0];
+        const storesResult = await storeResponse.json();
+        
+        // 새 API 응답 형태 처리: {success: true, data: [...]}
+        const storesData = storesResult.success ? storesResult.data : storesResult;
+        const storesArray = Array.isArray(storesData) ? storesData : [];
+        const currentStore = storesArray.find(s => s.id === storeId) || storesArray[0];
         setStore(currentStore);
 
         // 재고 현황 가져오기
