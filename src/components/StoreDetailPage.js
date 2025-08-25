@@ -140,30 +140,31 @@ const StoreDetailPage = () => {
     fetchStoreData();
   }, [storeId]);
 
-  // 페이지가 포커스될 때마다 데이터 새로고침 (스캔 후 돌아왔을 때)
+  // 페이지가 다른 탭에서 돌아왔을 때만 데이터 새로고침 (과도한 새로고침 방지)
   useEffect(() => {
+    let lastHiddenTime = null;
+    
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // 페이지가 보이게 될 때 데이터 새로고침
-        setTimeout(() => {
-          fetchStoreData();
-        }, 500); // 500ms 지연 후 새로고침
+      if (document.hidden) {
+        // 페이지가 숨겨질 때 시간 기록
+        lastHiddenTime = Date.now();
+      } else if (lastHiddenTime) {
+        // 페이지가 다시 보이게 될 때, 5초 이상 숨겨져 있었다면 새로고침
+        const hiddenDuration = Date.now() - lastHiddenTime;
+        if (hiddenDuration > 5000) { // 5초 이상 숨겨져 있었을 때만
+          setTimeout(() => {
+            fetchStoreData();
+          }, 500);
+        }
+        lastHiddenTime = null;
       }
     };
 
-    const handleFocus = () => {
-      // 페이지에 포커스가 오면 데이터 새로고침
-      setTimeout(() => {
-        fetchStoreData();
-      }, 500);
-    };
-
+    // focus 이벤트는 제거 (너무 자주 발생)
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
     };
   }, []);
 
