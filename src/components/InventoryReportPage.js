@@ -192,7 +192,7 @@ const InventoryReportPage = () => {
     }
 
     // 모바일에서 다운로드 확인 다이얼로그
-    const confirmDownload = window.confirm('재고 보고서를 HTML 파일로 다운로드하시겠습니까?');
+    const confirmDownload = window.confirm('보고서 파일로 다운로드하시겠습니까?');
     if (!confirmDownload) {
       return;
     }
