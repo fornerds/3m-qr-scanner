@@ -2433,27 +2433,103 @@ const QRScanPage = () => {
             </button>
           </div>
           
-          {!showProductList && (
-            <div style={{
-              textAlign: 'center',
-              color: '#6c757d',
-              fontSize: '14px',
-              padding: '20px 0'
-            }}>
+          {!showProductList && (() => {
+            const completed = scannedProducts.size + selectedProducts.size;
+            const total = allProducts.length || 150;
+            const percentage = Math.round((completed / total) * 100);
+            const progressColor = percentage >= 80 ? '#28a745' : percentage >= 50 ? '#ffc107' : percentage >= 20 ? '#fd7e14' : '#6c757d';
+            
+            return (
               <div style={{
-                fontSize: '32px',
-                marginBottom: '8px'
+                padding: '20px 16px',
+                background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                borderRadius: '12px',
+                margin: '0 8px',
+                border: `2px solid ${progressColor}20`
               }}>
-                {scannedProducts.size + selectedProducts.size}개
+                {/* 진행률 헤더 */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#343a40'
+                  }}>
+                    재고 체크 진행률
+                  </div>
+                  <div style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: progressColor
+                  }}>
+                    {percentage}%
+                  </div>
+                </div>
+
+                {/* 진행률 바 */}
+                <div style={{
+                  width: '100%',
+                  height: '8px',
+                  backgroundColor: '#e9ecef',
+                  borderRadius: '4px',
+                  overflow: 'hidden',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{
+                    width: `${percentage}%`,
+                    height: '100%',
+                    background: `linear-gradient(90deg, ${progressColor} 0%, ${progressColor}aa 100%)`,
+                    borderRadius: '4px',
+                    transition: 'width 0.5s ease-in-out'
+                  }} />
+                </div>
+
+                {/* 상세 정보 */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '12px'
+                }}>
+                  <div style={{
+                    fontSize: '28px',
+                    fontWeight: '700',
+                    color: progressColor
+                  }}>
+                    {completed}
+                  </div>
+                  <div style={{
+                    fontSize: '16px',
+                    color: '#6c757d'
+                  }}>
+                    / {total}개 완료
+                  </div>
+                </div>
+
+                {/* 상태 메시지 */}
+                <div style={{
+                  textAlign: 'center',
+                  fontSize: '13px',
+                  color: '#6c757d',
+                  lineHeight: '1.4'
+                }}>
+                  {percentage >= 90 ? '거의 완료되었습니다!' : 
+                   percentage >= 50 ? '절반 이상 완료되었습니다' :
+                   percentage >= 20 ? '꾸준히 진행 중입니다' :
+                   '시작이 반입니다! 화이팅!'}
+                  <br />
+                  <span style={{ fontSize: '12px', opacity: '0.8' }}>
+                    펼치기 버튼으로 전체 목록을 확인하세요
+                  </span>
+                </div>
               </div>
-              <div style={{ marginBottom: '4px', fontWeight: '500' }}>
-                전체 {allProducts.length || 150}개 중 완료
-              </div>
-              <div style={{ fontSize: '12px' }}>
-                펼치기 버튼을 눌러 전체 품목을 확인하세요
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {showProductList && (
             <div>
