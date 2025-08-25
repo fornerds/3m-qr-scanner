@@ -2496,8 +2496,13 @@ const QRScanPage = () => {
           </div>
           
           {!showProductList && (() => {
-            const completed = scannedProducts.size + selectedProducts.size;
-            const total = allProducts.length || 150;
+            // 중복 제거된 고유 제품 개수 계산
+            const uniqueScannedCodes = new Set([
+              ...Array.from(scannedProducts),
+              ...Array.from(selectedProducts)
+            ]);
+            const completed = uniqueScannedCodes.size;
+            const total = allProducts.length; // API에서 가져온 실제 제품 수 사용
             const percentage = Math.round((completed / total) * 100);
             const progressColor = percentage >= 80 ? '#28a745' : percentage >= 50 ? '#ffc107' : percentage >= 20 ? '#fd7e14' : '#6c757d';
             
