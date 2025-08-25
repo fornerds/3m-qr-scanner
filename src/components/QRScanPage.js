@@ -1764,6 +1764,7 @@ const QRScanPage = () => {
     const timer = setTimeout(() => {
       startCamera();
       preloadPopularProducts(); // 백그라운드에서 제품 캐싱
+      loadAllProducts(); // 전체 제품 리스트 로드 (필수!)
       loadExistingScanRecords(); // 기존 스캔 기록 불러오기
     }, 100);
     
@@ -2518,7 +2519,15 @@ const QRScanPage = () => {
             ]);
             const completed = uniqueScannedCodes.size;
             const total = allProducts.length; // API에서 가져온 실제 제품 수 사용
-            const percentage = Math.round((completed / total) * 100);
+            
+            // 안전한 진행률 계산 (0/0 = 0%, NaN 방지)
+            let percentage = 0;
+            if (total > 0) {
+              percentage = Math.round((completed / total) * 100);
+            } else if (completed > 0) {
+              percentage = 100; // 완료된 항목이 있지만 총 항목이 0인 경우
+            }
+            // total = 0, completed = 0인 경우 → 0% (기본값)
             const progressColor = percentage >= 80 ? '#28a745' : percentage >= 50 ? '#ffc107' : percentage >= 20 ? '#fd7e14' : '#6c757d';
             
             return (
