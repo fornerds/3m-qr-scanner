@@ -23,7 +23,7 @@ const StoreDetailPage = () => {
     const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
     
     if (diffInHours < 24) {
-      return '24시간';
+      return '24시간 이내';
     } else if (diffInDays < 2) {
       return '1일 전';
     } else if (diffInDays < 4) {

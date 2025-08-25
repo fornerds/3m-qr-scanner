@@ -18,33 +18,58 @@ const InventoryReportPage = () => {
     return 'low';
   }, []);
 
-  // 미진열 제품만 필터링 (API에서 제공하는 실제 판매 순위 사용)
-  const notDisplayedProducts = useMemo(() => {
+  // 전체 제품 현황 (진열 + 미진열) 표시
+  const allProducts = useMemo(() => {
     if (!reportData || !reportData.data) return [];
     
-    // 새 API 구조: data 배열에서 missing 항목 찾기
-    const missingData = reportData.data.find(item => item._id === 'missing');
+    const allItems = [];
     
-    if (!missingData) return [];
-
-    // API에서 제공하는 실제 판매 순위와 우선순위 사용
-    return missingData.items.map(item => {
-      // API에서 이미 계산된 rank와 priority 사용
-      const apiRank = item.rank || 1;
-      const apiPriority = item.priority || calculatePriority(apiRank);
-      
-      return {
-        productCode: item.sku,
-        productName: item.name,
-        priority: apiPriority, // API에서 제공하는 우선순위 사용
-        status: 'not_displayed',
-        estimatedStock: item.estimatedStock || 0,
-        price: item.price || 0,
-        category: item.category || '',
-        rank: apiRank, // API에서 제공하는 실제 판매 순위 사용
-        salesAvg: item.salesAvg || 0 // 평균 판매량 추가
-      };
-    });
+    // 미진열 제품 추가
+    const missingData = reportData.data.find(item => item._id === 'missing');
+    if (missingData) {
+      missingData.items.forEach(item => {
+        const apiRank = item.rank || 1;
+        const apiPriority = item.priority || calculatePriority(apiRank);
+        
+        allItems.push({
+          productCode: item.sku,
+          productName: item.name,
+          priority: apiPriority,
+          status: 'not_displayed',
+          estimatedStock: item.estimatedStock || 0,
+          price: item.price || 0,
+          category: item.category || '',
+          rank: apiRank,
+          salesAvg: item.salesAvg || 0,
+          lastScanned: null
+        });
+      });
+    }
+    
+    // 스캔된(진열된) 제품 추가
+    const scannedData = reportData.data.find(item => item._id === 'scanned');
+    if (scannedData) {
+      scannedData.items.forEach(item => {
+        const apiRank = item.rank || 1;
+        const apiPriority = item.priority || calculatePriority(apiRank);
+        
+        allItems.push({
+          productCode: item.sku,
+          productName: item.name,
+          priority: apiPriority,
+          status: 'displayed',
+          estimatedStock: item.estimatedStock || 0,
+          price: item.price || 0,
+          category: item.category || '',
+          rank: apiRank,
+          salesAvg: item.salesAvg || 0,
+          lastScanned: item.lastScanned
+        });
+      });
+    }
+    
+    // 판매순위로 정렬
+    return allItems.sort((a, b) => a.rank - b.rank);
   }, [reportData, calculatePriority]);
 
   // API에서 보고서 데이터와 매장 정보 가져오기
@@ -322,7 +347,7 @@ const InventoryReportPage = () => {
             fontWeight: 'bold', 
             color: 'white'
           }}>
-            미진열 현황 보고서
+            재고 현황 보고서
           </h1>
         </div>
 
@@ -445,7 +470,7 @@ const InventoryReportPage = () => {
           </p>
         </div>
 
-        {/* 미진열 상품 현황 */}
+        {/* 재고 현황 */}
         <div style={{
           backgroundColor: 'white',
           margin: '16px',
@@ -495,7 +520,7 @@ const InventoryReportPage = () => {
           </div>
 
           {/* 테이블 데이터 */}
-                      {notDisplayedProducts.map((item, index) => {
+                      {allProducts.map((item, index) => {
             return (
               <div 
                 key={index}
@@ -504,7 +529,7 @@ const InventoryReportPage = () => {
                   gridTemplateColumns: '1fr 2fr 0.8fr 0.8fr 0.8fr',
                   gap: '8px',
                   padding: '12px 16px',
-                  borderBottom: index < notDisplayedProducts.length - 1 ? '1px solid #f0f0f0' : 'none',
+                  borderBottom: index < allProducts.length - 1 ? '1px solid #f0f0f0' : 'none',
                   fontSize: '11px',
                   alignItems: 'center'
                 }}
