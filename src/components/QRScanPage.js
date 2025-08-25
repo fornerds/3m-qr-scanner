@@ -1493,13 +1493,16 @@ const QRScanPage = () => {
       const data = await response.json();
       
       if (data.success && data.data) {
-        // 스캔된 제품 코드들을 Set에 저장
+        // 스캔된 제품 코드들을 Set에 저장 (문자열로 정규화)
         const existingScannedProducts = new Set(
-          data.data.map(record => record.productCode)
+          data.data.map(record => String(record.productCode))
         );
         setScannedProducts(existingScannedProducts);
         
-        console.log(`기존 스캔 기록 ${data.data.length}개를 불러왔습니다.`);
+        console.log(`기존 스캔 기록 ${data.data.length}개를 불러왔습니다.`, {
+          sampleSKUs: Array.from(existingScannedProducts).slice(0, 5),
+          totalCount: existingScannedProducts.size
+        });
       }
     } catch (error) {
       console.error('기존 스캔 기록 로딩 오류:', error);
@@ -1535,7 +1538,24 @@ const QRScanPage = () => {
         ));
         
         // 스캔된 제품 리스트에 추가 (중요!)
-        setScannedProducts(prev => new Set([...prev, product.sku]));
+        setScannedProducts(prev => {
+          const newSet = new Set(prev);
+          const skuString = String(product.sku); // 문자열로 정규화
+          newSet.add(skuString);
+          console.log('AI 제품 등록 - 스캔된 제품 리스트 업데이트:', {
+            sku: skuString,
+            type: typeof skuString,
+            newSize: newSet.size
+          });
+          return newSet;
+        });
+        
+        // 선택된 제품에서도 제거 (이미 스캔된 제품이므로)
+        setSelectedProducts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(String(product.sku));
+          return newSet;
+        });
         
         // 스캔 결과에도 추가하여 하단 리스트에 표시
         setScanResult({
@@ -1545,11 +1565,31 @@ const QRScanPage = () => {
           source: 'AI 분석'
         });
         
+        // 리렌더링 강제를 위한 콘솔 로그
+        console.log(`AI 제품 등록 완료: ${product.sku} - ${product.name}`);
+        
       } else {
         if (saveResult.isDuplicate) {
           alert('이미 등록된 제품입니다.');
           // 중복이어도 리스트에는 추가 (이미 스캔된 상태로 표시)
-          setScannedProducts(prev => new Set([...prev, product.sku]));
+          setScannedProducts(prev => {
+            const newSet = new Set(prev);
+            const skuString = String(product.sku); // 문자열로 정규화
+            newSet.add(skuString);
+            console.log('중복 제품 - 스캔된 제품 리스트 업데이트:', {
+              sku: skuString,
+              type: typeof skuString,
+              newSize: newSet.size
+            });
+            return newSet;
+          });
+          
+          // 선택된 제품에서도 제거
+          setSelectedProducts(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(String(product.sku));
+            return newSet;
+          });
         } else {
           throw new Error(saveResult.message || '등록 실패');
         }
@@ -2429,9 +2469,23 @@ const QRScanPage = () => {
                     borderRadius: '8px'
                   }}>
                     {allProducts.map((product, index) => {
-                      const isScanned = scannedProducts.has(product.sku);
-                      const isSelected = selectedProducts.has(product.sku);
+                      const skuString = String(product.sku); // 문자열로 정규화
+                      const isScanned = scannedProducts.has(skuString);
+                      const isSelected = selectedProducts.has(skuString);
                       const isCompleted = isScanned || isSelected;
+                      
+                      // 디버깅: 첫 번째 제품의 상태 로그 (너무 많은 로그 방지)
+                      if (index === 0) {
+                        console.log('전체 품목 체크리스트 렌더링 - 첫 번째 제품:', {
+                          originalSku: product.sku,
+                          skuString,
+                          isScanned,
+                          scannedProductsSize: scannedProducts.size,
+                          hasThisSku: scannedProducts.has(skuString),
+                          skuType: typeof product.sku,
+                          normalizedSkuType: typeof skuString
+                        });
+                      }
                       
                       return (
                         <div
@@ -2446,7 +2500,7 @@ const QRScanPage = () => {
                             cursor: isScanned ? 'default' : 'pointer',
                             opacity: isScanned ? 0.6 : 1
                           }}
-                          onClick={() => !isScanned && toggleProductSelection(product.sku)}
+                          onClick={() => !isScanned && toggleProductSelection(skuString)}
                         >
                           {/* 체크박스 */}
                           <div style={{
