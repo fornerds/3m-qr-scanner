@@ -17,8 +17,11 @@ const StoreSelectPage = () => {
         if (!response.ok) {
           throw new Error('매장 목록을 가져올 수 없습니다.');
         }
-        const data = await response.json();
-        setStores(data);
+        const result = await response.json();
+        
+        // 새 API 응답 형태 처리: {success: true, data: [...]}
+        const storesData = result.success ? result.data : result;
+        setStores(Array.isArray(storesData) ? storesData : []);
       } catch (err) {
         console.error('매장 목록 조회 오류:', err);
         setError(err.message);

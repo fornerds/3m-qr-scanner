@@ -123,6 +123,7 @@ router.get('/', async (req, res) => {
     res.json({
       success: true,
       data: products,
+      products: products, // 기존 호환성을 위해 추가
       pagination: {
         currentPage: parseInt(page),
         totalPages: Math.ceil(totalCount / parseInt(limit)),
@@ -185,6 +186,10 @@ router.get('/sku/:sku', async (req, res) => {
     res.json({
       success: true,
       data: {
+        ...product,
+        importance
+      },
+      product: { // 기존 호환성을 위해 추가
         ...product,
         importance
       },
