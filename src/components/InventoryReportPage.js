@@ -11,24 +11,6 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 제품 순위 계산 (재고량 기준으로 변경)
-  const getProductRank = useCallback((productCode) => {
-    if (!reportData || !reportData.data) return 1;
-    
-    // 모든 아이템을 재고량 기준으로 정렬
-    const allItems = [];
-    reportData.data.forEach(group => {
-      if (group.items) {
-        allItems.push(...group.items);
-      }
-    });
-    
-    const sortedProducts = [...allItems].sort((a, b) => (b.estimatedStock || 0) - (a.estimatedStock || 0));
-    const rank = sortedProducts.findIndex(p => p.sku === productCode) + 1;
-    
-    return rank || 1;
-  }, [reportData]);
-
   // 판매순위에 따른 우선순위 계산 함수
   const calculatePriority = useCallback((rank) => {
     if (rank <= 20) return 'high';
@@ -36,7 +18,7 @@ const InventoryReportPage = () => {
     return 'low';
   }, []);
 
-  // 미진열 제품만 필터링 (새로운 API 구조에 맞게 수정)
+  // 미진열 제품만 필터링 (API에서 제공하는 실제 판매 순위 사용)
   const notDisplayedProducts = useMemo(() => {
     if (!reportData || !reportData.data) return [];
     
@@ -45,23 +27,25 @@ const InventoryReportPage = () => {
     
     if (!missingData) return [];
 
-    // 각 제품의 순위를 계산하고 우선순위를 동적으로 설정
+    // API에서 제공하는 실제 판매 순위와 우선순위 사용
     return missingData.items.map(item => {
-      const rank = getProductRank(item.sku);
-      const dynamicPriority = calculatePriority(rank);
+      // API에서 이미 계산된 rank와 priority 사용
+      const apiRank = item.rank || 1;
+      const apiPriority = item.priority || calculatePriority(apiRank);
       
       return {
         productCode: item.sku,
         productName: item.name,
-        priority: dynamicPriority, // 순위 기반 우선순위
+        priority: apiPriority, // API에서 제공하는 우선순위 사용
         status: 'not_displayed',
         estimatedStock: item.estimatedStock || 0,
         price: item.price || 0,
         category: item.category || '',
-        rank: rank
+        rank: apiRank, // API에서 제공하는 실제 판매 순위 사용
+        salesAvg: item.salesAvg || 0 // 평균 판매량 추가
       };
     });
-  }, [reportData, getProductRank, calculatePriority]);
+  }, [reportData, calculatePriority]);
 
   // API에서 보고서 데이터와 매장 정보 가져오기
   useEffect(() => {
