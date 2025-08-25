@@ -75,12 +75,11 @@ router.get('/', async (req, res) => {
           }
         }
       },
-      {
-        $project: {
-          scanInfo: 0,
-          salesAvg: 1 // salesAvg 필드 포함
+              {
+          $project: {
+            scanInfo: 0 // scanInfo 필드만 제외 (salesAvg는 자동 포함)
+          }
         }
-      }
     ];
 
     // 상세 리포트 vs 요약 리포트
