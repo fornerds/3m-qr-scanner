@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const InventoryReportPage = () => {
@@ -11,12 +11,30 @@ const InventoryReportPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 제품 순위 계산 (재고량 기준으로 변경)
+  const getProductRank = useCallback((productCode) => {
+    if (!reportData || !reportData.data) return 1;
+    
+    // 모든 아이템을 재고량 기준으로 정렬
+    const allItems = [];
+    reportData.data.forEach(group => {
+      if (group.items) {
+        allItems.push(...group.items);
+      }
+    });
+    
+    const sortedProducts = [...allItems].sort((a, b) => (b.estimatedStock || 0) - (a.estimatedStock || 0));
+    const rank = sortedProducts.findIndex(p => p.sku === productCode) + 1;
+    
+    return rank || 1;
+  }, [reportData]);
+
   // 판매순위에 따른 우선순위 계산 함수
-  const calculatePriority = (rank) => {
+  const calculatePriority = useCallback((rank) => {
     if (rank <= 20) return 'high';
     if (rank <= 60) return 'medium';
     return 'low';
-  };
+  }, []);
 
   // 미진열 제품만 필터링 (새로운 API 구조에 맞게 수정)
   const notDisplayedProducts = useMemo(() => {
@@ -43,25 +61,7 @@ const InventoryReportPage = () => {
         rank: rank
       };
     });
-  }, [reportData]);
-
-  // 제품 순위 계산 (재고량 기준으로 변경)
-  const getProductRank = (productCode) => {
-    if (!reportData || !reportData.data) return 1;
-    
-    // 모든 아이템을 재고량 기준으로 정렬
-    const allItems = [];
-    reportData.data.forEach(group => {
-      if (group.items) {
-        allItems.push(...group.items);
-      }
-    });
-    
-    const sortedProducts = [...allItems].sort((a, b) => (b.estimatedStock || 0) - (a.estimatedStock || 0));
-    const rank = sortedProducts.findIndex(p => p.sku === productCode) + 1;
-    
-    return rank || 1;
-  };
+  }, [reportData, getProductRank, calculatePriority]);
 
   // API에서 보고서 데이터와 매장 정보 가져오기
   useEffect(() => {
