@@ -1451,7 +1451,7 @@ const QRScanPage = () => {
 
           const standardizedDataUrl = canvas.toDataURL('image/jpeg', quality);
           
-          console.log('✅ 이미지 처리 완료:', {
+          console.log('이미지 처리 완료:', {
             원본: `${img.width}x${img.height} (${(img.width * img.height / 1000000).toFixed(1)}MP)`,
             처리후: `${width}x${height} (${(width * height / 1000000).toFixed(1)}MP)`,
             파일크기: `${Math.round(file.size / 1024)}KB → ${Math.round(standardizedDataUrl.length / 1024)}KB`,

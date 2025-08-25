@@ -66,19 +66,19 @@ async function connectToDatabase() {
     // 연결 이벤트 리스너 설정
     setupConnectionEventListeners(client);
 
-    console.log('✅ MongoDB 연결 성공');
-    console.log(`📊 데이터베이스: ${DB_NAME}`);
-    console.log(`🔗 연결 시간: ${lastConnectionTime.toISOString()}`);
+    console.log('MongoDB 연결 성공');
+    console.log(`데이터베이스: ${DB_NAME}`);
+    console.log(`연결 시간: ${lastConnectionTime.toISOString()}`);
     
     return { client, db };
   } catch (error) {
     connectionStatus = 'error';
     reconnectAttempts++;
     
-    console.error('❌ MongoDB 연결 오류:', error.message);
+    console.error('MongoDB 연결 오류:', error.message);
     
     if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-      console.log(`🔄 재연결 시도 ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+      console.log(`재연결 시도 ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
       await new Promise(resolve => setTimeout(resolve, 2000 * reconnectAttempts));
       return connectToDatabase();
     }
@@ -128,7 +128,7 @@ async function createOptimizedIndexes(db) {
       }
     }
     
-    console.log('📊 최적화된 인덱스 생성 완료');
+    console.log('최적화된 인덱스 생성 완료');
   } catch (error) {
     console.warn('인덱스 생성 중 일부 오류 발생:', error.message);
   }
@@ -143,7 +143,7 @@ function setupConnectionEventListeners(client) {
 
   client.on('serverHeartbeatSucceeded', () => {
     if (connectionStatus === 'unstable') {
-      console.log('✅ MongoDB 서버 하트비트 복구');
+      console.log('MongoDB 서버 하트비트 복구');
       connectionStatus = 'connected';
     }
   });
@@ -172,7 +172,7 @@ async function closeConnection() {
     cachedClient = null;
     cachedDb = null;
     connectionStatus = 'disconnected';
-    console.log('✅ MongoDB 연결 종료 완료');
+    console.log('MongoDB 연결 종료 완료');
   }
 }
 

@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 초고속 리포트 데이터 집계
+    // 초고속 리포트 데이터 집계
     const reportPipeline = [
       {
         $lookup: {

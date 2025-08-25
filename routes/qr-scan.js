@@ -84,7 +84,7 @@ router.post('/qr-detected', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 제품 조회 최적화
+    // 제품 조회 최적화
     const product = await db.collection('products').findOne({ 
       sku: String(qrData).trim() 
     });
@@ -182,13 +182,13 @@ router.post('/stop-camera', async (req, res) => {
   }
 });
 
-// 📊 활성 세션 조회
+// 활성 세션 조회
 router.get('/', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { storeId } = req.query;
-    console.log(`📊 활성 세션 조회: 매장 ${storeId || '전체'}`);
+    console.log(`활성 세션 조회: 매장 ${storeId || '전체'}`);
 
     const { db } = await connectToDatabase();
 

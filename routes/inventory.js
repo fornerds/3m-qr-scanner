@@ -2,13 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { connectToDatabase } = require('../config/database');
 
-// 📊 재고 현황 조회 (초고속 집계)
+// 재고 현황 조회 (초고속 집계)
 router.get('/', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { storeId } = req.query;
-    console.log(`📊 재고 현황 조회: 매장 ${storeId || '전체'}`);
+    console.log(`재고 현황 조회: 매장 ${storeId || '전체'}`);
 
     if (!storeId) {
       return res.status(400).json({
@@ -20,7 +20,7 @@ router.get('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 단일 Aggregation으로 전체 재고 현황 생성
+    // 단일 Aggregation으로 전체 재고 현황 생성
     const pipeline = [
       {
         $lookup: {
@@ -156,7 +156,7 @@ router.get('/', async (req, res) => {
     };
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 재고 현황 조회 완료 (${responseTime}ms): ${inventoryItems.length}개 제품`);
+    console.log(`재고 현황 조회 완료 (${responseTime}ms): ${inventoryItems.length}개 제품`);
 
     res.json({
       success: true,
@@ -169,7 +169,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 재고 현황 조회 오류 (${responseTime}ms):`, error);
+    console.error(`재고 현황 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -201,7 +201,7 @@ router.get('/trends', async (req, res) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - parseInt(days));
 
-    // 🚀 일별 스캔 트렌드 분석
+    // 일별 스캔 트렌드 분석
     const trendPipeline = [
       {
         $match: {
@@ -234,7 +234,7 @@ router.get('/trends', async (req, res) => {
     const trends = await db.collection('scan_records').aggregate(trendPipeline).toArray();
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 재고 트렌드 분석 완료 (${responseTime}ms)`);
+    console.log(`재고 트렌드 분석 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -250,7 +250,7 @@ router.get('/trends', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 재고 트렌드 분석 오류 (${responseTime}ms):`, error);
+    console.error(`재고 트렌드 분석 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,

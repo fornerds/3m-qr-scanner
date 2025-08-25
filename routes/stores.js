@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 단일 Aggregation으로 모든 데이터 가져오기 (초고속!)
+    // 단일 Aggregation으로 모든 데이터 가져오기 (초고속!)
     const pipeline = [
       // 1. 매장 정보 가져오기
       {
@@ -154,13 +154,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 특정 매장 상세 정보 조회 (더 빠른 버전)
+// 특정 매장 상세 정보 조회 (더 빠른 버전)
 router.get('/:id', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { id } = req.params;
-    console.log(`🏪 매장 상세 조회: ${id}`);
+    console.log(`매장 상세 조회: ${id}`);
 
     // 캐시 확인
     const cacheKey = getCacheKey('store_detail', { id });
@@ -311,7 +311,7 @@ router.post('/', async (req, res) => {
   
   try {
     const newStore = req.body;
-    console.log('🏪 새 매장 추가 요청:', newStore.name);
+    console.log(' 새 매장 추가 요청:', newStore.name);
 
     // 입력 데이터 검증
     if (!newStore.name || !newStore.address) {
@@ -325,7 +325,7 @@ router.post('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 중복 검사를 aggregation으로 최적화
+    // 중복 검사를 aggregation으로 최적화
     const duplicateCheck = await db.collection('stores').aggregate([
       {
         $match: {
@@ -446,7 +446,7 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-    console.log(`🏪 매장 수정 요청: ${id}`);
+    console.log(` 매장 수정 요청: ${id}`);
 
     // 입력 데이터 검증
     if (!updateData.name || !updateData.address) {
@@ -534,13 +534,13 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 🗑️ 매장 삭제 (관련 데이터도 함께 삭제)
+// 매장 삭제 (관련 데이터도 함께 삭제)
 router.delete('/:id', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { id: storeId } = req.params;
-    console.log(`🏪 매장 삭제 요청: ${storeId}`);
+    console.log(` 매장 삭제 요청: ${storeId}`);
 
     const { db } = await connectToDatabase();
 
@@ -555,9 +555,9 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    console.log(`🗑️ 매장 삭제 시작: ${existingStore.name}`);
+    console.log(`매장 삭제 시작: ${existingStore.name}`);
 
-    // 🚀 병렬로 관련 데이터 삭제 (트랜잭션 사용)
+    // 병렬로 관련 데이터 삭제 (트랜잭션 사용)
     const session = db.client.startSession();
     
     try {

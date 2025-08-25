@@ -107,12 +107,12 @@ process.on('SIGINT', () => {
 
 // 서버 시작
 const server = app.listen(PORT, () => {
-  console.log(`🚀 서버가 포트 ${PORT}에서 실행 중입니다.`);
-  console.log(`📝 환경: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🕐 시작 시간: ${new Date().toISOString()}`);
+  console.log(`서버가 포트 ${PORT}에서 실행 중입니다.`);
+  console.log(`환경: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`시작 시간: ${new Date().toISOString()}`);
   
   if (process.env.NODE_ENV !== 'production') {
-    console.log(`🔗 로컬 서버: http://localhost:${PORT}`);
+    console.log(`로컬 서버: http://localhost:${PORT}`);
   }
 });
 

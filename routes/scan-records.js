@@ -32,7 +32,7 @@ router.post('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 Upsert를 사용한 중복 방지 (원자적 연산)
+    // Upsert를 사용한 중복 방지 (원자적 연산)
     const scanRecord = {
       storeId: normalizedStoreId,
       productCode: normalizedProductCode,
@@ -216,7 +216,7 @@ router.get('/stats', async (req, res) => {
   
   try {
     const { storeId, period = '7d' } = req.query;
-    console.log(`📊 스캔 통계 조회: ${storeId}, 기간: ${period}`);
+    console.log(`스캔 통계 조회: ${storeId}, 기간: ${period}`);
 
     const { db } = await connectToDatabase();
 
@@ -240,7 +240,7 @@ router.get('/stats', async (req, res) => {
       matchStage.storeId = String(storeId);
     }
 
-    // 🚀 복합 통계를 단일 Aggregation으로 처리
+    // 복합 통계를 단일 Aggregation으로 처리
     const pipeline = [
       { $match: matchStage },
       {
@@ -327,7 +327,7 @@ router.get('/stats', async (req, res) => {
     };
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 스캔 통계 조회 완료 (${responseTime}ms)`);
+    console.log(`스캔 통계 조회 완료 (${responseTime}ms)`);
 
     res.json({
       success: true,
@@ -342,7 +342,7 @@ router.get('/stats', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 스캔 통계 조회 오류 (${responseTime}ms):`, error);
+    console.error(`스캔 통계 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -353,13 +353,13 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// 🗑️ 스캔 기록 삭제
+// 스캔 기록 삭제
 router.delete('/:id', async (req, res) => {
   const startTime = Date.now();
   
   try {
     const { id } = req.params;
-    console.log(`🗑️ 스캔 기록 삭제 요청: ${id}`);
+    console.log(`스캔 기록 삭제 요청: ${id}`);
 
     const { db } = await connectToDatabase();
 
@@ -383,7 +383,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    console.log(`✅ 스캔 기록 삭제 완료 (${responseTime}ms)`);
+    console.log(`스캔 기록 삭제 완료 (${responseTime}ms)`);
     
     res.json({
       success: true,
@@ -393,7 +393,7 @@ router.delete('/:id', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 스캔 기록 삭제 오류 (${responseTime}ms):`, error);
+    console.error(`스캔 기록 삭제 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -421,7 +421,7 @@ router.delete('/store/:storeId', async (req, res) => {
     });
 
     const responseTime = Date.now() - startTime;
-    console.log(`✅ 매장별 스캔 기록 삭제 완료 (${responseTime}ms): ${result.deletedCount}개`);
+    console.log(`매장별 스캔 기록 삭제 완료 (${responseTime}ms): ${result.deletedCount}개`);
 
     res.json({
       success: true,
@@ -433,7 +433,7 @@ router.delete('/store/:storeId', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 매장별 스캔 기록 삭제 오류 (${responseTime}ms):`, error);
+    console.error(`매장별 스캔 기록 삭제 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,

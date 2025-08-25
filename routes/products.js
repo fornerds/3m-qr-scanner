@@ -48,7 +48,7 @@ router.get('/', async (req, res) => {
 
     const { db } = await connectToDatabase();
 
-    // 🚀 Aggregation으로 고성능 검색 및 필터링
+    // Aggregation으로 고성능 검색 및 필터링
     const pipeline = [];
 
     // 매치 조건 구성
@@ -218,7 +218,7 @@ router.get('/categories/list', async (req, res) => {
 
     const { db } = await connectToDatabase();
     
-    // 🚀 단일 Aggregation으로 카테고리 통계 생성
+    // 단일 Aggregation으로 카테고리 통계 생성
     const categories = await db.collection('products').aggregate([
       { $match: { active: { $ne: false } } },
       {
@@ -322,7 +322,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
 
     console.log(`처리된 제품 개수: ${products.length}`);
 
-    // 🚀 Bulk 연산으로 성능 최적화
+    // Bulk 연산으로 성능 최적화
     const bulkOps = products.map(product => ({
       updateOne: {
         filter: { sku: product.sku },
@@ -371,7 +371,7 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// 🚀 최적화된 엑셀 파일 처리 함수
+// 최적화된 엑셀 파일 처리 함수
 async function processExcelFileOptimized(buffer) {
   try {
     const workbook = XLSX.read(buffer, { 
@@ -398,7 +398,7 @@ async function processExcelFileOptimized(buffer) {
     const dataRows = jsonData.slice(1);
     console.log(`원본 데이터 행 수: ${dataRows.length}`);
     
-    // 🚀 병렬 처리로 데이터 변환 최적화
+    // 병렬 처리로 데이터 변환 최적화
     const products = [];
     const batchSize = 1000;
     
