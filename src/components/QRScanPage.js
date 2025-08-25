@@ -2891,7 +2891,7 @@ const QRScanPage = () => {
                 fontWeight: '600',
                 color: '#333'
               }}>
-                🤖 병렬 AI 분석 결과 (3회 검증)
+                AI 매대 분석 결과
               </h3>
               <button
                 onClick={() => setShowAiResults(false)}
@@ -2977,17 +2977,7 @@ const QRScanPage = () => {
                     color: '#666',
                     marginBottom: '16px'
                   }}>
-                    3번의 병렬 AI 분석으로 {aiResults.length}개의 3M 제품을 발견했습니다. 신뢰도와 투표수를 확인 후 선택하여 등록하세요.
-                  </div>
-                  <div style={{
-                    fontSize: '12px',
-                    color: '#666',
-                    backgroundColor: '#f8f9fa',
-                    padding: '8px',
-                    borderRadius: '4px',
-                    marginBottom: '12px'
-                  }}>
-                    💡 <strong>투표 안내:</strong> 만장일치(3/3) > 다수결(2/3) > 소수의견(1/3) 순으로 정렬됩니다.
+                    {aiResults.length}개의 3M 제품이 감지되었습니다. 확인 후 재고로 등록하세요.
                   </div>
 
                   {aiResults.map((product, index) => (
@@ -3033,35 +3023,6 @@ const QRScanPage = () => {
                               marginTop: '4px'
                             }}>
                               신뢰도: {Math.round(product.confidence * 100)}%
-                              {product.votes && (
-                                <span style={{ marginLeft: '8px' }}>
-                                  • 투표: {product.votes}/3
-                                </span>
-                              )}
-                              {product.consensus && (
-                                <span style={{ 
-                                  marginLeft: '8px',
-                                  padding: '2px 6px',
-                                  borderRadius: '4px',
-                                  fontSize: '10px',
-                                  backgroundColor: product.consensus === 'unanimous' ? '#d4edda' : 
-                                                product.consensus === 'majority' ? '#fff3cd' : '#f8d7da',
-                                  color: product.consensus === 'unanimous' ? '#155724' : 
-                                        product.consensus === 'majority' ? '#856404' : '#721c24'
-                                }}>
-                                  {product.consensus === 'unanimous' ? '만장일치' : 
-                                   product.consensus === 'majority' ? '다수결' : '소수의견'}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          {product.detectedIn && (
-                            <div style={{
-                              fontSize: '11px',
-                              color: '#aaa',
-                              marginTop: '2px'
-                            }}>
-                              감지위치: {product.detectedIn}
                             </div>
                           )}
                         </div>
