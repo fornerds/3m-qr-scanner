@@ -3,7 +3,7 @@ const router = express.Router();
 const { connectToDatabase } = require('../config/database');
 const { ObjectId } = require('mongodb');
 
-// ⚡ 스캔 기록 생성 (중복 방지 최적화)
+// 스캔 기록 생성 (중복 방지 최적화)
 router.post('/', async (req, res) => {
   const startTime = Date.now();
   
@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
     const normalizedStoreId = String(storeId);
     const normalizedProductCode = String(productCode);
     
-    console.log('📝 스캔 기록 저장 요청:', { 
+    console.log('스캔 기록 저장 요청:', { 
       storeId: normalizedStoreId, 
       productCode: normalizedProductCode, 
       productName,
@@ -64,7 +64,7 @@ router.post('/', async (req, res) => {
 
     if (result.upsertedCount > 0) {
       // 새로 생성됨
-      console.log(`✅ 새 스캔 기록 저장 (${responseTime}ms):`, normalizedProductCode);
+      console.log(`새 스캔 기록 저장 (${responseTime}ms):`, normalizedProductCode);
       
       res.json({
         success: true,
@@ -75,7 +75,7 @@ router.post('/', async (req, res) => {
       });
     } else {
       // 이미 존재함 (중복)
-      console.log(`⚠️ 중복 스캔 기록 (${responseTime}ms):`, normalizedProductCode);
+      console.log(`중복 스캔 기록 (${responseTime}ms):`, normalizedProductCode);
       
       res.json({
         success: true,
@@ -87,7 +87,7 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 스캔 기록 저장 오류 (${responseTime}ms):`, error);
+    console.error(`스캔 기록 저장 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -98,7 +98,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// ⚡ 스캔 기록 조회 (페이징 및 필터링 최적화)
+// 스캔 기록 조회 (페이징 및 필터링 최적화)
 router.get('/', async (req, res) => {
   const startTime = Date.now();
   
@@ -116,11 +116,11 @@ router.get('/', async (req, res) => {
       endDate 
     } = req.query;
     
-    console.log('📊 스캔 기록 조회 요청:', { storeId, limit, offset });
+    console.log('스캔 기록 조회 요청:', { storeId, limit, offset });
 
     const { db } = await connectToDatabase();
 
-    // 🚀 Aggregation을 사용한 고성능 조회
+    // Aggregation을 사용한 고성능 조회
     const matchStage = {};
     
     if (storeId) matchStage.storeId = String(storeId);
@@ -176,7 +176,7 @@ router.get('/', async (req, res) => {
     const totalCount = totalCountResult[0]?.total || 0;
     const responseTime = Date.now() - startTime;
 
-    console.log(`✅ 스캔 기록 조회 완료 (${responseTime}ms): ${records.length}개 / 전체 ${totalCount}개`);
+    console.log(`스캔 기록 조회 완료 (${responseTime}ms): ${records.length}개 / 전체 ${totalCount}개`);
     
     res.json({
       success: true,
@@ -201,7 +201,7 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error(`❌ 스캔 기록 조회 오류 (${responseTime}ms):`, error);
+    console.error(`스캔 기록 조회 오류 (${responseTime}ms):`, error);
     
     res.status(500).json({
       success: false,
@@ -212,7 +212,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 📊 스캔 통계 조회 (초고속 집계)
+// 스캔 통계 조회 (초고속 집계)
 router.get('/stats', async (req, res) => {
   const startTime = Date.now();
   

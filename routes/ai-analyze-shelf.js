@@ -136,15 +136,15 @@ async function analyzeShelfWithAI(imageDataUrl, products) {
       imageFormat: imageDataUrl.split(';')[0].split(':')[1]
     });
 
-    // 🚀 병렬 AI 분석 (3회 동시 호출로 정확도 향상)
-    console.log('🔥 병렬 AI 분석 시작: 3회 동시 호출');
+    // 병렬 AI 분석 (3회 동시 호출로 정확도 향상)
+    console.log('병렬 AI 분석 시작: 3회 동시 호출');
     const startParallelTime = Date.now();
     
     // Promise.all로 3개의 API를 동시 병렬 호출
     const parallelPromises = Array.from({ length: 3 }, (_, index) => 
       callOpenAIVisionAPI(processedImageData, products, index + 1)
         .catch(error => {
-          console.warn(`❌ AI 호출 ${index + 1} 실패:`, error.message);
+          console.warn(`AI 호출 ${index + 1} 실패:`, error.message);
           return { error: error.message, products: [] };
         })
     );
@@ -152,7 +152,7 @@ async function analyzeShelfWithAI(imageDataUrl, products) {
     const parallelResults = await Promise.all(parallelPromises);
     const parallelTime = Date.now() - startParallelTime;
     
-    console.log(`🎯 병렬 AI 분석 완료 (${parallelTime}ms):`, parallelResults.map(r => 
+    console.log(`병렬 AI 분석 완료 (${parallelTime}ms):`, parallelResults.map(r => 
       r.error ? `오류: ${r.error}` : `${r.length}개 제품`
     ).join(', '));
     
@@ -160,11 +160,11 @@ async function analyzeShelfWithAI(imageDataUrl, products) {
     const successResults = parallelResults.filter(result => !result.error && Array.isArray(result));
     
     if (successResults.length === 0) {
-      console.error('❌ 모든 병렬 AI 호출 실패');
+      console.error('모든 병렬 AI 호출 실패');
       return [];
     }
     
-    // 🧠 결과 병합 및 투표 시스템
+    // 결과 병합 및 투표 시스템
     const mergedResults = mergeAIResults(successResults);
     
     return mergedResults;
@@ -225,15 +225,15 @@ async function processAndValidateImage(imageDataUrl) {
   }
 }
 
-// 🧠 AI 결과 병합 및 투표 시스템
+// AI 결과 병합 및 투표 시스템
 function mergeAIResults(results) {
-  console.log('🗳️ AI 결과 병합 시작:', results.map(r => r.length + '개'));
+  console.log('AI 결과 병합 시작:', results.map(r => r.length + '개'));
   
   // 모든 감지된 제품들을 SKU별로 집계
   const productVotes = new Map();
   
   results.forEach((resultArray, resultIndex) => {
-    console.log(`📊 결과 ${resultIndex + 1}:`, resultArray.map(p => p.name));
+    console.log(`결과 ${resultIndex + 1}:`, resultArray.map(p => p.name));
     
     resultArray.forEach(product => {
       const sku = product.sku;
@@ -258,7 +258,7 @@ function mergeAIResults(results) {
   });
   
   // 투표 결과 분석
-  console.log('🔍 투표 결과 분석:');
+  console.log('투표 결과 분석:');
   
   const finalProducts = [];
   const totalResults = results.length;
@@ -267,14 +267,14 @@ function mergeAIResults(results) {
     const avgConfidence = vote.confidenceSum / vote.votes;
     const votePercentage = (vote.votes / totalResults) * 100;
     
-    console.log(`📝 ${vote.product.name}:`, {
+    console.log(`${vote.product.name}:`, {
       votes: `${vote.votes}/${totalResults}`,
       percentage: `${votePercentage.toFixed(1)}%`,
       avgConfidence: avgConfidence.toFixed(2),
       appearances: vote.appearances
     });
     
-    // 🎯 새 전략: 1번이라도 감지되면 모두 포함 (사용자가 최종 선택)
+    // 새 전략: 1번이라도 감지되면 모두 포함 (사용자가 최종 선택)
     // 최소 신뢰도 0.6 이상만 필터링 (명백한 오류 제거)
     if (avgConfidence >= 0.6) {
       finalProducts.push({
@@ -289,7 +289,7 @@ function mergeAIResults(results) {
     }
   });
   
-  // 🏆 사용자 친화적 정렬: 만장일치 → 다수결 → 신뢰도 높은 순
+  // 사용자 친화적 정렬: 만장일치 → 다수결 → 신뢰도 높은 순
   finalProducts.sort((a, b) => {
     // 1순위: 만장일치
     if (a.consensus === 'unanimous' && b.consensus !== 'unanimous') return -1;
@@ -306,11 +306,11 @@ function mergeAIResults(results) {
     return b.confidence - a.confidence;
   });
   
-  console.log('🏆 최대 수집 결과:', finalProducts.length + '개 (사용자가 선택)');
+  console.log('최대 수집 결과:', finalProducts.length + '개 (사용자가 선택)');
   finalProducts.forEach((product, index) => {
-    const badge = product.consensus === 'unanimous' ? '🥇' : 
-                 product.consensus === 'majority' ? '🥈' : '🥉';
-    console.log(`${badge} ${index + 1}. ${product.name} (신뢰도: ${product.confidence.toFixed(2)}, 투표: ${product.votes}/${totalResults}, 감지위치: ${product.detectedIn})`);
+    const rank = product.consensus === 'unanimous' ? '[만장일치]' : 
+                 product.consensus === 'majority' ? '[다수결]' : '[소수의견]';
+    console.log(`${index + 1}. ${product.name} (신뢰도: ${product.confidence.toFixed(2)}, 투표: ${product.votes}/${totalResults}, ${rank})`);
   });
   
   return finalProducts;
@@ -331,10 +331,10 @@ async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1) {
   }
   
   try {
-    console.log(`🔍 === OpenAI Vision API 호출 ${callNumber} 시작 ===`);
+    console.log(`=== OpenAI Vision API 호출 ${callNumber} 시작 ===`);
     console.log('분석할 제품 수:', products.length);
 
-    // 🔍 AI에게 전달되는 제품 리스트 로깅 (모든 제품 전달)
+    // AI에게 전달되는 제품 리스트 로깅 (모든 제품 전달)
     const productList = products.map(p => `- ${p.name} (카테고리: ${p.category || 'N/A'})`).join('\n');
     console.log('=== AI에게 전달되는 제품 리스트 ===');
     console.log('총 제품 수:', products.length);
@@ -387,7 +387,7 @@ ${productList}
       temperature: 0.1
     };
 
-    // 🔍 OpenAI API 설정 로깅
+    // OpenAI API 설정 로깅
     console.log(`=== OpenAI API 요청 설정 (호출 ${callNumber}) ===`);
     console.log('모델:', requestBody.model);
     console.log('온도:', requestBody.temperature);
@@ -423,7 +423,7 @@ ${productList}
     // JSON 응답 안전하게 파싱
     const responseText = await response.text();
     
-    // 🔍 전체 OpenAI 응답 로깅
+    // 전체 OpenAI 응답 로깅
     console.log(`=== OpenAI 전체 응답 (호출 ${callNumber}) ===`);
     try {
       const responseObj = JSON.parse(responseText);
@@ -435,7 +435,7 @@ ${productList}
     let result;
     try {
       result = JSON.parse(responseText);
-      console.log(`✅ OpenAI API 응답 파싱 성공 (호출 ${callNumber})`);
+      console.log(`OpenAI API 응답 파싱 성공 (호출 ${callNumber})`);
     } catch (jsonError) {
       console.error('OpenAI API 응답 JSON 파싱 실패:', jsonError.message);
       console.error('응답 내용 (처음 500자):', responseText.substring(0, 500));
@@ -453,7 +453,7 @@ ${productList}
 
     const aiContent = result.choices[0].message.content;
     
-    // 🔍 AI가 생성한 텍스트 응답 로깅
+    // AI가 생성한 텍스트 응답 로깅
     console.log('=== OpenAI 텍스트 응답 ===');
     console.log(aiContent);
 
@@ -463,18 +463,18 @@ ${productList}
     
     // ```json 블록 처리
     if (cleanContent.startsWith('```json')) {
-      console.log('🔧 AI가 JSON 코드 블록으로 응답함, 정리 중...');
+      console.log('AI가 JSON 코드 블록으로 응답함, 정리 중...');
       cleanContent = cleanContent.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
       console.log('정리된 내용:', cleanContent);
     } else if (cleanContent.startsWith('```')) {
-      console.log('🔧 AI가 코드 블록으로 응답함, 정리 중...');
+      console.log('AI가 코드 블록으로 응답함, 정리 중...');
       cleanContent = cleanContent.replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
       console.log('정리된 내용:', cleanContent);
     }
     
     try {
       parsedResult = JSON.parse(cleanContent);
-      console.log('✅ JSON 파싱 성공 (정리된 내용)');
+      console.log('JSON 파싱 성공 (정리된 내용)');
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError);
       const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
@@ -485,13 +485,13 @@ ${productList}
       if (jsonMatch) {
         try {
           parsedResult = JSON.parse(jsonMatch[0]);
-          console.log('✅ JSON 파싱 성공 (정규식 매칭)');
+          console.log('JSON 파싱 성공 (정규식 매칭)');
         } catch (retryError) {
-          console.error('❌ JSON 파싱 재시도 실패:', retryError);
+          console.error('JSON 파싱 재시도 실패:', retryError);
           throw new Error(`JSON 파싱 실패: ${retryError.message}`);
         }
       } else {
-        console.error('❌ AI 응답에서 JSON 객체를 찾을 수 없습니다.');
+        console.error('AI 응답에서 JSON 객체를 찾을 수 없습니다.');
         throw new Error('AI 응답을 JSON으로 파싱할 수 없습니다.');
       }
     }
@@ -499,7 +499,7 @@ ${productList}
     // 응답 형식 검증 및 변환
     if (parsedResult.detectedProducts && Array.isArray(parsedResult.detectedProducts)) {
       const detectedProducts = parsedResult.detectedProducts.map(detected => {
-        console.log(`🔍 매칭 시도: AI 감지 제품 "${detected.name}"`);
+        console.log(`매칭 시도: AI 감지 제품 "${detected.name}"`);
         
         // 제품명으로 원본 제품 정보 찾기 (대소문자 구분 없이)
         const originalProduct = products.find(p => 
@@ -507,7 +507,7 @@ ${productList}
         );
         
         if (!originalProduct) {
-          console.warn(`❌ 매칭되지 않는 제품명: ${detected.name}`);
+          console.warn(`매칭되지 않는 제품명: ${detected.name}`);
           // 부분 매칭 시도 (포함 관계)
           const partialMatch = products.find(p => 
             p.name.toLowerCase().includes(detected.name.toLowerCase()) ||
@@ -515,7 +515,7 @@ ${productList}
           );
           
           if (partialMatch) {
-            console.log(`✅ 부분 매칭 성공: ${detected.name} → ${partialMatch.name}`);
+            console.log(`부분 매칭 성공: ${detected.name} → ${partialMatch.name}`);
             return {
               sku: partialMatch.sku,
               name: partialMatch.name,
@@ -525,12 +525,12 @@ ${productList}
               registered: false
             };
           } else {
-            console.log(`❌ 부분 매칭도 실패: ${detected.name}`);
+            console.log(`부분 매칭도 실패: ${detected.name}`);
             return null;
           }
         }
 
-        console.log(`✅ 완전 매칭 성공: ${detected.name}`);
+        console.log(`완전 매칭 성공: ${detected.name}`);
         return {
           sku: originalProduct.sku,
           name: originalProduct.name,
@@ -541,15 +541,15 @@ ${productList}
         };
       }).filter(Boolean); // null 값 제거
 
-      // 🔍 최종 파싱 결과 로깅
+      // 최종 파싱 결과 로깅
       console.log('=== 최종 파싱 결과 ===');
       console.log('파싱된 제품들:', JSON.stringify(detectedProducts, null, 2));
       console.log('유효한 제품 수:', detectedProducts.length);
 
-      console.log(`🎯 AI 호출 ${callNumber} 분석 완료: ${detectedProducts.length}개 제품 감지`);
+      console.log(`AI 호출 ${callNumber} 분석 완료: ${detectedProducts.length}개 제품 감지`);
       return detectedProducts;
     } else {
-      console.error('❌ AI 응답 형식이 예상과 다릅니다:', parsedResult);
+      console.error('AI 응답 형식이 예상과 다릅니다:', parsedResult);
       throw new Error('AI 응답 형식이 예상과 다릅니다.');
     }
 
@@ -562,7 +562,7 @@ ${productList}
 
 // Mock AI 응답 (API 키가 없거나 오류 시 사용)
 function getMockAIResponse(products) {
-  console.log('🔧 Mock AI 응답 생성 중...');
+  console.log('Mock AI 응답 생성 중...');
   
   const mockDetectedProducts = [];
   
@@ -591,7 +591,7 @@ function getMockAIResponse(products) {
     }
   }
   
-  console.log(`🎭 Mock 응답: ${mockDetectedProducts.length}개 제품 감지 시뮬레이션`);
+  console.log(`Mock 응답: ${mockDetectedProducts.length}개 제품 감지 시뮬레이션`);
   return mockDetectedProducts;
 }
 
