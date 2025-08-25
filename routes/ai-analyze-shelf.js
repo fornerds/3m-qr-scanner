@@ -497,8 +497,27 @@ ${productList}
     }
 
     // 응답 형식 검증 및 변환
-    if (parsedResult.detectedProducts && Array.isArray(parsedResult.detectedProducts)) {
-      const detectedProducts = parsedResult.detectedProducts.map(detected => {
+    let detectedProductsArray = [];
+    
+    // AI 응답이 직접 배열인 경우 (예: []) 또는 객체 형태인 경우 (예: {detectedProducts: []})
+    if (Array.isArray(parsedResult)) {
+      detectedProductsArray = parsedResult;
+      console.log('AI가 직접 배열 형태로 응답:', detectedProductsArray);
+    } else if (parsedResult.detectedProducts && Array.isArray(parsedResult.detectedProducts)) {
+      detectedProductsArray = parsedResult.detectedProducts;
+      console.log('AI가 객체 형태로 응답:', detectedProductsArray);
+    } else {
+      console.error('AI 응답 형식이 예상과 다릅니다:', parsedResult);
+      throw new Error('AI 응답 형식이 예상과 다릅니다.');
+    }
+    
+    // 빈 배열인 경우 처리
+    if (detectedProductsArray.length === 0) {
+      console.log(`AI 호출 ${callNumber} 분석 완료: 감지된 제품이 없습니다.`);
+      return [];
+    }
+    
+    const detectedProducts = detectedProductsArray.map(detected => {
         console.log(`매칭 시도: AI 감지 제품 "${detected.name}"`);
         
         // 제품명으로 원본 제품 정보 찾기 (대소문자 구분 없이)
@@ -548,10 +567,6 @@ ${productList}
 
       console.log(`AI 호출 ${callNumber} 분석 완료: ${detectedProducts.length}개 제품 감지`);
       return detectedProducts;
-    } else {
-      console.error('AI 응답 형식이 예상과 다릅니다:', parsedResult);
-      throw new Error('AI 응답 형식이 예상과 다릅니다.');
-    }
 
   } catch (error) {
     console.error('OpenAI Vision API 호출 오류:', error);
