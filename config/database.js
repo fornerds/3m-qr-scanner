@@ -4,16 +4,13 @@ const { MongoClient } = require('mongodb');
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/3m-inventory';
 const DB_NAME = '3m-inventory';
 
-// 연결 풀 설정 (성능 최적화)
+// 연결 풀 설정 (성능 최적화, MongoDB 6.x 호환)
 const CLIENT_OPTIONS = {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   maxPoolSize: 10, // 최대 연결 풀 크기
   minPoolSize: 2,  // 최소 연결 풀 크기
   maxIdleTimeMS: 30000, // 30초 후 유휴 연결 종료
   serverSelectionTimeoutMS: 5000, // 5초 타임아웃
   socketTimeoutMS: 30000, // 소켓 타임아웃
-  bufferMaxEntries: 0, // 버퍼링 비활성화
   retryWrites: true,
   retryReads: true,
   compressors: ['zlib'], // 압축 사용
