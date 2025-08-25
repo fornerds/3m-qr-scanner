@@ -12,18 +12,18 @@ const StoreListPage = () => {
 
   const sortOptions = ['최근 방문순', '이름순'];
 
-  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
-  const getRelativeTime = (lastVisit) => {
-    if (!lastVisit) return '방문 기록 없음';
+  // lastScanTime 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastScanTime) => {
+    if (!lastScanTime) return '방문 기록 없음';
     
-    const visitDate = new Date(lastVisit);
+    const visitDate = new Date(lastScanTime);
     const now = new Date();
     const diffInMs = now - visitDate;
     const diffInHours = diffInMs / (1000 * 60 * 60);
     const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
     
     if (diffInHours < 24) {
-      return '24시간';
+      return '24시간 이내';
     } else if (diffInDays < 2) {
       return '1일 전';
     } else if (diffInDays < 4) {
@@ -78,9 +78,9 @@ const StoreListPage = () => {
       
       case '최근 방문순':
       default:
-        // lastVisit 날짜를 기준으로 정렬 (최신 날짜가 먼저)
-        const dateA = a.lastVisit ? new Date(a.lastVisit) : new Date(0);
-        const dateB = b.lastVisit ? new Date(b.lastVisit) : new Date(0);
+        // lastScanTime 날짜를 기준으로 정렬 (최신 날짜가 먼저)
+        const dateA = a.lastScanTime ? new Date(a.lastScanTime) : new Date(0);
+        const dateB = b.lastScanTime ? new Date(b.lastScanTime) : new Date(0);
         return dateB - dateA;
     }
   });
@@ -373,7 +373,7 @@ const StoreListPage = () => {
                         color: '#999'
                       }}>
                         <i className="fas fa-clock" style={{ marginRight: '4px', fontSize: '10px' }}></i>
-                        {getRelativeTime(store.lastVisit)}
+                        {getRelativeTime(store.lastScanTime)}
                       </div>
                     </div>
 
