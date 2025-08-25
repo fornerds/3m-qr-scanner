@@ -835,7 +835,32 @@ const QRScanPage = () => {
 
       // Html5Qrcode 직접 사용으로 바로 카메라 시작
       try {
+        // DOM 요소 존재 확인
+        const qrReaderElement = document.getElementById("qr-reader");
+        if (!qrReaderElement) {
+          throw new Error('QR Reader DOM 요소를 찾을 수 없습니다.');
+        }
+        
+        // 기존 스캐너가 있다면 정리
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+            scannerRef.current.clear();
+          } catch (e) {
+            console.log('기존 스캐너 정리 중 무시 가능한 오류:', e);
+          }
+          scannerRef.current = null;
+        }
+        
+        // 새 스캐너 인스턴스 생성
         scannerRef.current = new Html5Qrcode("qr-reader");
+        
+        // 스캐너 생성 확인
+        if (!scannerRef.current) {
+          throw new Error('Html5Qrcode 인스턴스 생성에 실패했습니다.');
+        }
+        
+        console.log('Html5Qrcode 인스턴스 생성 성공');
         
         // 카메라 설정
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
@@ -875,12 +900,19 @@ const QRScanPage = () => {
           console.log('카메라 목록 조회 실패, 기본 설정 사용:', err);
         }
         
-        await scannerRef.current.start(
-          cameraId,
-          cameraConfig,
-          qrCodeSuccessCallback,
-          onScanError
-        );
+        // 카메라 시작 전 최종 확인
+        if (scannerRef.current && typeof scannerRef.current.start === 'function') {
+          console.log('카메라 시작 시도:', { cameraId, cameraConfig });
+          await scannerRef.current.start(
+            cameraId,
+            cameraConfig,
+            qrCodeSuccessCallback,
+            onScanError
+          );
+          console.log('카메라 시작 성공');
+        } else {
+          throw new Error('스캐너 인스턴스가 유효하지 않습니다.');
+        }
 
         setIsScanning(true);
         setScanStatus(`바코드 스캔 중...`);
@@ -953,8 +985,30 @@ const QRScanPage = () => {
         // 자동으로 단계적 설정으로 재시도
         setTimeout(() => tryDifferentCameraSettings(), 300);
       } else {
-      setScanStatus('카메라 접근 실패');
-        alert(`카메라 오류: ${error.message || '알 수 없는 오류가 발생했습니다.'}`);
+        setScanStatus('카메라 접근 실패');
+        
+        // 더 구체적인 오류 메시지 제공
+        let userMessage = '카메라 접근 중 오류가 발생했습니다.';
+        
+        if (error && error.message) {
+          if (error.message.includes('null') || error.message.includes('reading \'start\'')) {
+            userMessage = '카메라 초기화에 실패했습니다. 페이지를 새로고침하고 다시 시도해주세요.';
+          } else if (error.message.includes('device')) {
+            userMessage = '카메라 장치에 문제가 있습니다. 다른 브라우저나 기기에서 시도해보세요.';
+          } else if (error.message.includes('permission') || error.message.includes('권한')) {
+            userMessage = '카메라 권한을 허용해주세요.';
+          } else {
+            userMessage = `카메라 오류: ${error.message}`;
+          }
+        }
+        
+        console.error('카메라 상세 오류:', {
+          name: error?.name,
+          message: error?.message,
+          stack: error?.stack
+        });
+        
+        alert(userMessage + '\n\n해결 방법:\n1. 페이지 새로고침\n2. 브라우저 재시작\n3. 다른 브라우저 시도');
       }
     }
   };
@@ -1154,19 +1208,32 @@ const QRScanPage = () => {
         // 잠깐 대기
         await new Promise(resolve => setTimeout(resolve, 200));
 
+        // 새 스캐너 인스턴스 생성 및 검증
         scannerRef.current = new Html5Qrcode("qr-reader");
+        
+        if (!scannerRef.current) {
+          throw new Error('Html5Qrcode 인스턴스 생성에 실패했습니다.');
+        }
+        
+        console.log('Html5Qrcode 인스턴스 생성 성공 (재시작)');
         
         const qrCodeSuccessCallback = (decodedText, decodedResult) => {
           onScanSuccess(decodedText, decodedResult);
         };
 
-        // 카메라 시작
-        await scannerRef.current.start(
-          { facingMode: "environment" },
-          setting.config,
-          qrCodeSuccessCallback,
-          () => {} // 에러 무시
-        );
+        // 카메라 시작 전 최종 확인
+        if (scannerRef.current && typeof scannerRef.current.start === 'function') {
+          console.log('카메라 재시작 시도');
+          await scannerRef.current.start(
+            { facingMode: "environment" },
+            setting.config,
+            qrCodeSuccessCallback,
+            () => {} // 에러 무시
+          );
+          console.log('카메라 재시작 성공');
+        } else {
+          throw new Error('스캐너 인스턴스가 유효하지 않습니다 (재시작).');
+        }
 
         setIsScanning(true);
         setScanStatus(`바코드 스캔 중...`);
@@ -1468,9 +1535,24 @@ const QRScanPage = () => {
       const analysisResult = await analysisResponse.json();
 
       if (analysisResult.success) {
-        setAiResults(analysisResult.detectedProducts);
+        // 새 API 형태와 기존 형태 모두 지원
+        const detectedProducts = analysisResult.data || analysisResult.detectedProducts || [];
+        
+        console.log('AI 분석 결과:', {
+          totalDetected: detectedProducts.length,
+          products: detectedProducts,
+          meta: analysisResult.meta
+        });
+        
+        setAiResults(detectedProducts);
         setShowAiResults(true);
-        setScanStatus('AI 분석 완료');
+        
+        // 감지된 제품 수에 따른 상태 메시지
+        if (detectedProducts.length > 0) {
+          setScanStatus(`AI 분석 완료 - ${detectedProducts.length}개 제품 감지됨`);
+        } else {
+          setScanStatus('AI 분석 완료 - 감지된 제품 없음');
+        }
       } else {
         throw new Error(analysisResult.message || 'AI 분석에 실패했습니다.');
       }
@@ -2770,7 +2852,7 @@ const QRScanPage = () => {
       </div>
 
       {/* AI 분석 결과 모달 */}
-      {showAiResults && aiResults && (
+      {showAiResults && aiResults !== null && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -2862,11 +2944,31 @@ const QRScanPage = () => {
               {aiResults.length === 0 ? (
                 <div style={{
                   textAlign: 'center',
-                  color: '#666',
-                  fontSize: '16px',
                   padding: '40px 20px'
                 }}>
-                  매대에서 3M 제품을 찾지 못했습니다.
+                  <div style={{
+                    fontSize: '48px',
+                    marginBottom: '16px'
+                  }}>
+                    🔍
+                  </div>
+                  <div style={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: '12px'
+                  }}>
+                    매대에서 3M 제품을 찾지 못했습니다
+                  </div>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#666',
+                    lineHeight: '1.5'
+                  }}>
+                    • 조명이 충분한지 확인하세요<br/>
+                    • 제품이 명확하게 보이도록 촬영하세요<br/>
+                    • 다른 각도에서 다시 시도해보세요
+                  </div>
                 </div>
               ) : (
                 <>
