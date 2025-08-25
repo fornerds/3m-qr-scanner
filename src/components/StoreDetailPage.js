@@ -12,11 +12,11 @@ const StoreDetailPage = () => {
   const [showProductList, setShowProductList] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
 
-  // lastVisit 날짜를 상대적 시간으로 변환하는 함수
-  const getRelativeTime = (lastVisit) => {
-    if (!lastVisit) return '방문 기록 없음';
+  // lastScanTime 날짜를 상대적 시간으로 변환하는 함수
+  const getRelativeTime = (lastScanTime) => {
+    if (!lastScanTime) return '방문 기록 없음';
     
-    const visitDate = new Date(lastVisit);
+    const visitDate = new Date(lastScanTime);
     const now = new Date();
     const diffInMs = now - visitDate;
     const diffInHours = diffInMs / (1000 * 60 * 60);
@@ -89,7 +89,13 @@ const StoreDetailPage = () => {
         }
         const inventoryData = await inventoryResponse.json();
         console.log('재고 현황 API 응답:', inventoryData);
-        setInventory(inventoryData);
+        
+        // API 응답 구조에 맞게 inventory 설정
+        setInventory({
+          ...inventoryData.summary, // summary의 모든 필드를 최상위로
+          data: inventoryData.data,
+          notDisplayedProducts: inventoryData.data || []
+        });
 
         // 전체 제품 리스트 가져오기
         const productsResponse = await fetch('/api/products?limit=1000');
@@ -348,7 +354,7 @@ const StoreDetailPage = () => {
             gap: '4px'
           }}>
             <i className="fas fa-clock" style={{ fontSize: '10px' }}></i>
-            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '방문 기록 없음'}
+            마지막 방문: {store?.lastScanTime ? getRelativeTime(store.lastScanTime) : '방문 기록 없음'}
           </div>
         </div>
       </div>
@@ -377,7 +383,7 @@ const StoreDetailPage = () => {
             fontSize: '14px',
             color: '#666'
           }}>
-            마지막 방문: {store?.lastVisit ? getRelativeTime(store.lastVisit) : '방문 기록 없음'}
+            마지막 방문: {store?.lastScanTime ? getRelativeTime(store.lastScanTime) : '방문 기록 없음'}
           </span>
         </div>
         
