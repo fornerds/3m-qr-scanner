@@ -30,8 +30,11 @@ const StoreManagement = () => {
     try {
       setLoading(true);
       const response = await fetch('/api/stores');
-      const data = await response.json();
-      setStores(data);
+      const result = await response.json();
+      
+      // 새 API 응답 형태 처리: {success: true, data: [...]}
+      const storesData = result.success ? result.data : result;
+      setStores(Array.isArray(storesData) ? storesData : []);
     } catch (error) {
       console.error('매장 목록 조회 오류:', error);
     } finally {

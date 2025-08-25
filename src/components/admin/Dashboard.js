@@ -31,22 +31,25 @@ const Dashboard = () => {
       
       // 매장 수 조회
       const storesResponse = await fetch('/api/stores');
-      const storesData = await storesResponse.json();
+      const storesResult = await storesResponse.json();
+      const stores = storesResult.success ? storesResult.data : storesResult;
       
       // 제품 수 조회
       const productsResponse = await fetch('/api/products');
-      const productsData = await productsResponse.json();
-      console.log('제품 데이터 응답:', productsData); // 디버깅용
+      const productsResult = await productsResponse.json();
+      const products = productsResult.success ? (productsResult.data || productsResult.products) : productsResult;
+      console.log('제품 데이터 응답:', productsResult); // 디버깅용
       
       // 스캔 기록 수 조회
       const scansResponse = await fetch('/api/scan-records');
-      const scansData = await scansResponse.json();
+      const scansResult = await scansResponse.json();
+      const scans = scansResult.success ? scansResult.data : scansResult;
       
       setStats({
-        totalStores: storesData.length || 0,
-        totalProducts: productsData.products?.length || productsData.length || 0,
-        totalScans: scansData.length || 0,
-        recentActivity: scansData.slice(0, 5) || []
+        totalStores: Array.isArray(stores) ? stores.length : (storesResult.totalStores || 0),
+        totalProducts: Array.isArray(products) ? products.length : (productsResult.pagination?.totalCount || 0),
+        totalScans: Array.isArray(scans) ? scans.length : (scansResult.pagination?.total || 0),
+        recentActivity: Array.isArray(scans) ? scans.slice(0, 5) : []
       });
     } catch (error) {
       console.error('대시보드 데이터 조회 오류:', error);
