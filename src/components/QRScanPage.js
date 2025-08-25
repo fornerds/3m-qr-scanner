@@ -2792,15 +2792,6 @@ const QRScanPage = () => {
                     (scanStatus.includes('권한') || scanStatus.includes('접근 실패') || scanStatus.includes('초기화 실패')) ? '#dc3545' : '#6c757d'
             }}>
               {scanStatus || (isScanning ? '스캔 중...' : '스캔 준비')}
-              {isScanning && (
-                <div style={{
-                  fontSize: '12px',
-                  opacity: 0.8,
-                  marginTop: '2px'
-                }}>
-                  {CAMERA_PRESETS[currentSetting]?.name}
-                </div>
-              )}
             </span>
           </div>
           
