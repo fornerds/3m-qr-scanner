@@ -274,28 +274,43 @@ function mergeAIResults(results) {
       appearances: vote.appearances
     });
     
-    // 투표 기준: 50% 이상 또는 신뢰도가 매우 높은 경우 (0.9+)
-    if (vote.votes >= Math.ceil(totalResults * 0.5) || avgConfidence >= 0.9) {
+    // 🎯 새 전략: 1번이라도 감지되면 모두 포함 (사용자가 최종 선택)
+    // 최소 신뢰도 0.6 이상만 필터링 (명백한 오류 제거)
+    if (avgConfidence >= 0.6) {
       finalProducts.push({
         ...vote.product,
-        confidence: Math.min(avgConfidence + (vote.votes - 1) * 0.05, 1.0), // 투표 보너스
+        confidence: Math.min(avgConfidence + (vote.votes - 1) * 0.03, 1.0), // 약간의 투표 보너스
         votes: vote.votes,
         votePercentage: votePercentage,
-        consensus: vote.votes === totalResults ? 'unanimous' : 'majority'
+        consensus: vote.votes === totalResults ? 'unanimous' : 
+                  vote.votes >= Math.ceil(totalResults * 0.5) ? 'majority' : 'minority',
+        detectedIn: vote.appearances.map(a => `호출${a.resultIndex}`).join(', ')
       });
     }
   });
   
-  // 신뢰도 순으로 정렬
+  // 🏆 사용자 친화적 정렬: 만장일치 → 다수결 → 신뢰도 높은 순
   finalProducts.sort((a, b) => {
+    // 1순위: 만장일치
     if (a.consensus === 'unanimous' && b.consensus !== 'unanimous') return -1;
     if (b.consensus === 'unanimous' && a.consensus !== 'unanimous') return 1;
+    
+    // 2순위: 다수결
+    if (a.consensus === 'majority' && b.consensus === 'minority') return -1;
+    if (b.consensus === 'majority' && a.consensus === 'minority') return 1;
+    
+    // 3순위: 투표 수
+    if (a.votes !== b.votes) return b.votes - a.votes;
+    
+    // 4순위: 신뢰도
     return b.confidence - a.confidence;
   });
   
-  console.log('🏆 최종 선별 결과:', finalProducts.length + '개');
+  console.log('🏆 최대 수집 결과:', finalProducts.length + '개 (사용자가 선택)');
   finalProducts.forEach((product, index) => {
-    console.log(`${index + 1}. ${product.name} (신뢰도: ${product.confidence.toFixed(2)}, 투표: ${product.votes}/${totalResults}, 합의: ${product.consensus})`);
+    const badge = product.consensus === 'unanimous' ? '🥇' : 
+                 product.consensus === 'majority' ? '🥈' : '🥉';
+    console.log(`${badge} ${index + 1}. ${product.name} (신뢰도: ${product.confidence.toFixed(2)}, 투표: ${product.votes}/${totalResults}, 감지위치: ${product.detectedIn})`);
   });
   
   return finalProducts;
