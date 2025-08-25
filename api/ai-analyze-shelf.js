@@ -27,6 +27,21 @@ export default async function handler(req, res) {
       });
     }
 
+    // 이미지 크기 체크 (Vercel 1MB 제한 대응)
+    const imageSizeInBytes = Math.ceil(image.length * 3/4); // Base64는 실제 크기의 약 4/3
+    const maxSizeInMB = 0.8; // 800KB 제한 (여유분 포함)
+    const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
+
+    if (imageSizeInBytes > maxSizeInBytes) {
+      return res.status(413).json({
+        success: false,
+        message: `이미지 크기가 너무 큽니다. 최대 ${maxSizeInMB}MB까지 지원합니다. 현재 크기: ${(imageSizeInBytes / 1024 / 1024).toFixed(2)}MB`,
+        error: 'IMAGE_TOO_LARGE',
+        currentSize: imageSizeInBytes,
+        maxSize: maxSizeInBytes
+      });
+    }
+
     // 다양한 이미지 형식 지원
     const supportedFormats = ['data:image/jpeg', 'data:image/jpg', 'data:image/png', 'data:image/webp', 'data:image/heic', 'data:image/heif'];
     const hasValidFormat = supportedFormats.some(format => image.toLowerCase().startsWith(format.toLowerCase()));
@@ -43,6 +58,33 @@ export default async function handler(req, res) {
       return res.status(400).json({
         success: false,
         message: '제품 리스트가 유효하지 않습니다.'
+      });
+    }
+
+    // 제품 리스트 크기 제한 (성능 및 메모리 최적화)
+    if (products.length > 1000) {
+      return res.status(413).json({
+        success: false,
+        message: `제품 리스트가 너무 큽니다. 최대 1000개까지 지원합니다. 현재: ${products.length}개`,
+        error: 'PRODUCT_LIST_TOO_LARGE',
+        currentCount: products.length,
+        maxCount: 1000
+      });
+    }
+
+    // 전체 요청 크기 체크
+    const requestSizeInBytes = JSON.stringify(req.body).length;
+    const maxRequestSizeInMB = 0.9; // 900KB 제한
+    const maxRequestSizeInBytes = maxRequestSizeInMB * 1024 * 1024;
+
+    if (requestSizeInBytes > maxRequestSizeInBytes) {
+      return res.status(413).json({
+        success: false,
+        message: `전체 요청 크기가 너무 큽니다. 최대 ${maxRequestSizeInMB}MB까지 지원합니다. 현재 크기: ${(requestSizeInBytes / 1024 / 1024).toFixed(2)}MB`,
+        error: 'REQUEST_TOO_LARGE',
+        currentSize: requestSizeInBytes,
+        maxSize: maxRequestSizeInBytes,
+        suggestion: '이미지 품질을 낮추거나 크기를 줄여서 다시 시도해주세요.'
       });
     }
 
