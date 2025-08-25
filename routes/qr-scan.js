@@ -110,6 +110,17 @@ router.post('/qr-detected', async (req, res) => {
       { $set: { lastActivity: new Date() } }
     ).catch(err => console.warn('세션 업데이트 실패:', err));
 
+    // 매장 방문 기록 업데이트 (비동기)
+    db.collection('stores').updateOne(
+      { _id: String(storeId) },
+      { 
+        $set: { 
+          lastVisit: new Date(),
+          updatedAt: new Date()
+        } 
+      }
+    ).catch(err => console.warn('매장 방문 기록 업데이트 실패:', err));
+
     const responseTime = Date.now() - startTime;
     console.log(`QR 코드 처리 완료 (${responseTime}ms): ${product.name}`);
 

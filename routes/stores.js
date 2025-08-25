@@ -162,7 +162,20 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     console.log(`매장 상세 조회: ${id}`);
 
-    // 캐시 확인
+    const { db } = await connectToDatabase();
+
+    // 매장 방문 기록 업데이트 (비동기, 응답 속도에 영향 없음)
+    db.collection('stores').updateOne(
+      { _id: id },
+      { 
+        $set: { 
+          lastVisit: new Date(),
+          updatedAt: new Date()
+        } 
+      }
+    ).catch(err => console.warn('매장 방문 기록 업데이트 실패:', err));
+
+    // 캐시 확인 (방문 기록 업데이트 후에 체크)
     const cacheKey = getCacheKey('store_detail', { id });
     const cachedResult = getFromCache(cacheKey);
     
@@ -174,8 +187,6 @@ router.get('/:id', async (req, res) => {
         cached: true
       });
     }
-
-    const { db } = await connectToDatabase();
 
     // 매장 정보와 상세 통계를 한 번에 가져오기
     const pipeline = [

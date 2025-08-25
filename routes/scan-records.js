@@ -59,6 +59,17 @@ router.post('/', async (req, res) => {
       { upsert: true }
     );
 
+    // 매장 방문 기록 업데이트 (비동기)
+    db.collection('stores').updateOne(
+      { _id: normalizedStoreId },
+      { 
+        $set: { 
+          lastVisit: new Date(),
+          updatedAt: new Date()
+        } 
+      }
+    ).catch(err => console.warn('매장 방문 기록 업데이트 실패:', err));
+
     const responseTime = Date.now() - startTime;
 
     if (result.upsertedCount > 0) {
