@@ -314,13 +314,14 @@ const QRScanPage = () => {
       const response = await fetch('/api/products?limit=50'); // 상위 50개 제품
       const result = await response.json();
       
-      if (result.success && result.products) {
+      const products = result.data || result.products || [];
+      if (result.success && products.length > 0) {
         const newCache = new Map(productCache);
-        result.products.forEach(product => {
+        products.forEach(product => {
           newCache.set(product.sku, product);
         });
         setProductCache(newCache);
-        console.log(`${result.products.length}개 제품을 캐시에 프리로드했습니다.`);
+        console.log(`${products.length}개 제품을 캐시에 프리로드했습니다.`);
       }
     } catch (error) {
       console.log('제품 프리로딩 실패:', error);
@@ -350,10 +351,22 @@ const QRScanPage = () => {
       const response = await fetch('/api/products?limit=1000'); // 모든 제품 가져오기
       const result = await response.json();
       
-      if (result.success && result.products) {
-        setAllProducts(result.products);
-        console.log(`${result.products.length}개 제품을 불러왔습니다.`);
+      console.log('API 응답 구조:', {
+        success: result.success,
+        hasData: !!result.data,
+        hasProducts: !!result.products,
+        dataLength: result.data?.length,
+        productsLength: result.products?.length
+      });
+      
+      // data 필드 우선, 없으면 products 필드 사용
+      const products = result.data || result.products || [];
+      
+      if (result.success && products.length > 0) {
+        setAllProducts(products);
+        console.log(`${products.length}개 제품을 불러왔습니다.`);
       } else {
+        console.error('제품 데이터 없음:', result);
         throw new Error('제품 리스트를 가져올 수 없습니다.');
       }
     } catch (error) {
@@ -447,12 +460,13 @@ const QRScanPage = () => {
       const response = await fetch(`/api/products?search=${encodeURIComponent(searchQuery.trim())}&limit=20`);
       const result = await response.json();
       
-      if (result.success && result.products) {
-        setSearchResults(result.products);
+      const products = result.data || result.products || [];
+      if (result.success && products.length > 0) {
+        setSearchResults(products);
         setShowSearchResults(true);
         
         // 검색 결과를 캐시에도 추가
-        result.products.forEach(product => {
+        products.forEach(product => {
           if (product.sku) {
             addToCache(product.sku, product);
           }
@@ -1489,7 +1503,8 @@ const QRScanPage = () => {
       const productsResponse = await fetch('/api/products?limit=1000'); // 모든 제품 가져오기
       const productsData = await productsResponse.json();
 
-      if (!productsData.success) {
+      const products = productsData.data || productsData.products || [];
+      if (!productsData.success || products.length === 0) {
         throw new Error('제품 리스트를 가져올 수 없습니다.');
       }
 
@@ -1500,7 +1515,7 @@ const QRScanPage = () => {
         },
         body: JSON.stringify({
           image: imageDataUrl,
-          products: productsData.products,
+          products: products,
           storeId: storeId
         })
       });
