@@ -215,11 +215,11 @@ async function callOpenAIVisionAPI(imageDataUrl, products) {
     console.log('🔍 === OpenAI Vision API 호출 시작 ===');
     console.log('분석할 제품 수:', products.length);
 
-    // 🔍 AI에게 전달되는 제품 리스트 로깅
-    const productList = products.slice(0, 100).map(p => `- ${p.name} (카테고리: ${p.category || 'N/A'})`).join('\n');
+    // 🔍 AI에게 전달되는 제품 리스트 로깅 (모든 제품 전달)
+    const productList = products.map(p => `- ${p.name} (카테고리: ${p.category || 'N/A'})`).join('\n');
     console.log('=== AI에게 전달되는 제품 리스트 ===');
     console.log('총 제품 수:', products.length);
-    console.log('분석 대상 제품 수:', Math.min(products.length, 100));
+    console.log('분석 대상 제품 수:', products.length);
     console.log('제품 목록:\n', productList);
 
     const requestBody = {
@@ -338,13 +338,27 @@ ${productList}
     console.log('=== OpenAI 텍스트 응답 ===');
     console.log(aiContent);
 
-    // JSON 파싱 시도
+    // JSON 파싱 시도 (```json 블록 처리 포함)
     let parsedResult;
+    let cleanContent = aiContent.trim();
+    
+    // ```json 블록 처리
+    if (cleanContent.startsWith('```json')) {
+      console.log('🔧 AI가 JSON 코드 블록으로 응답함, 정리 중...');
+      cleanContent = cleanContent.replace(/^```json\s*/i, '').replace(/\s*```$/, '').trim();
+      console.log('정리된 내용:', cleanContent);
+    } else if (cleanContent.startsWith('```')) {
+      console.log('🔧 AI가 코드 블록으로 응답함, 정리 중...');
+      cleanContent = cleanContent.replace(/^```\s*/i, '').replace(/\s*```$/, '').trim();
+      console.log('정리된 내용:', cleanContent);
+    }
+    
     try {
-      parsedResult = JSON.parse(aiContent);
+      parsedResult = JSON.parse(cleanContent);
+      console.log('✅ JSON 파싱 성공 (정리된 내용)');
     } catch (parseError) {
       console.error('JSON 파싱 오류:', parseError);
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
       
       console.log('=== JSON 추출 결과 ===');
       console.log('JSON 매치:', jsonMatch ? jsonMatch[0] : 'JSON을 찾을 수 없음');
@@ -352,6 +366,7 @@ ${productList}
       if (jsonMatch) {
         try {
           parsedResult = JSON.parse(jsonMatch[0]);
+          console.log('✅ JSON 파싱 성공 (정규식 매칭)');
         } catch (retryError) {
           console.error('❌ JSON 파싱 재시도 실패:', retryError);
           throw new Error(`JSON 파싱 실패: ${retryError.message}`);

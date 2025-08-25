@@ -1513,7 +1513,7 @@ const QRScanPage = () => {
   // AI 매대 분석 실행
   const analyzeShelfWithAI = async (imageDataUrl) => {
     try {
-      const productsResponse = await fetch('/api/products');
+      const productsResponse = await fetch('/api/products?limit=1000'); // 모든 제품 가져오기
       const productsData = await productsResponse.json();
 
       if (!productsData.success) {
