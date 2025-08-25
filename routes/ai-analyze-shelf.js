@@ -5,7 +5,7 @@ const router = express.Router();
 // 🤖 AI 선반 분석 (원본 로직 기반)
 router.post('/', async (req, res) => {
   try {
-    const { image, products, storeId } = req.body;
+    const { image, products, storeId, quadrants } = req.body;
 
     // 입력 데이터 검증
     if (!image || !products || !storeId) {
@@ -84,8 +84,8 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // AI 분석 수행
-    const detectedProducts = await analyzeShelfWithAI(image, products);
+    // AI 분석 수행 (클라이언트에서 전달된 분할 이미지 사용)
+    const detectedProducts = await analyzeShelfWithAI(image, products, quadrants);
 
     // 분석 로그 저장
     try {
@@ -123,8 +123,40 @@ router.post('/', async (req, res) => {
   }
 });
 
-// AI 분석 함수 (OpenAI Vision API 연동)
-async function analyzeShelfWithAI(imageDataUrl, products) {
+// 이미지를 4개 영역으로 분할하는 함수
+async function splitImageIntoQuadrants(imageDataUrl) {
+  console.log('이미지 4분할 시작...');
+  try {
+    // Canvas를 사용하여 이미지 분할 (Node.js 환경에서는 단순한 방법 사용)
+    const base64Data = imageDataUrl.split(',')[1];
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+    
+    console.log('원본 이미지 크기:', imageBuffer.length, 'bytes');
+    
+    // 실제 분할은 클라이언트에서 처리하거나 별도 라이브러리 사용
+    // 지금은 원본 이미지를 4번 복사하여 시뮬레이션 (각각 다른 prompt로 분석)
+    const quadrants = [
+      { data: imageDataUrl, region: '왼쪽 상단 (Left-Top)', instruction: '이미지의 왼쪽 상단 영역에 집중하여' },
+      { data: imageDataUrl, region: '오른쪽 상단 (Right-Top)', instruction: '이미지의 오른쪽 상단 영역에 집중하여' },
+      { data: imageDataUrl, region: '왼쪽 하단 (Left-Bottom)', instruction: '이미지의 왼쪽 하단 영역에 집중하여' },
+      { data: imageDataUrl, region: '오른쪽 하단 (Right-Bottom)', instruction: '이미지의 오른쪽 하단 영역에 집중하여' }
+    ];
+    
+    console.log('이미지 4분할 완료:', quadrants.map(q => q.region).join(', '));
+    return quadrants;
+  } catch (error) {
+    console.error('이미지 분할 실패:', error.message);
+    // 실패 시 원본 이미지 4개 반환
+    return Array.from({ length: 4 }, (_, i) => ({
+      data: imageDataUrl,
+      region: `영역 ${i + 1}`,
+      instruction: `이미지의 특정 영역에 집중하여`
+    }));
+  }
+}
+
+// AI 분석 함수 (OpenAI Vision API 연동) - 7개 병렬 처리
+async function analyzeShelfWithAI(imageDataUrl, products, clientQuadrants = null) {
   try {
     // 이미지 데이터 정규화 및 검증
     const processedImageData = await processAndValidateImage(imageDataUrl);
@@ -136,31 +168,62 @@ async function analyzeShelfWithAI(imageDataUrl, products) {
       imageFormat: imageDataUrl.split(';')[0].split(':')[1]
     });
 
-    // 병렬 AI 분석 (3회 동시 호출로 정확도 향상)
-    console.log('병렬 AI 분석 시작: 3회 동시 호출');
+    // 이미지 4분할 수행 (클라이언트에서 제공되면 사용, 아니면 서버에서 시뮬레이션)
+    let quadrants;
+    if (clientQuadrants && clientQuadrants.length === 4) {
+      console.log('클라이언트에서 전달된 분할 이미지 사용');
+      quadrants = clientQuadrants.map(q => ({
+        data: q.data,
+        region: q.region,
+        instruction: `이미지의 ${q.region} 영역에 집중하여`
+      }));
+    } else {
+      console.log('서버에서 이미지 분할 시뮬레이션 수행');
+      quadrants = await splitImageIntoQuadrants(processedImageData);
+    }
+    
+    // 7개 병렬 AI 분석 (전체 이미지 3회 + 분할 이미지 4회)
+    console.log('병렬 AI 분석 시작: 7회 동시 호출 (전체 3회 + 분할 4회)');
     const startParallelTime = Date.now();
     
-    // Promise.all로 3개의 API를 동시 병렬 호출
-    const parallelPromises = Array.from({ length: 3 }, (_, index) => 
-      callOpenAIVisionAPI(processedImageData, products, index + 1)
+    // 전체 이미지 3회 분석을 위한 Promise 배열
+    const fullImagePromises = Array.from({ length: 3 }, (_, index) => 
+      callOpenAIVisionAPI(processedImageData, products, `전체-${index + 1}`, '전체 이미지를 종합적으로')
         .catch(error => {
-          console.warn(`AI 호출 ${index + 1} 실패:`, error.message);
+          console.warn(`전체 이미지 AI 호출 ${index + 1} 실패:`, error.message);
           return { error: error.message, products: [] };
         })
     );
     
+    // 분할 이미지 4회 분석을 위한 Promise 배열
+    const quadrantPromises = quadrants.map((quadrant, index) => 
+      callOpenAIVisionAPI(quadrant.data, products, `분할-${quadrant.region}`, quadrant.instruction)
+        .catch(error => {
+          console.warn(`분할 이미지 ${quadrant.region} AI 호출 실패:`, error.message);
+          return { error: error.message, products: [] };
+        })
+    );
+    
+    // 모든 Promise를 병렬로 실행
+    const parallelPromises = [...fullImagePromises, ...quadrantPromises];
     const parallelResults = await Promise.all(parallelPromises);
     const parallelTime = Date.now() - startParallelTime;
     
-    console.log(`병렬 AI 분석 완료 (${parallelTime}ms):`, parallelResults.map(r => 
-      r.error ? `오류: ${r.error}` : `${r.length}개 제품`
+    console.log(`7개 병렬 AI 분석 완료 (${parallelTime}ms):`);
+    console.log('- 전체 이미지 분석:', parallelResults.slice(0, 3).map((r, i) => 
+      r.error ? `전체-${i+1}: 오류` : `전체-${i+1}: ${r.length}개`
     ).join(', '));
+    console.log('- 분할 이미지 분석:', parallelResults.slice(3).map((r, i) => {
+      const regions = ['왼쪽상단', '오른쪽상단', '왼쪽하단', '오른쪽하단'];
+      return r.error ? `${regions[i]}: 오류` : `${regions[i]}: ${r.length}개`;
+    }).join(', '));
     
     // 성공한 결과들만 필터링
     const successResults = parallelResults.filter(result => !result.error && Array.isArray(result));
     
+    console.log(`성공한 AI 분석: ${successResults.length}/7개`);
     if (successResults.length === 0) {
-      console.error('모든 병렬 AI 호출 실패');
+      console.error('모든 7개 병렬 AI 호출 실패');
       return [];
     }
     
@@ -225,9 +288,9 @@ async function processAndValidateImage(imageDataUrl) {
   }
 }
 
-// AI 결과 병합 및 투표 시스템
+// AI 결과 병합 및 투표 시스템 (7개 결과 통합)
 function mergeAIResults(results) {
-  console.log('AI 결과 병합 시작:', results.map(r => r.length + '개'));
+  console.log('7개 AI 결과 병합 시작:', results.map(r => r.length + '개'));
   
   // 모든 감지된 제품들을 SKU별로 집계
   const productVotes = new Map();
@@ -317,7 +380,7 @@ function mergeAIResults(results) {
 }
 
 // OpenAI Vision API 호출 함수
-async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1) {
+async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1, focusInstruction = '전체 이미지를 종합적으로') {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   
   if (!OPENAI_API_KEY) {
@@ -349,11 +412,11 @@ async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1) {
           content: [
             {
               type: "text",
-              text: `당신은 3M 제품 인식 전문가입니다. 이 매대 이미지를 분석해서 3M 브랜드 제품들을 찾아 식별해주세요.
+              text: `당신은 3M 제품 인식 전문가입니다. ${focusInstruction} 분석해서 3M 브랜드 제품들을 찾아 식별해주세요.
 
 **분석 방법:**
-1. 이미지에서 3M 브랜드 로고, 제품명, 패키지 디자인을 자세히 확인하세요
-2. 제품명이나 패키지가 명확히 보이는 3M 제품만 식별하세요
+1. ${focusInstruction} 이미지에서 3M 브랜드 로고, 제품명, 패키지 디자인을 자세히 확인하세요
+2. 제품명이나 패키지가 명확히 보이는 3M 제품만 식별하세요  
 3. SKU 코드는 보이지 않으므로 제품명으로만 판단하세요
 4. 신뢰도 0.7 이상인 제품만 포함하세요
 

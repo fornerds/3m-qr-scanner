@@ -1497,9 +1497,78 @@ const QRScanPage = () => {
     });
   };
 
-  // AI 매대 분석 실행
+  // 이미지를 4개 영역으로 실제 분할하는 함수
+  const splitImageIntoQuadrants = async (imageDataUrl) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          const width = img.width;
+          const height = img.height;
+          const halfWidth = width / 2;
+          const halfHeight = height / 2;
+          
+          console.log(`이미지 4분할 시작: ${width}x${height}`);
+          
+          const quadrants = [];
+          const regions = [
+            { x: 0, y: 0, name: '왼쪽 상단' },
+            { x: halfWidth, y: 0, name: '오른쪽 상단' },
+            { x: 0, y: halfHeight, name: '왼쪽 하단' },
+            { x: halfWidth, y: halfHeight, name: '오른쪽 하단' }
+          ];
+          
+          regions.forEach((region, index) => {
+            canvas.width = halfWidth;
+            canvas.height = halfHeight;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 해당 영역만 그리기
+            ctx.drawImage(
+              img,
+              region.x, region.y, halfWidth, halfHeight,
+              0, 0, halfWidth, halfHeight
+            );
+            
+            const quadrantDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            quadrants.push({
+              data: quadrantDataUrl,
+              region: region.name
+            });
+          });
+          
+          console.log('이미지 4분할 완료:', quadrants.map(q => q.region).join(', '));
+          resolve(quadrants);
+        } catch (error) {
+          console.error('이미지 분할 오류:', error);
+          // 실패 시 원본 이미지 4개 반환
+          resolve(Array.from({ length: 4 }, (_, i) => ({
+            data: imageDataUrl,
+            region: `영역 ${i + 1}`
+          })));
+        }
+      };
+      
+      img.onerror = () => {
+        console.error('이미지 로딩 실패');
+        // 실패 시 원본 이미지 4개 반환
+        resolve(Array.from({ length: 4 }, (_, i) => ({
+          data: imageDataUrl,
+          region: `영역 ${i + 1}`
+        })));
+      };
+      
+      img.src = imageDataUrl;
+    });
+  };
+
+  // AI 매대 분석 실행 (7개 병렬 처리)
   const analyzeShelfWithAI = async (imageDataUrl) => {
     try {
+      setScanStatus('제품 리스트 로딩 중...');
       const productsResponse = await fetch('/api/products?limit=1000'); // 모든 제품 가져오기
       const productsData = await productsResponse.json();
 
@@ -1508,6 +1577,11 @@ const QRScanPage = () => {
         throw new Error('제품 리스트를 가져올 수 없습니다.');
       }
 
+      // 클라이언트에서 이미지 4분할 수행
+      setScanStatus('이미지 분할 처리 중...');
+      const quadrants = await splitImageIntoQuadrants(imageDataUrl);
+      
+      setScanStatus('AI 분석 시작 중... (7개 병렬 처리)');
       const analysisResponse = await fetch('/api/ai-analyze-shelf', {
         method: 'POST',
         headers: {
@@ -1516,7 +1590,11 @@ const QRScanPage = () => {
         body: JSON.stringify({
           image: imageDataUrl,
           products: products,
-          storeId: storeId
+          storeId: storeId,
+          quadrants: quadrants.map(q => ({
+            data: q.data,
+            region: q.region
+          }))
         })
       });
 
@@ -1537,9 +1615,9 @@ const QRScanPage = () => {
         
         // 감지된 제품 수에 따른 상태 메시지
         if (detectedProducts.length > 0) {
-          setScanStatus(`AI 분석 완료 - ${detectedProducts.length}개 제품 감지됨`);
+          setScanStatus(`AI 분석 완료 (7개 병렬) - ${detectedProducts.length}개 제품 감지됨`);
         } else {
-          setScanStatus('AI 분석 완료 - 감지된 제품 없음');
+          setScanStatus('AI 분석 완료 (7개 병렬) - 감지된 제품 없음');
         }
       } else {
         throw new Error(analysisResult.message || 'AI 분석에 실패했습니다.');
