@@ -136,10 +136,38 @@ async function analyzeShelfWithAI(imageDataUrl, products) {
       imageFormat: imageDataUrl.split(';')[0].split(':')[1]
     });
 
-    // OpenAI Vision API 호출
-    const aiResponse = await callOpenAIVisionAPI(processedImageData, products);
+    // 🚀 병렬 AI 분석 (3회 동시 호출로 정확도 향상)
+    console.log('🔥 병렬 AI 분석 시작: 3회 동시 호출');
+    const startParallelTime = Date.now();
     
-    return aiResponse;
+    // Promise.all로 3개의 API를 동시 병렬 호출
+    const parallelPromises = Array.from({ length: 3 }, (_, index) => 
+      callOpenAIVisionAPI(processedImageData, products, index + 1)
+        .catch(error => {
+          console.warn(`❌ AI 호출 ${index + 1} 실패:`, error.message);
+          return { error: error.message, products: [] };
+        })
+    );
+    
+    const parallelResults = await Promise.all(parallelPromises);
+    const parallelTime = Date.now() - startParallelTime;
+    
+    console.log(`🎯 병렬 AI 분석 완료 (${parallelTime}ms):`, parallelResults.map(r => 
+      r.error ? `오류: ${r.error}` : `${r.length}개 제품`
+    ).join(', '));
+    
+    // 성공한 결과들만 필터링
+    const successResults = parallelResults.filter(result => !result.error && Array.isArray(result));
+    
+    if (successResults.length === 0) {
+      console.error('❌ 모든 병렬 AI 호출 실패');
+      return [];
+    }
+    
+    // 🧠 결과 병합 및 투표 시스템
+    const mergedResults = mergeAIResults(successResults);
+    
+    return mergedResults;
 
   } catch (error) {
     console.error('AI 분석 실행 오류:', error);
@@ -197,8 +225,84 @@ async function processAndValidateImage(imageDataUrl) {
   }
 }
 
+// 🧠 AI 결과 병합 및 투표 시스템
+function mergeAIResults(results) {
+  console.log('🗳️ AI 결과 병합 시작:', results.map(r => r.length + '개'));
+  
+  // 모든 감지된 제품들을 SKU별로 집계
+  const productVotes = new Map();
+  
+  results.forEach((resultArray, resultIndex) => {
+    console.log(`📊 결과 ${resultIndex + 1}:`, resultArray.map(p => p.name));
+    
+    resultArray.forEach(product => {
+      const sku = product.sku;
+      
+      if (!productVotes.has(sku)) {
+        productVotes.set(sku, {
+          product: product,
+          votes: 0,
+          confidenceSum: 0,
+          appearances: []
+        });
+      }
+      
+      const vote = productVotes.get(sku);
+      vote.votes += 1;
+      vote.confidenceSum += (product.confidence || 0.8);
+      vote.appearances.push({
+        resultIndex: resultIndex + 1,
+        confidence: product.confidence || 0.8
+      });
+    });
+  });
+  
+  // 투표 결과 분석
+  console.log('🔍 투표 결과 분석:');
+  
+  const finalProducts = [];
+  const totalResults = results.length;
+  
+  productVotes.forEach((vote, sku) => {
+    const avgConfidence = vote.confidenceSum / vote.votes;
+    const votePercentage = (vote.votes / totalResults) * 100;
+    
+    console.log(`📝 ${vote.product.name}:`, {
+      votes: `${vote.votes}/${totalResults}`,
+      percentage: `${votePercentage.toFixed(1)}%`,
+      avgConfidence: avgConfidence.toFixed(2),
+      appearances: vote.appearances
+    });
+    
+    // 투표 기준: 50% 이상 또는 신뢰도가 매우 높은 경우 (0.9+)
+    if (vote.votes >= Math.ceil(totalResults * 0.5) || avgConfidence >= 0.9) {
+      finalProducts.push({
+        ...vote.product,
+        confidence: Math.min(avgConfidence + (vote.votes - 1) * 0.05, 1.0), // 투표 보너스
+        votes: vote.votes,
+        votePercentage: votePercentage,
+        consensus: vote.votes === totalResults ? 'unanimous' : 'majority'
+      });
+    }
+  });
+  
+  // 신뢰도 순으로 정렬
+  finalProducts.sort((a, b) => {
+    if (a.consensus === 'unanimous' && b.consensus !== 'unanimous') return -1;
+    if (b.consensus === 'unanimous' && a.consensus !== 'unanimous') return 1;
+    return b.confidence - a.confidence;
+  });
+  
+  console.log('🏆 최종 선별 결과:', finalProducts.length + '개');
+  finalProducts.forEach((product, index) => {
+    console.log(`${index + 1}. ${product.name} (신뢰도: ${product.confidence.toFixed(2)}, 투표: ${product.votes}/${totalResults}, 합의: ${product.consensus})`);
+  });
+  
+  return finalProducts;
+}
+
 // OpenAI Vision API 호출 함수
-async function callOpenAIVisionAPI(imageDataUrl, products) {
+async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   
   if (!OPENAI_API_KEY) {
@@ -212,7 +316,7 @@ async function callOpenAIVisionAPI(imageDataUrl, products) {
   }
   
   try {
-    console.log('🔍 === OpenAI Vision API 호출 시작 ===');
+    console.log(`🔍 === OpenAI Vision API 호출 ${callNumber} 시작 ===`);
     console.log('분석할 제품 수:', products.length);
 
     // 🔍 AI에게 전달되는 제품 리스트 로깅 (모든 제품 전달)
@@ -269,7 +373,7 @@ ${productList}
     };
 
     // 🔍 OpenAI API 설정 로깅
-    console.log('=== OpenAI API 요청 설정 ===');
+    console.log(`=== OpenAI API 요청 설정 (호출 ${callNumber}) ===`);
     console.log('모델:', requestBody.model);
     console.log('온도:', requestBody.temperature);
     console.log('최대 토큰:', requestBody.max_tokens);
@@ -305,7 +409,7 @@ ${productList}
     const responseText = await response.text();
     
     // 🔍 전체 OpenAI 응답 로깅
-    console.log('=== OpenAI 전체 응답 ===');
+    console.log(`=== OpenAI 전체 응답 (호출 ${callNumber}) ===`);
     try {
       const responseObj = JSON.parse(responseText);
       console.log(JSON.stringify(responseObj, null, 2));
@@ -316,7 +420,7 @@ ${productList}
     let result;
     try {
       result = JSON.parse(responseText);
-      console.log('OpenAI API 응답 파싱 성공');
+      console.log(`✅ OpenAI API 응답 파싱 성공 (호출 ${callNumber})`);
     } catch (jsonError) {
       console.error('OpenAI API 응답 JSON 파싱 실패:', jsonError.message);
       console.error('응답 내용 (처음 500자):', responseText.substring(0, 500));
@@ -427,7 +531,7 @@ ${productList}
       console.log('파싱된 제품들:', JSON.stringify(detectedProducts, null, 2));
       console.log('유효한 제품 수:', detectedProducts.length);
 
-      console.log(`🎯 AI 분석 완료: ${detectedProducts.length}개 제품 감지`);
+      console.log(`🎯 AI 호출 ${callNumber} 분석 완료: ${detectedProducts.length}개 제품 감지`);
       return detectedProducts;
     } else {
       console.error('❌ AI 응답 형식이 예상과 다릅니다:', parsedResult);
