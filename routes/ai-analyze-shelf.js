@@ -13,6 +13,20 @@ async function analyzeShelfWithAI(image, products) {
 
     const productList = products.slice(0, 100).map(p => `- SKU: ${p.sku}, 이름: ${p.name}`).join('\n');
     
+    // 🔍 AI에게 전달되는 제품 리스트 로깅
+    console.log('=== AI에게 전달되는 제품 리스트 ===');
+    console.log('총 제품 수:', products.length);
+    console.log('분석 대상 제품 수:', Math.min(products.length, 100));
+    console.log('제품 목록:');
+    console.log(productList);
+    
+    // 🔍 OpenAI API 설정 로깅
+    console.log('=== OpenAI API 요청 설정 ===');
+    console.log('모델:', 'gpt-4o');
+    console.log('온도:', 0.1);
+    console.log('최대 토큰:', 1500);
+    console.log('이미지 크기:', Math.ceil(image.length * 3/4), 'bytes');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -76,19 +90,47 @@ ${productList}
     }
 
     const data = await response.json();
+    
+    // 🔍 전체 OpenAI 응답 로깅
+    console.log('=== OpenAI 전체 응답 ===');
+    console.log(JSON.stringify(data, null, 2));
+    
     const content = data.choices[0]?.message?.content;
+    
+    // 🔍 AI가 생성한 텍스트 응답 로깅
+    console.log('=== OpenAI 텍스트 응답 ===');
+    console.log(content);
 
     if (!content) {
       throw new Error('OpenAI 응답에 내용이 없습니다.');
     }
 
     const jsonMatch = content.match(/\[[\s\S]*\]/);
+    
+    // 🔍 JSON 추출 결과 로깅
+    console.log('=== JSON 추출 결과 ===');
+    console.log('JSON 매치:', jsonMatch ? jsonMatch[0] : 'JSON을 찾을 수 없음');
+    
     if (!jsonMatch) {
+      console.error('❌ AI 응답에서 JSON 배열을 찾을 수 없습니다.');
+      console.error('전체 응답:', content);
       throw new Error('AI 응답에서 JSON을 찾을 수 없습니다.');
     }
 
-    const detectedProducts = JSON.parse(jsonMatch[0]);
-    return detectedProducts.filter(p => p.sku && p.name);
+    try {
+      const detectedProducts = JSON.parse(jsonMatch[0]);
+      
+      // 🔍 최종 파싱 결과 로깅
+      console.log('=== 최종 파싱 결과 ===');
+      console.log('파싱된 제품들:', JSON.stringify(detectedProducts, null, 2));
+      console.log('유효한 제품 수:', detectedProducts.filter(p => p.sku && p.name).length);
+      
+      return detectedProducts.filter(p => p.sku && p.name);
+    } catch (parseError) {
+      console.error('❌ JSON 파싱 오류:', parseError);
+      console.error('파싱 시도한 텍스트:', jsonMatch[0]);
+      throw new Error(`JSON 파싱 실패: ${parseError.message}`);
+    }
 
   } catch (error) {
     console.error('AI 분석 오류:', error);
