@@ -40,8 +40,8 @@ router.post('/', async (req, res) => {
       sessionId: sessionId || 'unknown',
       source,
       timestamp: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date()
+      createdAt: new Date()
+      // updatedAt는 $currentDate로 처리
     };
 
     // 중복 체크를 위한 고유 키
@@ -55,7 +55,7 @@ router.post('/', async (req, res) => {
       duplicateFilter,
       {
         $setOnInsert: scanRecord,
-        $set: { updatedAt: new Date() }
+        $currentDate: { updatedAt: true } // MongoDB가 자동으로 현재 시간 설정
       },
       { upsert: true }
     );
