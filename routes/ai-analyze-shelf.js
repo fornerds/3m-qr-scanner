@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
 
     // 이미지 크기 체크 (Heroku 50MB 제한 대응)
     const imageSizeInBytes = Math.ceil(image.length * 3/4);
-    const maxSizeInMB = 10;
+    const maxSizeInMB = 20;
     const maxSizeInBytes = maxSizeInMB * 1024 * 1024;
 
     if (imageSizeInBytes > maxSizeInBytes) {
@@ -70,7 +70,7 @@ router.post('/', async (req, res) => {
 
     // 전체 요청 크기 체크
     const requestSizeInBytes = JSON.stringify(req.body).length;
-    const maxRequestSizeInMB = 45;
+    const maxRequestSizeInMB = 50;
     const maxRequestSizeInBytes = maxRequestSizeInMB * 1024 * 1024;
 
     if (requestSizeInBytes > maxRequestSizeInBytes) {
@@ -86,6 +86,8 @@ router.post('/', async (req, res) => {
 
     // AI 분석 수행 (클라이언트에서 전달된 분할 이미지 사용)
     const detectedProducts = await analyzeShelfWithAI(image, products, quadrants);
+
+    console.log(`[AI 분석 완료] ${detectedProducts.length}개의 DB 검증된 제품 감지`);
 
     // 분석 로그 저장
     try {
@@ -109,7 +111,7 @@ router.post('/', async (req, res) => {
     return res.status(200).json({
       success: true,
       data: detectedProducts, // 클라이언트 호환성을 위해 추가
-      detectedProducts,
+      detectedProducts: detectedProducts,
       message: `${detectedProducts.length}개의 3M 제품이 감지되었습니다.`
     });
 
@@ -337,9 +339,9 @@ function mergeAIResults(results) {
       appearances: vote.appearances
     });
     
-    // 새 전략: 1번이라도 감지되면 모두 포함 (사용자가 최종 선택)
-    // 최소 신뢰도 0.6 이상만 필터링 (명백한 오류 제거)
-    if (avgConfidence >= 0.6) {
+    // 관대한 검증: DB에 있는 제품이면 낮은 신뢰도라도 사용자에게 제안
+    // 최소 신뢰도 0.3 이상만 필터링 (사용자가 최종 판단)
+    if (avgConfidence >= 0.3) {
       finalProducts.push({
         ...vote.product,
         confidence: Math.min(avgConfidence + (vote.votes - 1) * 0.03, 1.0), // 약간의 투표 보너스
@@ -414,27 +416,35 @@ async function callOpenAIVisionAPI(imageDataUrl, products, callNumber = 1, focus
               type: "text",
               text: `당신은 3M 제품 인식 전문가입니다. ${focusInstruction} 분석해서 3M 브랜드 제품들을 찾아 식별해주세요.
 
-**분석 방법:**
-1. ${focusInstruction} 이미지에서 3M 브랜드 로고, 제품명, 패키지 디자인을 자세히 확인하세요
-2. 제품명이나 패키지가 명확히 보이는 3M 제품만 식별하세요  
-3. SKU 코드는 보이지 않으므로 제품명으로만 판단하세요
-4. 신뢰도 0.7 이상인 제품만 포함하세요
+**🔒 중요한 제약사항:**
+- 아래 제품 목록에 정확히 있는 제품명만 사용하세요
+- 제품 목록에 없는 제품명은 절대 만들지 마세요
+- 유사하거나 비슷한 제품명도 사용하지 마세요
+- 신뢰도 0.3 이상이면 포함하세요 (사용자가 최종 선택)
 
-**찾아야 할 3M 제품 목록:**
+**📋 Flow 분석 방법:**
+1. 사진에서 제품을 찾을때는 사진속에 있는 3M 제품을 최대한 누락없이 찾아주세요
+2. 포장/색상/수량이 다르면 각각 별도의 제품으로 인식합니다
+3. 제품 포장에 "3M" 또는 "Scotch-Brite" 등의 정확한 브랜드 로고가 명확히 표시되어 있어야 합니다
+4. ${focusInstruction} 이미지에서 3M, Scotch-Brite 브랜드 로고를 모두 찾아주세요
+5. 아래 목록에 있는 제품이 보이면 적극적으로 포함
+6. 의심스럽더라도 목록에 있는 제품이면 일단 포함 (사용자가 최종 선택)
+
+**허용된 3M 제품 목록 (이 목록에 있는 제품명만 사용):**
 ${productList}
 
-**응답 형식 (JSON만 응답):**
+**응답 형식 (JSON만):**
 {
   "detectedProducts": [
     {
-      "name": "정확한_제품명",
-      "category": "카테고리명", 
+      "name": "위_목록의_정확한_제품명",
+      "category": "해당_카테고리", 
       "confidence": 0.85
     }
   ]
 }
 
-중요: 제품이 없으면 빈 배열 []을 반환하세요. 다른 설명 없이 JSON만 응답해주세요.`
+💡 제품이 확실하지 않아도 목록에 있다면 포함하세요. 사용자가 최종 판단합니다. JSON 외 다른 내용은 포함하지 마세요.`
             },
             {
               type: "image_url",
@@ -581,38 +591,19 @@ ${productList}
     }
     
     const detectedProducts = detectedProductsArray.map(detected => {
-        console.log(`매칭 시도: AI 감지 제품 "${detected.name}"`);
+        console.log(`[엄격 검증] AI 감지 제품: "${detected.name}"`);
         
-        // 제품명으로 원본 제품 정보 찾기 (대소문자 구분 없이)
+        // 🔒 엄격한 완전 매칭만 허용 (대소문자 구분 없이)
         const originalProduct = products.find(p => 
           p.name.toLowerCase().trim() === detected.name.toLowerCase().trim()
         );
         
         if (!originalProduct) {
-          console.warn(`매칭되지 않는 제품명: ${detected.name}`);
-          // 부분 매칭 시도 (포함 관계)
-          const partialMatch = products.find(p => 
-            p.name.toLowerCase().includes(detected.name.toLowerCase()) ||
-            detected.name.toLowerCase().includes(p.name.toLowerCase())
-          );
-          
-          if (partialMatch) {
-            console.log(`부분 매칭 성공: ${detected.name} → ${partialMatch.name}`);
-            return {
-              sku: partialMatch.sku,
-              name: partialMatch.name,
-              category: partialMatch.category,
-              price: partialMatch.price,
-              confidence: detected.confidence || 0.8,
-              registered: false
-            };
-          } else {
-            console.log(`부분 매칭도 실패: ${detected.name}`);
-            return null;
-          }
+          console.warn(`❌ [DB 검증 실패] "${detected.name}" - 데이터베이스에 존재하지 않는 제품이므로 제외`);
+          return null; // 부분 매칭 제거 - DB에 없는 제품은 절대 허용 안함
         }
 
-        console.log(`완전 매칭 성공: ${detected.name}`);
+        console.log(`✅ [DB 검증 성공] "${detected.name}" → SKU: ${originalProduct.sku}`);
         return {
           sku: originalProduct.sku,
           name: originalProduct.name,
