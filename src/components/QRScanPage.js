@@ -31,7 +31,7 @@ const QRScanPage = () => {
   // 제품 캐시 시스템 (최고 속도를 위한 로컬 캐싱)
   const [productCache, setProductCache] = useState(new Map());
   const [isPreloading, setIsPreloading] = useState(false);
-  const SCAN_COOLDOWN = 30; // 30ms로 극한 최적화
+  const SCAN_COOLDOWN = 300; // 0.3초 초고속 쿨다운 (즉시 연속 스캔)
   
   // 카메라 설정 옵션
   const [currentSetting, setCurrentSetting] = useState('highPerformance'); // 기본값: 고성능으로 변경
@@ -149,15 +149,36 @@ const QRScanPage = () => {
   const [pinchDistance, setPinchDistance] = useState(0);
   const [currentZoom, setCurrentZoom] = useState(1);
 
+  // 줌 상태에 따른 QR 스캔 최적화
+  const getZoomOptimizedScanConfig = (zoomLevel) => {
+    if (zoomLevel > 1.5) {
+      // 줌 상태: 더 정밀한 스캔 설정 (화질 저하 보상)
+      return {
+        fps: 20,  // FPS 낮춰서 정확도 향상
+        qrboxPercentage: 0.9, // 더 큰 스캔 영역
+        scanSensitivity: 'high' // 고감도 스캔
+      };
+    } else {
+      // 일반 상태: 기본 빠른 스캔 설정
+      return {
+        fps: null, // 프리셋 기본값 사용
+        qrboxPercentage: null, // 프리셋 기본값 사용
+        scanSensitivity: 'normal'
+      };
+    }
+  };
+
   // 현재 설정에 따른 카메라 설정 생성
   const getCurrentCameraConfig = () => {
     const preset = CAMERA_PRESETS[currentSetting];
+    const zoomOptimized = getZoomOptimizedScanConfig(currentZoom);
     
     const config = {
-      fps: preset.fps,
+      fps: zoomOptimized.fps || preset.fps, // 줌 최적화 FPS 우선
       qrbox: function(viewfinderWidth, viewfinderHeight) {
         let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
-        let qrboxSize = Math.floor(minEdgeSize * preset.qrboxPercentage);
+        let qrboxPercentage = zoomOptimized.qrboxPercentage || preset.qrboxPercentage;
+        let qrboxSize = Math.floor(minEdgeSize * qrboxPercentage);
         return {
           width: qrboxSize,
           height: qrboxSize
@@ -223,16 +244,16 @@ const QRScanPage = () => {
         await scannerRef.current.stop();
         console.log('카메라 정지 완료');
         
-        // 잠깐 대기 후 재시작
+        // 즉시 재시작 (대기 시간 최소화)
         setTimeout(() => {
           startCamera();
-        }, 500);
+        }, 100);
       } catch (error) {
         console.error('카메라 정지 중 오류:', error);
-        // 강제로 재시작
+        // 강제로 즉시 재시작
         setTimeout(() => {
           startCamera();
-        }, 500);
+        }, 100);
       }
     } else {
       // 카메라가 실행 중이 아니면 바로 시작
@@ -269,8 +290,22 @@ const QRScanPage = () => {
       if (Math.abs(newZoom - currentZoom) > 0.02) {
         console.log('줌 변경:', currentZoom, '->', newZoom);
         setCurrentZoom(newZoom);
-        applyZoom(newZoom);
+        await applyZoom(newZoom);
         setPinchDistance(distance);
+        
+        // 줌 레벨이 1.5 기준으로 넘나들면 카메라 설정 최적화 재적용
+        const wasZoomed = currentZoom > 1.5;
+        const isNowZoomed = newZoom > 1.5;
+        
+        if (wasZoomed !== isNowZoomed) {
+          console.log(`줌 최적화 모드 변경: ${wasZoomed ? '줌' : '일반'} → ${isNowZoomed ? '줌' : '일반'}`);
+          // 200ms 후 카메라 설정 재적용
+          setTimeout(() => {
+            if (scannerRef.current && isScanning) {
+              changeCameraSetting(currentSetting); // 현재 설정으로 재시작
+            }
+          }, 200);
+        }
       }
     }
   };
@@ -281,25 +316,231 @@ const QRScanPage = () => {
     }
   };
 
-  const applyZoom = (zoomLevel) => {
-    // 다양한 선택자로 비디오 요소 찾기
-    let video = document.querySelector('#qr-reader video');
-    if (!video) {
-      video = document.querySelector('video');
+  // 터치 포커싱 기능 (화면 터치 지점에 포커스)
+  const handleTouchFocus = async (e) => {
+    try {
+      e.preventDefault();
+      
+      const video = document.querySelector('#qr-reader video');
+      if (!video || !video.srcObject) {
+        console.log('비디오 요소나 스트림이 없어 포커싱할 수 없습니다.');
+        return;
+      }
+
+      // 터치 좌표 계산
+      const rect = video.getBoundingClientRect();
+      const x = e.clientX ? e.clientX - rect.left : e.touches[0].clientX - rect.left;
+      const y = e.clientY ? e.clientY - rect.top : e.touches[0].clientY - rect.top;
+      
+      // 상대 좌표로 변환 (0-1 범위)
+      const relativeX = x / rect.width;
+      const relativeY = y / rect.height;
+      
+      console.log('터치 포커싱 시도:', { x: relativeX, y: relativeY });
+
+      // 비디오 스트림의 비디오 트랙 가져오기
+      const stream = video.srcObject;
+      const videoTracks = stream.getVideoTracks();
+      
+      if (videoTracks.length === 0) {
+        console.log('비디오 트랙이 없어 포커싱할 수 없습니다.');
+        return;
+      }
+
+      const track = videoTracks[0];
+      const capabilities = track.getCapabilities();
+      
+      // 포커싱 기능 지원 여부 확인
+      if (capabilities.focusMode && capabilities.focusMode.includes('manual')) {
+        await track.applyConstraints({
+          advanced: [{
+            focusMode: 'manual',
+            focusDistance: Math.max(0.1, Math.min(0.9, relativeY)) // Y 좌표 기반 포커스 거리
+          }]
+        });
+        
+        console.log('터치 포커싱 적용 완료');
+        
+        // 시각적 피드백 제공
+        showFocusIndicator(x + rect.left, y + rect.top);
+        
+        // 1초 후 다시 연속 포커싱으로 복구
+        setTimeout(async () => {
+          try {
+            await track.applyConstraints({
+              advanced: [{
+                focusMode: 'continuous'
+              }]
+            });
+            console.log('연속 포커싱 모드로 복구');
+          } catch (error) {
+            console.log('연속 포커싱 복구 실패:', error);
+          }
+        }, 1000);
+        
+      } else {
+        console.log('수동 포커싱이 지원되지 않는 카메라입니다.');
+        // 지원되지 않는 경우에도 시각적 피드백은 제공
+        showFocusIndicator(x + rect.left, y + rect.top);
+      }
+      
+    } catch (error) {
+      console.error('터치 포커싱 오류:', error);
+    }
+  };
+
+  // 포커스 인디케이터 표시 (시각적 피드백)
+  const showFocusIndicator = (x, y) => {
+    // 기존 포커스 인디케이터 제거
+    const existingIndicator = document.getElementById('focus-indicator');
+    if (existingIndicator) {
+      existingIndicator.remove();
+    }
+
+    // 새 포커스 인디케이터 생성
+    const indicator = document.createElement('div');
+    indicator.id = 'focus-indicator';
+    indicator.style.cssText = `
+      position: fixed;
+      left: ${x - 30}px;
+      top: ${y - 30}px;
+      width: 60px;
+      height: 60px;
+      border: 2px solid #00ff00;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1000;
+      animation: focusPulse 0.8s ease-out;
+    `;
+
+    // 애니메이션 스타일 추가 (한 번만)
+    if (!document.getElementById('focus-animation-style')) {
+      const style = document.createElement('style');
+      style.id = 'focus-animation-style';
+      style.textContent = `
+        @keyframes focusPulse {
+          0% { transform: scale(1.5); opacity: 0.8; }
+          50% { transform: scale(1.0); opacity: 1.0; }
+          100% { transform: scale(0.8); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(indicator);
+
+    // 1초 후 제거
+    setTimeout(() => {
+      if (indicator && indicator.parentNode) {
+        indicator.remove();
+      }
+    }, 800);
+  };
+
+  // 고화질 실제 카메라 줌 (화질 손실 없음)
+  const applyZoom = async (zoomLevel) => {
+    try {
+      const video = document.querySelector('#qr-reader video');
+      if (!video || !video.srcObject) {
+        console.log('비디오 스트림을 찾을 수 없음');
+        return;
+      }
+
+      const stream = video.srcObject;
+      const videoTracks = stream.getVideoTracks();
+      
+      if (videoTracks.length === 0) {
+        console.log('비디오 트랙을 찾을 수 없음');
+        return;
+      }
+
+      const track = videoTracks[0];
+      const capabilities = track.getCapabilities();
+      
+      // 실제 카메라 줌 기능 확인 및 적용
+      if (capabilities.zoom) {
+        const { min, max } = capabilities.zoom;
+        const actualZoom = Math.max(min, Math.min(max, zoomLevel));
+        
+        await track.applyConstraints({
+          advanced: [{
+            zoom: actualZoom
+          }]
+        });
+        
+        console.log(`실제 카메라 줌 적용: ${actualZoom} (범위: ${min}-${max})`);
+        return true; // 실제 줌 성공
+        
+      } else if (capabilities.focusDistance) {
+        // 줌이 없으면 포커스 거리로 대체 (고화질 근접 촬영)
+        const focusDistance = Math.max(0.05, Math.min(0.3, 1 / zoomLevel));
+        
+        await track.applyConstraints({
+          advanced: [{
+            focusDistance: focusDistance,
+            focusMode: 'manual'
+          }]
+        });
+        
+        console.log(`포커스 거리 조정으로 줌 효과: ${focusDistance}`);
+        
+        // 1초 후 연속 포커싱 복구
+        setTimeout(async () => {
+          try {
+            await track.applyConstraints({
+              advanced: [{ focusMode: 'continuous' }]
+            });
+          } catch (error) {
+            console.log('연속 포커싱 복구 실패:', error);
+          }
+        }, 1000);
+        
+        return true; // 포커스 줌 성공
+      }
+      
+      // 실제 줌/포커스가 지원되지 않는 경우에만 폴백
+      console.log('실제 카메라 줌 미지원 - 고해상도 크롭 줌으로 폴백');
+      return applyHighQualityCropZoom(video, zoomLevel);
+      
+    } catch (error) {
+      console.error('카메라 줌 적용 실패:', error);
+      // 최후 수단으로 기존 CSS 줌 (화질 저하 경고)
+      return applyFallbackCSSZoom(video, zoomLevel);
+    }
+  };
+
+  // 고해상도 크롭 줄 (화질 손실 최소화)
+  const applyHighQualityCropZoom = (video, zoomLevel) => {
+    if (!video) return false;
+    
+    // 비디오 컨테이너의 overflow를 hidden으로 설정
+    const container = video.closest('#qr-reader');
+    if (container) {
+      container.style.overflow = 'hidden';
     }
     
-    if (video) {
-      // 비디오만 확대 (컨테이너는 그대로)
-      video.style.transform = `scale(${zoomLevel})`;
-      video.style.transformOrigin = 'center center';
-      video.style.transition = 'transform 0.2s ease';
-      video.style.maxWidth = 'none'; // 확대 시 maxWidth 제한 제거
-      video.style.maxHeight = 'none';
-      
-      console.log('줌 적용됨:', zoomLevel);
-    } else {
-      console.log('비디오 요소를 찾을 수 없음');
-    }
+    // 비디오를 확대하되, 컨테이너로 자르기 (크롭 효과)
+    const scale = zoomLevel;
+    video.style.transform = `scale(${scale})`;
+    video.style.transformOrigin = 'center center';
+    video.style.transition = 'transform 0.3s ease';
+    
+    console.log(`고해상도 크롭 줌 적용: ${scale}x`);
+    return true;
+  };
+
+  // 최후 수단 CSS 줌 (화질 저하 경고)
+  const applyFallbackCSSZoom = (video, zoomLevel) => {
+    if (!video) return false;
+    
+    video.style.transform = `scale(${zoomLevel})`;
+    video.style.transformOrigin = 'center center';
+    video.style.transition = 'transform 0.2s ease';
+    video.style.maxWidth = 'none';
+    video.style.maxHeight = 'none';
+    
+    console.warn(`⚠️ CSS 줌 적용 (화질 저하 가능): ${zoomLevel}x`);
+    return true;
   };
 
 
@@ -728,11 +969,11 @@ const QRScanPage = () => {
         navigator.vibrate(200);
       }
       
-      // 2초 후 결과 초기화 (빠른 연속 스캔을 위해 단축)
+      // 1초 후 결과 초기화 (빠른 연속 스캔을 위해 단축)
       setTimeout(() => {
         setScanResult(null);
-        setScanStatus('바코드 스캔 중...');
-      }, 2000);
+        setScanStatus(`📱 기기 카메라 실시간 스캔 중... (스캔됨: ${scannedProducts.size}개)`);
+      }, 1000);
       
       console.log(`QR 코드 처리됨: ${productCode} - ${scanResult.statusMessage}`);
     } catch (error) {
@@ -777,8 +1018,7 @@ const QRScanPage = () => {
         qrReaderDiv.innerHTML = '';
       }
       
-      // 잠깐 대기 (DOM 정리 시간)
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // DOM 정리 즉시 완료 (대기 시간 제거)
       
       // 현재 설정에 따른 카메라 설정 가져오기
       const { config, cameraConfig: dynamicCameraConfig } = getCurrentCameraConfig();
@@ -787,11 +1027,11 @@ const QRScanPage = () => {
       const onScanSuccess = (decodedText, decodedResult) => {
         const currentTime = Date.now();
         
-        // 강화된 중복 스캔 방지
-        // 1. 같은 코드인지 확인
-        // 2. 쿨다운 시간 확인 (2초)
+        // 스마트 중복 스캔 방지
+        // 1. 같은 코드 연속 스캔 방지 (0.8초 쿨다운)
+        // 2. 다른 코드는 즉시 스캔 허용
         if (decodedText === lastScannedCode && (currentTime - lastScanTime) < SCAN_COOLDOWN) {
-          console.log('스캔 쿨다운 중:', decodedText);
+          console.log(`동일 QR 쿨다운 중: ${decodedText} (${SCAN_COOLDOWN - (currentTime - lastScanTime)}ms 남음)`);
           return;
         }
         
@@ -799,22 +1039,22 @@ const QRScanPage = () => {
         setLastScannedCode(decodedText);
         setLastScanTime(currentTime);
         
-        // 즉시 피드백 제공
-        setScanStatus(`✓ 스캔됨! 검색 중... (${decodedText.substring(0, 10)}...)`);
+        // 즉시 피드백 제공 (더 명확하고 친근하게)
+        setScanStatus(`🔍 스캔 완료! 제품 확인 중... (${decodedText.length > 15 ? decodedText.substring(0, 15) + '...' : decodedText})`);
         
-        // 진동 피드백 (지원하는 기기에서)
+        // 향상된 진동 피드백 (성공 패턴)
         if (navigator.vibrate) {
-          navigator.vibrate(100);
+          navigator.vibrate([100, 50, 100]); // 성공 패턴: 진동-멈춤-진동
         }
         
         // 제품 검색
         processQR(decodedText);
         
-        // 1초 후 중복 방지 해제 (최고 속도 재스캔)
+        // 초고속 쿨다운 후 중복 방지 해제 (즉시 연속 스캔)
         setTimeout(() => {
           setLastScannedCode('');
           setLastScanTime(0);
-        }, 1000);
+        }, SCAN_COOLDOWN);
       };
 
       // 스캔 에러 콜백 (무시)
@@ -859,8 +1099,16 @@ const QRScanPage = () => {
         // 동적 카메라 설정 사용
         const cameraConfig = dynamicCameraConfig;
         
-        // 후면 카메라 우선 시작 (카메라 목록에서 후면 카메라 찾기)
-        let cameraId = { facingMode: "environment" };
+        // 기기 후면 카메라 강제 사용 (네이티브에 가까운 경험)
+        let cameraId = { 
+          facingMode: { exact: "environment" }, // 후면 카메라 강제 사용
+          advanced: [
+            { focusMode: "continuous" },  // 연속 초점
+            { focusDistance: 0.1 },       // 가까운 거리 포커스 (QR/바코드 최적화)
+            { whiteBalanceMode: "continuous" }, // 자동 화이트밸런스
+            { exposureMode: "continuous" } // 자동 노출
+          ]
+        };
         
         try {
           // 사용 가능한 카메라 목록 가져오기
@@ -910,8 +1158,8 @@ const QRScanPage = () => {
         setCurrentZoom(1);
 
 
-        // 카메라가 로드된 후 터치 이벤트 추가
-        setTimeout(() => {
+        // 카메라 로드 후 즉시 터치 이벤트 추가 (대기 최소화)
+        setTimeout(async () => {
           const video = document.querySelector('#qr-reader video');
           console.log('카메라 로드 확인 - Video:', !!video);
           
@@ -919,10 +1167,14 @@ const QRScanPage = () => {
           const qrReader = document.getElementById('qr-reader');
           if (qrReader) {
             qrReader.style.pointerEvents = 'auto';
+            
+            // 터치 포커싱 기능 추가 - 화면 터치시 해당 지점에 포커스
+            qrReader.addEventListener('click', handleTouchFocus);
+            qrReader.addEventListener('touchstart', handleTouchFocus);
           }
           
-          applyZoom(1);
-        }, 1000); // 1초로 늘림
+          await applyZoom(1);
+        }, 300); // 1초 → 0.3초로 단축
       } catch (renderError) {
         console.error('스캐너 렌더링 오류:', renderError);
         
@@ -1029,13 +1281,11 @@ const QRScanPage = () => {
         scannerRef.current = null;
       }
       
-      // DOM 정리는 약간의 지연 후 실행
-      setTimeout(() => {
-        const qrReaderDiv = document.getElementById('qr-reader');
-        if (qrReaderDiv) {
-          qrReaderDiv.innerHTML = '';
-        }
-      }, 100);
+      // DOM 정리 즉시 실행 (대기 시간 제거)
+      const stopQrReaderDiv = document.getElementById('qr-reader');
+      if (stopQrReaderDiv) {
+        stopQrReaderDiv.innerHTML = '';
+      }
       
       setIsScanning(false);
       setScanResult(null);
@@ -1192,8 +1442,7 @@ const QRScanPage = () => {
           qrReaderDiv.innerHTML = '';
         }
 
-        // 잠깐 대기
-        await new Promise(resolve => setTimeout(resolve, 200));
+        // 스캐너 인스턴스 즉시 생성 (대기 시간 제거)
 
         // 새 스캐너 인스턴스 생성 및 검증
         scannerRef.current = new Html5Qrcode("qr-reader");
@@ -1249,8 +1498,7 @@ const QRScanPage = () => {
       setIsAnalyzing(true);
       setScanStatus('고화질 매대 촬영 중...');
       
-      // 잠시 대기하여 카메라 포커스 조정
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 카메라 포커스 자동 조정 (즉시 촬영 가능)
 
       const videoElement = document.querySelector('#qr-reader video');
       if (!videoElement) {
@@ -1296,11 +1544,65 @@ const QRScanPage = () => {
   // 앨범에서 사진 선택
   const selectPhotoFromAlbum = () => {
     if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute('capture');
       fileInputRef.current.click();
     }
   };
 
-  // 파일 선택 처리
+
+
+
+
+  // QR 코드 디코딩 함수 (기기 카메라용)
+  const decodeQRFromImage = async (file) => {
+    try {
+      console.log('📸 기기 카메라 이미지에서 QR 코드 탐지 시도...');
+      
+      // 임시 DOM 요소 생성 (QR 스캐닝용)
+      let tempDiv = document.getElementById('temp-qr-reader');
+      if (!tempDiv) {
+        tempDiv = document.createElement('div');
+        tempDiv.id = 'temp-qr-reader';
+        tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+      }
+      
+      // Html5Qrcode 인스턴스로 파일 스캔
+      const html5QrCode = new Html5Qrcode("temp-qr-reader");
+      
+      // 이미지 파일에서 QR 코드 스캔
+      const result = await html5QrCode.scanFile(file, true);
+      
+      console.log('🎯 기기 카메라 QR 디코딩 성공!', result);
+      
+      if (result) {
+        // 성공 진동 피드백
+        if (navigator.vibrate) {
+          navigator.vibrate([100, 50, 100]); // 성공 패턴
+        }
+        
+        setScanStatus(`🎯 QR 코드 발견! 제품 등록 중... (${result.length > 15 ? result.substring(0, 15) + '...' : result})`);
+        
+        // 제품 검색 및 등록
+        await processQR(result);
+        
+        console.log('✅ 기기 카메라 QR 처리 완료:', result);
+        
+        // 임시 요소 정리
+        html5QrCode.clear();
+        
+        return true; // QR 코드 처리 완료
+      }
+      
+      return false; // QR 코드 없음
+      
+    } catch (error) {
+      console.log('📷 기기 카메라 이미지에 QR 코드 없음 (AI 매대 분석으로 전환):', error.message);
+      return false; // QR 코드가 없는 일반 매대 이미지
+    }
+  };
+
+  // 파일 선택 처리 (기기 카메라 + 앨범)
   const handleFileSelect = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -1320,7 +1622,36 @@ const QRScanPage = () => {
 
     try {
       setIsAnalyzing(true);
-      setScanStatus('원본 이미지 로딩 중...');
+      setScanStatus('📸 이미지 분석 중...');
+      
+      // 이미지를 base64로 변환
+      const imageDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      // 1단계: QR 코드 우선 탐지 시도 (기기 카메라로 QR 찍었을 가능성)
+      setScanStatus('🔍 QR 코드 확인 중...');
+      const hasQRCode = await decodeQRFromImage(file);
+      
+      if (hasQRCode) {
+        // QR 코드 발견하고 처리 완료됨
+        setIsAnalyzing(false);
+        setScanStatus(`✅ QR 코드 처리 완료! (스캔됨: ${scannedProducts.size}개)`);
+        
+        // 1초 후 상태 리셋 (빠른 연속 처리)
+        setTimeout(() => {
+          setScanStatus(`📱 기기 카메라 실시간 스캔 중... (스캔됨: ${scannedProducts.size}개)`);
+        }, 1000);
+        
+        event.target.value = ''; // input 초기화
+        return; // QR 코드 처리 완료, AI 분석 불필요
+      }
+
+      // 2단계: QR 코드가 없으면 AI 매대 분석 진행
+      setScanStatus('🤖 AI 매대 분석 중...');
 
       console.log('원본 이미지 로딩:', {
         파일명: file.name,
@@ -2070,7 +2401,7 @@ const QRScanPage = () => {
             position: 'absolute',
             top: '20px',
             right: '20px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backgroundColor: currentZoom > 1.5 ? 'rgba(0, 120, 255, 0.9)' : 'rgba(0, 0, 0, 0.7)', // 줌 최적화 시 파란 배경
             color: 'white',
             padding: '8px 16px',
             borderRadius: '20px',
@@ -2079,14 +2410,17 @@ const QRScanPage = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            zIndex: 1000
+            zIndex: 1000,
+            border: currentZoom > 1.5 ? '2px solid #00ff00' : 'none', // 줌 최적화 시 초록 테두리
+            boxShadow: currentZoom > 1.5 ? '0 0 10px rgba(0, 255, 0, 0.5)' : 'none' // 줌 최적화 시 초록 글로우
           }}>
-            <i className="fas fa-search-plus"></i>
+            <i className={currentZoom > 1.5 ? "fas fa-crosshairs" : "fas fa-search-plus"}></i>
             {(currentZoom * 100).toFixed(0)}%
+            {currentZoom > 1.5 && <span style={{ fontSize: '10px', opacity: 0.8, marginLeft: '4px' }}>정밀</span>}
             <button
-              onClick={() => {
+              onClick={async () => {
                 setCurrentZoom(1);
-                applyZoom(1);
+                await applyZoom(1);
               }}
               style={{
                 background: 'transparent',
